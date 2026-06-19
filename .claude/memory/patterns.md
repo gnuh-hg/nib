@@ -166,3 +166,12 @@ Stack: React/TS — overlay MVP + wire dock NAV vào app-level state (nav-dock-r
 Pattern: `SettingsOverlay/` mirror `LibraryOverlay/` (scrim+panel, data-open no-unmount, reduced-motion). Lang/Theme seg dùng useI18n.setLang + useTheme.setTheme → runtime + persist sẵn trong provider (nib-lang/nib-theme), KHÔNG cần thêm cơ chế lưu. Overlay state ở AppShell (top-level như LibraryOverlay), mở từ dock = thêm prop callback bubble: AppShell→Workspace→UnifiedDock→NavLevel onSettings/onLibrary (hết no-op placeholder). AccountChip đọc localStorage nib-user-name fallback "User".
 Quyết định: dock dọc hẹp → AccountChip avatar-only (tên qua title/aria), không render name label (ép dock rộng).
 Done-criteria pass: tsc 0 · vitest 56/56 · build 0 (2.02s) · §9 15/15 en+vi · parity 147/147 · 0 hex rời src/components.
+
+## 2026-06-19 16:25 — settings-overlay-layout-neutral-3-variants
+
+Stack: React/TS — SettingsOverlay sidebar-nav + ProfileProvider (settings-redesign S2).
+Pattern layout-neutral: component tree CỐ ĐỊNH (SettingsNav + SettingsContent, HTML không hardcode width/position) → 3 hướng nav (rail/tabs/grid) = thuần CSS qua `[data-settings-layout=rail|tabs|grid]` trên `.nib-settings__panel`. Dev switch tạm persist localStorage `nib-settings-layout` → user bấm đổi LIVE chọn 1 hướng, task sau khoá.
+Section registry: `SectionDef[]` (id/i18nKey:I18nKey/icon/component/comingSoon?) eager — thêm section = append 1 entry, shell không sửa. activeId trong INTERNAL SettingsContext (không export khỏi index.ts) → props chỉ {open,onClose} (tránh 18-prop LibraryOverlay).
+ProfileProvider: wrap NGOÀI ThemeProvider ở App.tsx (dock/TopStrip sau dùng useProfile). StoredProfile persist `nib-profile`, avatarInitials derive tại render (không persist), avatarColor = deriveAvatarColor(name) stable hash %8 → named swatch token (`--swatch-teal..slate`, KHÔNG `--swatch-1..8`). Avatar dùng color-mix(swatch 16%, surface) tránh hex rời.
+R1 confirm: thêm TẤT CẢ i18n key settings.* (en+vi) TRƯỚC khi tạo registry — I18nKey=keyof typeof en check compile-time, sai thứ tự → tsc fail.
+Done: tsc 0 · build 0 · vitest 62/62 (+6 profile: deriveInitials ''→'?'/'Hung'→'H'/'Nguyen Hai'→'NH', deriveAvatarColor stable) · 0 hex rời · settings.* parity en=vi=19.

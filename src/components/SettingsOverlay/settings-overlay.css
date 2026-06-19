@@ -1,7 +1,9 @@
 /* =============================================================================
-   Settings overlay (nav-dock-design §5). Scrim + panel, mirrors LibraryOverlay.
-   Language + Theme segmented selectors. Colors/spacing strictly via tokens.
-   Open/close = data-attr on .nib-settings-overlay (no conditional unmount).
+   Settings overlay — card float mirroring LibraryOverlay (settings-redesign).
+   Sidebar-nav shell with THREE selectable layout variants driven purely by
+   [data-settings-layout=rail|tabs|grid] on the panel (component tree is
+   layout-neutral — the same HTML reflows via CSS). Colours/spacing via tokens
+   only; open/close = data-attr (no conditional unmount).
    ========================================================================== */
 
 .nib-settings-overlay {
@@ -29,8 +31,8 @@
   position: absolute;
   inset: 0;
   margin: auto;
-  width: min(460px, calc(100% - 80px));
-  height: min(360px, calc(100% - 80px));
+  width: min(900px, calc(100% - 80px));
+  height: min(600px, calc(100% - 80px));
   z-index: 60;
   display: flex;
   flex-direction: column;
@@ -54,7 +56,7 @@
 @media (prefers-reduced-motion: reduce) {
   .nib-settings-overlay,
   .nib-settings__panel {
-    transition: none;
+    transition-property: opacity;
   }
 }
 
@@ -62,9 +64,35 @@
 .nib-settings__header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 12px 12px 18px;
+  gap: 12px;
+  flex: none;
+  height: 57px;
+  padding: 0 12px 0 12px;
   border-bottom: 1px solid var(--border);
+}
+
+.nib-settings__back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border: none;
+  border-radius: 8px;
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
+}
+.nib-settings__back:hover {
+  color: var(--text-primary);
+}
+.nib-settings__back:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
 .nib-settings__heading {
@@ -75,62 +103,349 @@
   letter-spacing: -0.01em;
 }
 
-.nib-settings__close {
+/* TEMP DEV layout switch — removed after the user locks a layout. */
+.nib-settings__devswitch {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
+  gap: 4px;
   flex: none;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-subtle);
+}
+.nib-settings__devswitch-btn {
   border: none;
-  border-radius: 9px;
+  border-radius: 6px;
+  padding: 5px 9px;
   background: transparent;
   color: var(--text-muted);
+  font-size: var(--font-size-ui-xs);
+  font-weight: 600;
+  text-transform: capitalize;
+  cursor: pointer;
+}
+.nib-settings__devswitch-btn[data-active='true'] {
+  background: var(--bg-elevated);
+  color: var(--accent);
+  box-shadow: var(--shadow-1);
+}
+
+/* ---- Inner shell (nav + content) ---- */
+.nib-settings__inner {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+.nib-settings__nav {
+  flex: none;
+}
+.nib-settings__nav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+}
+.nib-settings__nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--font-size-ui-sm);
+  font-weight: 600;
+  text-align: left;
   cursor: pointer;
   transition:
     background-color 0.15s,
     color 0.15s;
 }
-.nib-settings__close:hover {
-  background-color: var(--bg-subtle);
-  color: var(--text-primary);
+.nib-settings__nav-item:hover:not([data-coming-soon]) {
+  color: var(--accent);
 }
-.nib-settings__close:focus-visible {
+.nib-settings__nav-item:focus-visible {
   outline: 2px solid var(--accent);
-  outline-offset: 1px;
+  outline-offset: -2px;
+}
+.nib-settings__nav-item[data-coming-soon] {
+  color: var(--text-muted);
+  cursor: default;
+}
+.nib-settings__nav-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.nib-settings__nav-label {
+  flex: 1;
+}
+.nib-settings__nav-badge {
+  flex: none;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  font-size: var(--font-size-ui-xs);
+  font-weight: 600;
 }
 
-/* ---- Body ---- */
-.nib-settings__body {
+.nib-settings__content {
   flex: 1;
+  min-width: 0;
   overflow-y: auto;
-  padding: 20px 18px;
+  padding: 24px 28px;
+  animation: nib-settings-fade 0.15s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nib-settings__content {
+    animation: none;
+  }
+}
+@keyframes nib-settings-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* =============================================================================
+   LAYOUT H1 — vertical rail (nav 200px left + content right)
+   ========================================================================== */
+.nib-settings__panel[data-settings-layout='rail'] .nib-settings__nav {
+  width: 200px;
+  padding: 14px 12px;
+  border-right: 1px solid var(--border);
+  background: var(--bg-surface);
+}
+.nib-settings__panel[data-settings-layout='rail'] .nib-settings__nav-list {
+  flex-direction: column;
+  gap: 4px;
+}
+.nib-settings__panel[data-settings-layout='rail']
+  .nib-settings__nav-item[data-active='true'] {
+  position: relative;
+  background: var(--accent-subtle);
+  color: var(--accent);
+  font-weight: 600;
+}
+.nib-settings__panel[data-settings-layout='rail']
+  .nib-settings__nav-item[data-active='true']::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 24px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+/* =============================================================================
+   LAYOUT H2 — horizontal tabs (tab bar under header + content full)
+   ========================================================================== */
+.nib-settings__panel[data-settings-layout='tabs'] .nib-settings__inner {
+  flex-direction: column;
+}
+.nib-settings__panel[data-settings-layout='tabs'] .nib-settings__nav {
+  width: 100%;
+  height: 48px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elevated);
+}
+.nib-settings__panel[data-settings-layout='tabs'] .nib-settings__nav-list {
+  flex-direction: row;
+  gap: 4px;
+  height: 100%;
+  align-items: stretch;
+}
+.nib-settings__panel[data-settings-layout='tabs'] .nib-settings__nav-item {
+  position: relative;
+  border-radius: 0;
+  padding: 0 14px;
+}
+.nib-settings__panel[data-settings-layout='tabs'] .nib-settings__nav-label {
+  flex: none;
+}
+.nib-settings__panel[data-settings-layout='tabs']
+  .nib-settings__nav-item[data-active='true'] {
+  color: var(--accent);
+}
+.nib-settings__panel[data-settings-layout='tabs']
+  .nib-settings__nav-item[data-active='true']::after {
+  content: '';
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent);
+  transition: opacity 0.18s;
+}
+
+/* =============================================================================
+   LAYOUT H3 — card grid nav (card column 240px left + content right)
+   ========================================================================== */
+.nib-settings__panel[data-settings-layout='grid'] .nib-settings__nav {
+  width: 240px;
+  padding: 16px 14px;
+  border-right: 1px solid var(--border);
+  background: var(--bg-surface);
+}
+.nib-settings__panel[data-settings-layout='grid'] .nib-settings__nav-list {
+  flex-direction: column;
+  gap: 8px;
+}
+.nib-settings__panel[data-settings-layout='grid'] .nib-settings__nav-item {
+  flex-direction: row;
+  gap: 12px;
+  min-height: 56px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-elevated);
+}
+.nib-settings__panel[data-settings-layout='grid'] .nib-settings__nav-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+}
+.nib-settings__panel[data-settings-layout='grid']
+  .nib-settings__nav-item[data-active='true'] {
+  background: var(--accent-subtle);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.nib-settings__panel[data-settings-layout='grid']
+  .nib-settings__nav-item[data-active='true']
+  .nib-settings__nav-icon {
+  background: var(--accent);
+  color: var(--text-on-accent);
+}
+
+/* =============================================================================
+   Section content — shared (Account + Appearance)
+   ========================================================================== */
+.nib-settings__section-title {
+  margin: 0 0 20px;
+  font-size: var(--font-size-doc-heading);
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+/* ---- Account ---- */
+.nib-settings-account {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.nib-settings-account__identity {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.nib-settings-account__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  flex: none;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--avatar-color) 16%, var(--bg-surface));
+  color: var(--avatar-color);
+  font-size: 20px;
+  font-weight: 700;
+  user-select: none;
+}
+.nib-settings-account__photo-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  font-size: var(--font-size-ui-xs);
+  font-weight: 600;
+  cursor: not-allowed;
+}
+.nib-settings-account__badge {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  font-size: var(--font-size-ui-xs);
+  font-weight: 600;
+}
+
+.nib-settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.nib-settings-field__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.nib-settings-field__input {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+  font-size: var(--font-size-doc-small);
+  font-family: inherit;
+}
+.nib-settings-field__input::placeholder {
+  color: var(--text-muted);
+}
+.nib-settings-field__input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+  border-color: var(--accent);
+}
+
+/* ---- Appearance (migrated segmented selectors) ---- */
+.nib-settings-appearance {
   display: flex;
   flex-direction: column;
   gap: 22px;
 }
-
 .nib-settings__group {
   display: flex;
   flex-direction: column;
   gap: 9px;
 }
-
 .nib-settings__label {
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.02em;
   text-transform: uppercase;
   color: var(--text-muted);
 }
-
-/* Segmented selector — each option ≥44px tall hit target. */
 .nib-settings__seg {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: wrap;
 }
-
 .nib-settings__opt {
   display: inline-flex;
   align-items: center;
@@ -141,7 +456,7 @@
   border-radius: 10px;
   background: transparent;
   color: var(--text-secondary);
-  font-size: 13.5px;
+  font-size: var(--font-size-ui-sm);
   font-weight: 600;
   cursor: pointer;
   transition:

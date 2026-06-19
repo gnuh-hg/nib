@@ -515,3 +515,11 @@ export const IconDockCollapse = (p: IconProps) => (
     <line x1="6" y1="15" x2="18" y2="15" />
   </svg>
 );
+
+/** User — Account settings section. Head + shoulders outline. */
+export const IconUser = (p: IconProps) => (
+  <Base {...p}>
+    <circle cx="12" cy="8" r="4" />
+    <path d="M5.5 20a6.5 6.5 0 0 1 13 0" />
+  </Base>
+);
