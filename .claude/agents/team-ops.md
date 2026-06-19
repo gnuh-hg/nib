@@ -88,6 +88,7 @@ Theo `.claude/skills/memory/SKILL.md`: pattern fix tái dùng (vd "SILENT lặp 
 
 - Master/playbook: `.claude/master.md`, `.claude/teams/playbook.md` (§6 failure-modes + PASS-criteria team-ops).
 - Skill: `.claude/skills/team-fix/SKILL.md`, `.claude/skills/memory/SKILL.md`.
+- **Checklist MCP tool khi tạo agent/skill mới** (gitnexus / gsap / figma / chrome — điều kiện gắn + cảnh báo architectural): `.claude/skills/team-fix/SKILL.md §7`. Chạy checklist này mỗi khi lead tạo agent body hoặc skill mới — trước khi commit frontmatter, để không lặp ISSUE-8/9 (tool thiếu, phát hiện sau khi spawn).
 - Đầu vào: issue-queue `.claude/teams/issues.md` (lead append khi phát hiện lỗi phối hợp). Bạn là **chủ sở hữu** cập nhật trạng thái queue.
 - Đối tượng sửa: agent body của mọi vai (`researcher`/`architect`/`editor-frontend`/`backend-cas`/`handwriting`/`glue-packaging`/`planner`/`team-ops`), playbook, master, skill, settings.json.
 - Project brief: `CLAUDE.md` (§11 open questions — không tự chốt; §12 roster workstream).

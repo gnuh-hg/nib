@@ -47,6 +47,15 @@
 > trong `tools:`. Nếu chỉ liệt tool domain (Read/Bash/Write…) thì teammate KHÔNG report/TaskUpdate
 > được → câm (issue code `SILENT`).
 
+> **4 nhóm MCP tool (gitnexus / gsap / figma / chrome) — checklist 2 chiều** ở
+> `.claude/skills/team-fix/SKILL.md §7` (**nguồn sự thật duy nhất**; note này chỉ trỏ tới):
+> - **§7.A Create-time** — khi LEAD tạo/sửa agent body hoặc skill MỚI: chạy checklist gắn đúng tool
+>   vào `tools:` frontmatter TRƯỚC khi commit (hoặc giao `team-ops`). Tránh lặp ISSUE-8 (chrome) /
+>   ISSUE-9 (gitnexus) — "spawn xong mới phát hiện tool thiếu".
+> - **§7.B Use-time** — khi đang LÀM VIỆC: với tay tới đúng skill/tool theo trigger (đọc/sửa code →
+>   gitnexus, **impact trước khi sửa symbol**; animation → gsap; thiết kế Figma → figma MCP; verify
+>   UI browser → chrome, lead-foreground-only). Có tool mà quên dùng cũng vô nghĩa.
+
 > **KHÔNG có vai tester riêng.** Mỗi implementer (editor-frontend / backend-cas / handwriting /
 > glue-packaging) **tự chạy gate** bằng skill `build-verify` rồi nộp evidence. Lead gate bằng
 > evidence nộp — không cần vai tester độc lập. Xem §7.

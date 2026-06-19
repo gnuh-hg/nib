@@ -375,6 +375,7 @@ có section "Human gate §11.2" enforce điều này.
 - Spec sản phẩm — yêu cầu nền [LOCKED] (song ngữ en/vi · thiết bị desktop-class + 3 input · theme light/dark/system + root màu/tokens): `docs/requirements.md`. Đường nhập cốt lõi: `docs/feature.md`. Mọi task chạm UI bám 2 file này.
 - Agent body (self-contained, lead không cần repeat protocol): `.claude/agents/*.md`.
 - Skill gate implementer: `.claude/skills/build-verify/SKILL.md` · memory: `.claude/skills/memory/SKILL.md` · team-fix: `.claude/skills/team-fix/SKILL.md`.
+- **4 nhóm MCP tool (gitnexus / gsap / figma / chrome)** → checklist 2 chiều `team-fix/SKILL.md §7`: **§7.A create-time** (gắn tool khi tạo/sửa agent/skill mới, tránh lặp ISSUE-8/9) + **§7.B use-time** (với tay tới đúng skill/tool khi làm việc: đọc/sửa code→gitnexus impact, animation→gsap, Figma→figma MCP, browser verify→chrome foreground-only). Nguồn sự thật duy nhất = team-fix §7.
 - Issue-queue (sự cố phối hợp — `team-ops` sở hữu): `.claude/teams/issues.md`.
 - Tool: `TeamCreate` / `TeamDelete` / `Agent` / `SendMessage` / `TaskCreate` / `TaskUpdate` / `TaskGet` / `TaskList` / `TaskOutput` / `TaskStop`.
 ```

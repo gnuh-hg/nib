@@ -120,3 +120,34 @@ High-impact (master/playbook/settings) → USER DUYỆT trước khi done. Agent
 Sau sửa agent body → gợi ý lead re-spawn smoke vai đó.
 CHỈ .claude/ — KHÔNG src/ backend/ src-tauri/.
 ```
+
+---
+
+## 7. Checklist MCP tool/skill khi tạo agent body hoặc skill mới
+
+> **Dùng khi**: lead (hoặc team-ops theo yêu cầu lead) tạo agent body mới trong `.claude/agents/` hoặc skill mới trong `.claude/skills/`. Mục đích: không lặp ISSUE-8 (chrome thiếu tool) + ISSUE-9 (gitnexus thiếu tool) — cả hai từ "spawn xong mới phát hiện tool chưa có trong frontmatter".
+
+| Nhóm | Tool / Skill path | Gắn vào agent nào | Điều kiện & cảnh báo |
+|---|---|---|---|
+| **gitnexus** (code intelligence) | `mcp__gitnexus__query`, `mcp__gitnexus__context`, `mcp__gitnexus__list_repos`, `mcp__gitnexus__route_map` (đọc); `mcp__gitnexus__impact`, `mcp__gitnexus__api_impact`, `mcp__gitnexus__detect_changes`, `mcp__gitnexus__rename` (sửa) | Agent **đọc hoặc sửa code** trong repo đã index ("Nib") | Researcher → 4 tool đọc. Architect → 4 tool đọc + `impact`. Implementer (editor-frontend / backend-cas / glue-packaging / handwriting) → 5 tool (+ `api_impact`, `detect_changes`, `rename`). KHÔNG gắn vào planner / team-ops / design-figma (không làm code). Thêm section prose "GitNexus — Blast-radius check" + 4 bước (impact → warn HIGH/CRIT → rename → detect_changes). |
+| **gsap** (animation skill) | `.claude/skills/gsap-react/SKILL.md` (entry-point React) + 7 skill: `gsap-core` / `gsap-timeline` / `gsap-scrolltrigger` / `gsap-plugins` / `gsap-utils` / `gsap-performance` / `gsap-frameworks` | Agent **build UI animation/motion** — hiện tại chỉ `editor-frontend` | Thêm section "GSAP Animation Skills" + bảng map skill→use-case. Bắt buộc ghi: (1) `prefers-reduced-motion` → `gsap.matchMedia()` + `duration: 0` fallback; (2) cleanup `useGSAP`/`gsap.context().revert()`. KHÔNG thêm vào agent không làm UI React. |
+| **figma** (visual design MCP) | 17 tool `mcp__claude_ai_Figma__*` (whoami / get_design_context / get_screenshot / get_metadata / get_variable_defs / search_design_system / get_libraries / create_new_file / use_figma / upload_assets / download_assets / generate_figma_design / generate_diagram / list_code_components / get_code_component_info / get_code_connect_map / add_code_connect_map) | Agent **tạo/đọc/sync Figma** — hiện tại chỉ `design-figma` | Tool đã có trong `settings.json` allow list. Ghi trong agent body: PHẢI load `skill://figma/figma-use/SKILL.md` trước `use_figma`/`create_new_file`; tương tự `/figma-generate-design` trước `generate_figma_design`. |
+| **chrome** (browser automation) | `mcp__claude-in-chrome__tabs_context_mcp`, `mcp__claude-in-chrome__tabs_create_mcp`, `mcp__claude-in-chrome__navigate`, `mcp__claude-in-chrome__computer`, `mcp__claude-in-chrome__read_page`, `mcp__claude-in-chrome__read_console_messages` | Agent làm **browser smoke / UI verify** — hiện tại `editor-frontend` + `glue-packaging` | **CẢNH BÁO architectural (ISSUE-8):** Chrome extension bind vào foreground session — background teammate KHÔNG connect được. Tool khả dụng cho lead foreground smoke thủ công; teammate KHÔNG block chờ browser smoke (dùng click-through checklist — `build-verify/SKILL.md §5`). Tool đã có trong `settings.json` allow list. |
+
+### A. Create-time — khi tạo/sửa agent body hoặc skill mới (team-ops chạy)
+
+1. Xác định agent mới làm gì → đối chiếu 4 nhóm bảng trên: đọc/sửa code → gitnexus; UI animation React → gsap; thiết kế Figma → figma MCP; browser verify → chrome + ghi cảnh báo architectural.
+2. Thêm tool vào `tools:` frontmatter + thêm section prose pointer tương ứng vào agent body.
+3. Kiểm `settings.json` `permissions.allow` — 4 nhóm trên đã có entry; tool ngoài 4 nhóm → cần append vào allow list (HIGH-IMPACT, chờ user duyệt).
+4. Gate nhẹ: frontmatter hợp lệ (name/model/tools parse được) → báo lead diff + gợi ý re-spawn smoke.
+
+### B. Use-time — khi nào với tay tới skill/tool này trong lúc LÀM VIỆC
+
+> Áp cho lead và mọi teammate đã có tool tương ứng trong frontmatter. Mục đích: có tool rồi nhưng quên dùng cũng vô nghĩa.
+
+| Nhóm | Trigger dùng (use-time) | Hành động |
+|---|---|---|
+| **gitnexus** | Sắp **đọc hiểu** code lạ, **tìm** symbol/flow, hoặc **trước khi sửa** 1 function/class/method | Dùng `query`/`context`/`route_map` thay grep để khám phá; **BẮT BUỘC `impact` trước khi sửa symbol** → báo blast-radius + cảnh báo HIGH/CRITICAL; sau sửa chạy `detect_changes`; đổi tên → `rename` (không find-replace). |
+| **gsap** | Đang build/đụng **animation, transition, motion, scroll-driven** UI | Load skill phù hợp TRƯỚC khi viết: React → `gsap-react`; timeline/sequence → `gsap-timeline`; scroll/pin → `gsap-scrolltrigger`; plugin → `gsap-plugins`. Luôn ghép `prefers-reduced-motion` + cleanup. |
+| **figma** | Task **tạo / đọc / sync** thiết kế, hoặc user đưa URL `figma.com` | Load `skill://figma/figma-use/SKILL.md` (hoặc `/figma-generate-design`) TRƯỚC `use_figma`/`create_new_file`/`generate_figma_design`; đọc design có sẵn → `get_design_context`/`get_screenshot`/`get_variable_defs`. |
+| **chrome** | Cần **xem/verify UI thật trên browser** (smoke, console error, screenshot) | Chỉ **lead foreground** dùng (ISSUE-8: background teammate không reach extension). Khởi đầu `tabs_context_mcp` → `tabs_create_mcp`/`navigate` → `read_page`/`read_console_messages`. Teammate KHÔNG block chờ browser smoke — dùng click-through checklist (`build-verify/SKILL.md §5`). |

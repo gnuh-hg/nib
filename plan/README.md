@@ -56,5 +56,6 @@ Cấm gate cảm tính ("render đẹp", "ổn rồi").
 | `dock-v2` | long-plan (Phase 0 add-on) | v2 Tool Dock: UnifiedDock thay FloatingToolbar+PenPalette. 2 phase / 3 session. Spec từ Nib-Dock-v2-ref.html. | 🔄 |
 | `nib-editor-rebuild` | long-plan (Phase 0 re-align) | Rebuild 5 vùng UI (tokens/header/canvas-paper/rail/library) khớp `Nib Editor.dc.html`. 1 phase / 5 session. Landscape-only. UnifiedDock không đụng. | 🔄 |
 | `nav-dock-redesign` | long-plan (Phase 0 nav overhaul) | Dock drill-down 2 level (NAV/TOOLS) + TopStrip mỏng + bỏ SidebarRail/TopChrome/ModeToggle + Settings overlay + AccountChip. Spec: `docs/nav-dock-design.md`. 1 phase / 3 session. | 🔄 |
+| `settings-redesign` | long-plan (Phase 0 add-on) | Thiết kế lại + mở rộng SettingsOverlay: sidebar-nav layout + section registry + 3 section MVP (Account mock · Language · Theme). 2 phase / 4 session. | 🔄 |
 
 > Cập nhật bảng này mỗi khi tạo/đóng một plan. Trạng thái: ⬜ chưa bắt đầu · 🔄 đang chạy · ✅ done.
