@@ -1,0 +1,164 @@
+/* =============================================================================
+   Settings overlay (nav-dock-design §5). Scrim + panel, mirrors LibraryOverlay.
+   Language + Theme segmented selectors. Colors/spacing strictly via tokens.
+   Open/close = data-attr on .nib-settings-overlay (no conditional unmount).
+   ========================================================================== */
+
+.nib-settings-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+.nib-settings-overlay[data-open='true'] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.nib-settings__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  background: var(--scrim);
+}
+
+.nib-settings__panel {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: min(460px, calc(100% - 80px));
+  height: min(360px, calc(100% - 80px));
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background-color: var(--bg-elevated);
+  box-shadow: var(--shadow-2);
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity 0.2s,
+    transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nib-settings-overlay[data-open='true'] .nib-settings__panel {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nib-settings-overlay,
+  .nib-settings__panel {
+    transition: none;
+  }
+}
+
+/* ---- Header ---- */
+.nib-settings__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 12px 12px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.nib-settings__heading {
+  flex: 1;
+  font-size: var(--font-size-ui-md);
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.nib-settings__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
+}
+.nib-settings__close:hover {
+  background-color: var(--bg-subtle);
+  color: var(--text-primary);
+}
+.nib-settings__close:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* ---- Body ---- */
+.nib-settings__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.nib-settings__group {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.nib-settings__label {
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* Segmented selector — each option ≥44px tall hit target. */
+.nib-settings__seg {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.nib-settings__opt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.15s,
+    color 0.15s,
+    border-color 0.15s;
+}
+.nib-settings__opt:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.nib-settings__opt:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.nib-settings__opt[data-active='true'] {
+  background-color: var(--accent-subtle);
+  border-color: var(--accent);
+  color: var(--accent);
+}

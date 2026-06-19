@@ -1,0 +1,89 @@
+/* =============================================================================
+   Nib — Global reset + base layout
+   Mọi màu đọc từ token (tokens.css). Min-width hỗ trợ = 820px (design §2.2).
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  /* Theme background đặt sớm để anti-flash khớp với inline script index.html */
+  background-color: var(--bg-app);
+  color-scheme: light dark;
+}
+
+body {
+  font-family: var(--font-ui);
+  font-size: var(--font-size-ui-md);
+  line-height: 1.5;
+  color: var(--text-primary);
+  background-color: var(--bg-app);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Text selection dùng accent-subtle (token, không hex rời) */
+::selection {
+  background-color: var(--accent-subtle);
+}
+
+/* Caret màu brand teal */
+input,
+textarea,
+[contenteditable] {
+  caret-color: var(--caret);
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+a {
+  color: var(--accent);
+}
+
+/* Reduced motion — tôn trọng prefers-reduced-motion (requirements §2) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* =============================================================================
+   Small-screen guard — dưới 820px CSS → notice thay vì co layout (requirements §2)
+   App content ẩn, .nib-small-screen hiện. Text qua i18n (render trong React).
+   ========================================================================== */
+.nib-small-screen {
+  display: none;
+}
+
+@media (max-width: 819px) {
+  .nib-shell {
+    display: none;
+  }
+  .nib-small-screen {
+    display: flex;
+  }
+}

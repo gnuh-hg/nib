@@ -1,0 +1,168 @@
+/* =============================================================================
+   Nib — Design Tokens (root màu chính thức + typography + spacing + swatch)
+   Nguồn: docs/requirements.md §3 (root màu) · docs/design.md §6.2/§6.3/§8.2 + §10.2
+   QUY ƯỚC: mọi màu/khoảng cách/bán kính/shadow trong app ĐỌC TỪ token ở file này.
+            Cấm hex rời trong component. Đổi theme = đổi giá trị token ở [data-theme].
+   ========================================================================== */
+
+:root,
+[data-theme='light'] {
+  /* ---- Nền — "giấy" ấm, KHÔNG #FFF chói (đỡ mỏi mắt session dài) ---- */
+  --bg-app: #f3f1ec; /* mặt bàn / canvas */
+  --bg-surface: #fbfaf7; /* mặt block toán — giấy ấm */
+  --bg-elevated: #ffffff; /* popover/menu nổi (kèm shadow) */
+  --bg-subtle: #e7e4dd; /* vùng phụ, input nền chìm */
+  --desk: #dad6cd; /* mặt bàn ngoài tờ giấy (sheet) */
+
+  /* ---- Chữ — "ink-black" hơi ngả xanh (mực blue-black) ---- */
+  --text-primary: #1a1c20;
+  --text-secondary: #4a4e57;
+  --text-muted: #868a92;
+  --text-on-accent: #ffffff;
+
+  /* ---- Viền ---- */
+  --border: #e3dfd7;
+  --border-strong: #cbc6bc;
+
+  /* ---- Teal Ink — màu chủ đạo (brand + tương tác) ---- */
+  --accent: #0e7c86;
+  --accent-hover: #0a5f67;
+  --accent-subtle: #def1f2; /* nền nhạt vùng accent / text-selection */
+  --caret: #0e7c86;
+
+  /* ---- Mực viết tay (stylus stroke) — teal sâu hơn ---- */
+  --ink: #0a5a62;
+
+  /* ---- Kết quả symbolic EXACT (indigo/violet — KHÁC teal) ---- */
+  --result: #4b3fbf;
+  --result-subtle: #eceafb;
+
+  /* ---- Kết quả số GẦN ĐÚNG / numeric fallback (amber) ---- */
+  /* design §10.2 [USER CHỐT]: light #9A6A11 → #7A5200 (WCAG AA 6.63:1 trên --bg-surface) */
+  --approx: #7a5200;
+  --approx-subtle: #fbf1dc;
+
+  /* ---- Trạng thái ---- */
+  --success: #137a52;
+  --warning: #7a5200; /* = approx (cùng semantic amber, design §10.2) */
+  --error: #b42318;
+  --info: #0e7c86; /* = accent teal */
+
+  /* ---- Hình khối ---- */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --shadow-1: 0 1px 2px rgba(20, 24, 40, 0.06), 0 1px 1px rgba(20, 24, 40, 0.04);
+  --shadow-2: 0 8px 26px rgba(20, 24, 40, 0.16);
+  --sheet-shadow: 0 2px 4px rgba(20, 24, 40, 0.08),
+    0 12px 32px rgba(20, 24, 40, 0.12); /* bóng tờ giấy nổi trên mặt bàn */
+
+  /* Modal backdrop scrim */
+  --overlay: rgba(20, 24, 40, 0.28);
+  --scrim: rgba(26, 28, 32, 0.42); /* lớp mờ nền Library overlay */
+
+  /* ---- Swatch 8 màu (annotation text + ink) — design §8.2 ---- */
+  --swatch-teal: #0e7c86;
+  --swatch-blue: #2563c9;
+  --swatch-green: #137a52;
+  --swatch-red: #b42318;
+  --swatch-purple: #6d4bd6;
+  --swatch-rose: #c2255c;
+  --swatch-orange: #b7651b;
+  --swatch-slate: #475569;
+}
+
+[data-theme='dark'] {
+  /* ---- Graphite ấm — KHÔNG đen tuyền ---- */
+  --bg-app: #15171a;
+  --bg-surface: #1d2024;
+  --bg-elevated: #24282d;
+  --bg-subtle: #15171a;
+  --desk: #0f1113; /* mặt bàn ngoài tờ giấy (sheet) */
+
+  --text-primary: #e8e6e1; /* off-white ấm, không #FFF chói */
+  --text-secondary: #abaeb4;
+  --text-muted: #767a81;
+  --text-on-accent: #0c111b;
+
+  --border: #30343a;
+  --border-strong: #434851;
+
+  /* Teal Ink sáng lên cho đọc được trên nền tối */
+  --accent: #3fb6be;
+  --accent-hover: #5fcbd2;
+  --accent-subtle: #103438;
+  --caret: #5fd4dc;
+
+  --ink: #4fc9d1;
+
+  --result: #9a8cf0;
+  --result-subtle: #211e3a;
+
+  --approx: #d6a53e;
+  --approx-subtle: #2e2613;
+
+  --success: #3fbe85;
+  --warning: #d6a53e;
+  --error: #e5675b;
+  --info: #3fb6be;
+
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-2: 0 10px 30px rgba(0, 0, 0, 0.55);
+  --sheet-shadow: 0 2px 6px rgba(0, 0, 0, 0.4),
+    0 16px 40px rgba(0, 0, 0, 0.5); /* bóng tờ giấy nổi trên mặt bàn */
+
+  --overlay: rgba(0, 0, 0, 0.5);
+  --scrim: rgba(0, 0, 0, 0.55); /* lớp mờ nền Library overlay */
+
+  /* Swatch dark variants — design §8.2 */
+  --swatch-teal: #3fb6be;
+  --swatch-blue: #6aa3f0;
+  --swatch-green: #3fbe85;
+  --swatch-red: #e5675b;
+  --swatch-purple: #a78bf5;
+  --swatch-rose: #ec6fa0;
+  --swatch-orange: #e0a33e;
+  --swatch-slate: #94a3b8;
+}
+
+/* =============================================================================
+   Typography — design §6.2 (independent of theme)
+   ========================================================================== */
+:root {
+  --font-ui: 'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI',
+    Roboto, sans-serif;
+
+  /* UI chrome */
+  --font-size-ui-xs: 11px;
+  --font-size-ui-sm: 13px;
+  --font-size-ui-md: 15px;
+
+  /* Document text (3 bậc §7.5.2 feature.md) */
+  --font-size-doc-heading: 20px;
+  --font-size-doc-body: 16px;
+  --font-size-doc-small: 13px;
+
+  /* Math */
+  --font-math-inline: 16px;
+  --font-math-display: 18px;
+
+  /* =========================================================================
+     Spacing — design §6.3 (base 4px, bội số 8px)
+     ====================================================================== */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* Ruled paper grid (design §3.3 — [LEAD CHỐT]) */
+  --ruled-line-height: 64px;
+
+  /* Canvas content max-width (design §3.2). Architect Q11.8 open — exposed as a
+     CSS var with 1440px default so it can become configurable later. */
+  --canvas-max-width: 1440px;
+}

@@ -1,0 +1,224 @@
+/* =============================================================================
+   Canvas — ruled paper + free-placement blocks (design.md §3, §4).
+   Colors/spacing strictly via tokens. Keep 64px in sync with geometry.ts.
+   ========================================================================== */
+
+/* ---- Body: the row below the full-width header — SidebarRail + stage. ---- */
+.nib-body {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ---- Stage: the canvas column beside the rail (header is above .nib-body). ---- */
+.nib-stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ---- Desk: surface behind the sheet; centers + scrolls the fixed-width paper.
+   position:static so the block offsetParent stays .nib-pm (664px), NOT the
+   viewport-wide desk (RISK#2 — a positioned desk would make blocks overflow). ---- */
+.nib-desk {
+  position: static;
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  padding: 30px 0;
+  background-color: var(--desk);
+  overflow-y: auto;
+}
+
+/* ---- Paper: the fixed 664px sheet (design-ref dòng 124). Positioned context
+   for the margin line, page title, ruling and blocks. ---- */
+.nib-paper {
+  position: relative;
+  width: 664px;
+  flex: none;
+  background-color: var(--bg-app);
+  border-radius: 5px 5px 0 0;
+  box-shadow: var(--sheet-shadow);
+  min-height: calc(var(--ruled-line-height) * 16);
+}
+
+/* ---- Left margin rule (design-ref dòng 125) ---- */
+.nib-margin-line {
+  position: absolute;
+  left: 44px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background-color: color-mix(in srgb, var(--accent) 22%, transparent);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ---- Page title row (design-ref dòng 126). Placeholder until S1.4 binds the
+   real doc title; aria-hidden for now. ---- */
+/* ---- Ruled paper: 1px line every 64px (design.md §3.3). Paper already paints
+   --bg-app, so this layer carries ONLY the ruling gradient. ---- */
+.nib-ruled-paper {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  /* Line at the BOTTOM of each 64px cell (design-ref) so content sits on it. */
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 63px,
+    var(--border) 63px,
+    var(--border) var(--ruled-line-height)
+  );
+}
+
+/* ---- Editor host: positioned (relative) with a min-height so the block layer
+   has real height. RISK#1: without min-height the host collapses to 0 and the
+   absolutely-placed blocks lose their clickable/scrollable area. ---- */
+.nib-editor-host {
+  position: relative;
+  min-height: calc(var(--ruled-line-height) * 16);
+  z-index: 1;
+}
+
+.nib-pm {
+  position: relative;
+  min-height: inherit;
+  width: 100%;
+  outline: none;
+}
+
+/* ---- Selection overlay (region-select visuals — logic added later). Hidden. ---- */
+.nib-selection-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  display: none;
+}
+
+/* ---- Hint pill (contextual hint near sheet bottom — logic added later). Hidden. ---- */
+.nib-hint-pill {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  display: none;
+  align-items: center;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background-color: var(--bg-elevated);
+  box-shadow: var(--shadow-2);
+  color: var(--text-secondary);
+  font-size: var(--font-size-ui-sm);
+  pointer-events: none;
+}
+
+/* =============================================================================
+   Block (NodeView) — absolute placement, partial-ruling gap
+   ========================================================================== */
+.nib-block {
+  position: absolute;
+  z-index: 2;
+  min-width: 64px;
+  max-width: calc(100% - var(--space-5));
+}
+
+/* Baseline-sit on the ruled line (design-ref): content aligns to the bottom of
+   its cell. Surface only as tall as content → ruling shows through below. */
+.nib-block__surface {
+  position: relative;
+  display: inline-flex;
+  align-items: flex-end;
+  min-width: 48px;
+  min-height: 50px;
+  padding: 6px 14px 11px;
+  border-radius: 8px;
+  background-color: transparent;
+  transition: background-color 100ms ease;
+}
+
+.nib-block__content {
+  font-size: 19px;
+  color: var(--text-primary);
+  line-height: 1.2;
+  white-space: pre-wrap;
+  outline: none;
+}
+
+.nib-block__placeholder {
+  position: absolute;
+  left: 14px;
+  bottom: 11px;
+  color: var(--text-muted);
+  font-size: 19px;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ---- Left-edge active line (design-ref: 2px, inset 8px vertically) ---- */
+.nib-block__edge {
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 0;
+  width: 2px;
+  background-color: var(--accent);
+  border-radius: 0; /* flat cap */
+  opacity: 0;
+  transition: opacity 100ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nib-block__edge,
+  .nib-block__surface {
+    transition: none;
+  }
+}
+
+/* Active highlight (background) — all active blocks incl. ink-capture */
+.nib-block[data-active='true'] .nib-block__surface {
+  background-color: var(--accent-subtle);
+}
+
+/* Left-edge shows only when data-show-edge=true (math/text editing, NOT ink) */
+.nib-block[data-show-edge='true'] .nib-block__edge {
+  opacity: 1;
+}
+
+/* Hover affordance on fine pointers only (design.md §4.3) */
+@media (hover: hover) and (pointer: fine) {
+  .nib-block:hover .nib-block__surface {
+    background-color: var(--accent-subtle);
+  }
+}
+
+/* =============================================================================
+   Clamp toast (design.md §3.1)
+   ========================================================================== */
+.nib-toast {
+  position: fixed;
+  left: 50%;
+  bottom: var(--space-5);
+  transform: translateX(-50%);
+  max-width: 480px;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background-color: var(--bg-elevated);
+  box-shadow: var(--shadow-2);
+  color: var(--text-secondary);
+  font-size: var(--font-size-ui-sm);
+  z-index: 50;
+}
+
+/* Responsive: the paper is a fixed 664px sheet centered by .nib-desk, so it
+   needs no per-breakpoint side padding. Landscape-only ≥1024px (requirements §2);
+   the <1024px / portrait notice is handled by .nib-small-screen. */

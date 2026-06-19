@@ -1,0 +1,533 @@
+/*
+ * UnifiedDock v2 — visual spec mirrors docs/Nib-Dock-v2-ref.html exactly.
+ * Token mapping (PLAN §e): --sw-* → --swatch-*, --sh1/2 → --shadow-1/2,
+ * --desk → --bg-app. NO raw hex / rgba — all colors via CSS custom properties.
+ */
+
+/* Stage must be a positioning context for the absolutely-placed dock. */
+.nib-stage {
+  position: relative;
+}
+
+/* ── Dock container + expanded shell ───────────────────────────────── */
+/* Drag anchor — fixed, portaled to <body>; left/top driven by pos state. */
+.nib-dock-anchor {
+  position: fixed;
+  z-index: 30;
+  width: 56px;
+  height: 56px;
+}
+/* While dragging: kill every transition + text selection for lag-free tracking. */
+.nib-dock-anchor[data-dragging] * {
+  transition: none !important;
+  user-select: none;
+}
+
+.nib-dock__expanded {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 56px;
+  padding: 5px 0 7px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  box-shadow: var(--shadow-2);
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.nib-dock__expanded[data-collapsed='true'] {
+  opacity: 0;
+  transform: scale(0.92);
+  pointer-events: none;
+}
+/* Expand upward when there isn't room below the anchor (PLAN §3.2). */
+.nib-dock__expanded[data-expand-up] {
+  top: auto;
+  bottom: 0;
+}
+
+/* Collapsed square — crossfades with the expanded shell. */
+.nib-dock__collapsed {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-2);
+  color: var(--text-secondary);
+  cursor: pointer;
+  touch-action: none;
+  opacity: 0;
+  transform: scale(0.92);
+  pointer-events: none;
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.15s ease;
+}
+.nib-dock__collapsed[data-collapsed='true'] {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+.nib-dock__collapsed:hover {
+  box-shadow:
+    var(--shadow-2),
+    0 0 0 2px var(--accent-subtle);
+}
+.nib-dock__collapsed-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+}
+
+/* ── Drag grip ─────────────────────────────────────────────────────── */
+.nib-dock__drag {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 17px;
+  color: var(--text-muted);
+  cursor: grab;
+  touch-action: none;
+}
+.nib-dock__drag:active {
+  cursor: grabbing;
+}
+
+/* ── Mode toggle (single cycle button) ─────────────────────────────── */
+.nib-dock__mode {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 44px;
+  height: 30px;
+  margin: 3px 0 4px;
+  padding: 0 9px;
+  border: none;
+  border-radius: 9px;
+  background: var(--accent-subtle);
+  color: var(--accent);
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+.nib-dock__mode:active {
+  transform: scale(0.88);
+}
+
+/* ── Dividers ──────────────────────────────────────────────────────── */
+.nib-dock__divider {
+  width: 30px;
+  height: 1px;
+  margin: 4px 0;
+  background: var(--border);
+}
+.nib-dock__divider--wide {
+  width: 34px;
+  margin: 2px 0 4px;
+}
+
+/* ── Generic dock button ───────────────────────────────────────────── */
+.nib-dock__btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  /* ≥44px hit target — requirements §2 [LOCKED] (no HTML-wins exception here). */
+  height: 44px;
+  border: none;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    transform 0.1s;
+}
+.nib-dock__btn:hover {
+  background: var(--bg-subtle);
+}
+.nib-dock__btn:active {
+  transform: scale(0.92);
+}
+.nib-dock__btn[data-active='true'] {
+  background: var(--accent-subtle);
+  color: var(--accent);
+}
+.nib-dock__btn--convert {
+  height: 44px;
+}
+
+/* ── Drill-down level wrapper + NAV row (nav-dock-design §1) ────────── */
+.nib-dock__level,
+.nib-dock__nav {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+/* Fade in on level change (key remount); disabled under reduced-motion below. */
+.nib-dock__level {
+  animation: nib-dock-level-in 0.15s ease;
+}
+@keyframes nib-dock-level-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* NAV buttons reuse the generic dock button look (≥44px from .nib-dock__btn). */
+.nib-dock__navbtn {
+  margin: 1px 0;
+}
+
+/* Back — drill up to NAV; accent-tinted like the old mode slot. */
+.nib-dock__back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 11px;
+  background: var(--accent-subtle);
+  color: var(--accent);
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+.nib-dock__back:active {
+  transform: scale(0.9);
+}
+
+/* Flyout-indicator corner mark. */
+.nib-dock__corner {
+  position: absolute;
+  right: 5px;
+  bottom: 5px;
+  display: flex;
+  color: var(--text-muted);
+}
+
+/* Color button — ink dot. */
+.nib-dock__color-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--ink);
+  box-shadow: 0 0 0 1px var(--border);
+}
+
+/* Format button glyph (serif "T"). */
+.nib-dock__format-glyph {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Format wrapper — slides in only in type mode. */
+.nib-dock__format {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transition:
+    max-height 0.24s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.2s ease;
+}
+.nib-dock__format[data-visible='true'] {
+  max-height: 46px;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ── Calculate (primary accent) ────────────────────────────────────── */
+.nib-dock__calc {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 13px;
+  background: var(--accent);
+  color: var(--text-on-accent);
+  box-shadow: var(--shadow-1);
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+.nib-dock__calc:active {
+  transform: scale(0.93);
+}
+.nib-dock__calc[data-pulsing='true'] {
+  animation: nibCalcPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes nibCalcPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 30%, transparent);
+  }
+  55% {
+    box-shadow: 0 0 0 9px color-mix(in srgb, var(--accent) 0%, transparent);
+  }
+}
+
+/* ── Collapse button ───────────────────────────────────────────────── */
+.nib-dock__collapse {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 22px;
+  margin-top: 5px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    transform 0.1s;
+}
+.nib-dock__collapse:hover {
+  background: var(--bg-subtle);
+}
+.nib-dock__collapse:active {
+  transform: scale(0.88);
+}
+
+/* ── Flyouts ───────────────────────────────────────────────────────── */
+.nib-dock__flyout {
+  position: absolute;
+  right: 64px;
+  /* Fallback top; UnifiedDock overrides with an overflow-aware value (§3.2). */
+  top: 0;
+  z-index: 20;
+  padding: 6px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-2);
+  opacity: 0;
+  transform: translateX(9px) scale(0.97);
+  pointer-events: none;
+  transition:
+    opacity 0.15s,
+    transform 0.15s;
+}
+.nib-dock__flyout[data-open='true'] {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+  pointer-events: auto;
+}
+
+/* Per-flyout widths (top is computed in JS — overflow-aware, §3.2). */
+.nib-dock__flyout--ptr {
+  width: 182px;
+}
+.nib-dock__flyout--sel {
+  width: 186px;
+}
+.nib-dock__flyout--pen {
+  width: 172px;
+}
+.nib-dock__flyout--size {
+  width: 148px;
+}
+.nib-dock__flyout--color {
+  width: 172px;
+  padding: 8px;
+}
+.nib-dock__flyout--fmt {
+  width: 186px;
+  padding: 8px;
+}
+
+.nib-dock__flyout-header {
+  padding: 4px 8px 5px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* Flyout rows (tool options). Rendered as <button> where interactive. */
+.nib-dock__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 34px;
+  padding: 0 9px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.nib-dock__row:hover {
+  background: var(--bg-subtle);
+}
+.nib-dock__row[data-active] {
+  background: var(--accent-subtle);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Stroke-size dots. */
+.nib-dock__dot {
+  flex: none;
+  border-radius: 50%;
+  background: var(--ink);
+}
+.nib-dock__dot--thin {
+  width: 6px;
+  height: 6px;
+}
+.nib-dock__dot--med {
+  width: 11px;
+  height: 11px;
+}
+.nib-dock__dot--thick {
+  width: 15px;
+  height: 15px;
+}
+
+/* Font-size letters. */
+.nib-dock__sizeletter {
+  flex: none;
+  width: 16px;
+  text-align: center;
+  font-weight: 700;
+}
+.nib-dock__sizeletter--s {
+  font-size: 11px;
+}
+.nib-dock__sizeletter--m {
+  font-size: 14px;
+}
+.nib-dock__sizeletter--l {
+  font-size: 17px;
+}
+
+/* Color swatch grid. */
+.nib-dock__swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 9px;
+  padding: 0 3px;
+}
+.nib-dock__swatch {
+  justify-self: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--border);
+  cursor: pointer;
+  transition: transform 0.12s;
+}
+.nib-dock__swatch:hover {
+  transform: scale(1.15);
+}
+.nib-dock__swatch[data-active='true'] {
+  box-shadow:
+    0 0 0 2px var(--bg-elevated),
+    0 0 0 3px var(--accent);
+}
+
+/* Format B/I/U/S buttons. */
+.nib-dock__fmt-row {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 8px;
+}
+.nib-dock__fmt-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.nib-dock__fmt-btn:hover {
+  background: var(--bg-subtle);
+}
+.nib-dock__fmt-btn[data-active] {
+  background: var(--accent-subtle);
+  color: var(--accent);
+}
+.nib-dock__fmt-btn--b {
+  font-weight: 800;
+}
+.nib-dock__fmt-btn--i {
+  font-style: italic;
+}
+.nib-dock__fmt-btn--u {
+  text-decoration: underline;
+}
+.nib-dock__fmt-btn--s {
+  text-decoration: line-through;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nib-dock,
+  .nib-dock__expanded,
+  .nib-dock__collapsed,
+  .nib-dock__mode,
+  .nib-dock__btn,
+  .nib-dock__calc,
+  .nib-dock__collapse,
+  .nib-dock__format,
+  .nib-dock__flyout,
+  .nib-dock__row,
+  .nib-dock__swatch {
+    transition: none;
+  }
+  .nib-dock__calc[data-pulsing='true'] {
+    animation: none;
+  }
+  .nib-dock__level {
+    animation: none;
+  }
+  .nib-dock__back {
+    transition: none;
+  }
+}

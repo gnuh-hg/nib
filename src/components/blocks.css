@@ -1,0 +1,253 @@
+/* =============================================================================
+   Block bodies: MathLive editor, result render, badge, chips, spinner, error,
+   text formatting. Colors strictly via tokens (no raw hex).
+   ========================================================================== */
+
+/* ---- MathLive editing field ---- */
+.nib-mathfield-host {
+  display: inline-block;
+}
+
+.nib-mathfield {
+  font-size: 19px;
+  color: var(--text-primary);
+  --caret-color: var(--caret);
+  --selection-background-color: var(--accent-subtle);
+  --contains-highlight-background-color: transparent;
+  border: none;
+  background: transparent;
+  outline: none;
+  min-width: 40px;
+}
+
+/* Hidden ProseMirror contentDOM for math blocks (PM needs it; MathLive is the
+   real editor). Kept in the DOM but visually collapsed. */
+.nib-pm-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* ---- Text block content + 3 size tiers ---- */
+.nib-block__content[data-text-scale='heading'] {
+  font-size: var(--font-size-doc-heading);
+  font-weight: 600;
+  line-height: 1.35;
+}
+.nib-block__content[data-text-scale='body'] {
+  font-size: var(--font-size-doc-body);
+  line-height: 1.65;
+}
+.nib-block__content[data-text-scale='small'] {
+  font-size: var(--font-size-doc-small);
+  line-height: 1.55;
+}
+
+/* ---- Seamless result render (design.md §6, §7) ---- */
+.nib-math-row,
+.nib-result {
+  display: inline-flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  font-size: 19px;
+  cursor: text;
+}
+
+.nib-result__input {
+  color: var(--text-primary);
+}
+
+.nib-result__eq {
+  color: var(--text-secondary);
+}
+
+/* Result value: color is the ONLY structural difference from input (no box) */
+.nib-result__value[data-kind='exact'] {
+  color: var(--result);
+}
+.nib-result__value[data-kind='approx'] {
+  color: var(--approx);
+}
+
+/* ---- Badge ≈ (design.md §7.3) ---- */
+.nib-badge-approx {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 20px;
+  padding: 3px 6px;
+  border-radius: var(--radius-sm);
+  background-color: var(--approx-subtle);
+  color: var(--approx);
+  font-size: var(--font-size-ui-sm);
+  font-weight: 700;
+  line-height: 1;
+}
+/* 44×44 hit area without changing visual size (requirements §2) */
+.nib-badge-approx::before {
+  content: '';
+  position: absolute;
+  inset: -12px -8px;
+}
+
+/* ---- Inline toggle chips exact ↔ decimal (design.md §7.4) ---- */
+.nib-result__chips {
+  display: inline-flex;
+  gap: var(--space-1);
+  margin-left: var(--space-2);
+}
+
+.nib-chip {
+  min-height: 22px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--font-size-ui-xs);
+  font-weight: 500;
+  line-height: 1;
+}
+.nib-chip[data-active='true'] {
+  background-color: var(--accent-subtle);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ---- EVALUATING spinner (design.md §5.3) ---- */
+.nib-eval-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--accent-subtle);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: nib-spin 0.7s linear infinite;
+}
+
+@keyframes nib-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nib-eval-spinner {
+    animation: nib-pulse 1s ease-in-out infinite;
+    border-top-color: var(--accent);
+  }
+}
+
+@keyframes nib-pulse {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ---- ERROR state (design.md §5.2) ---- */
+.nib-error {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--error);
+  font-size: var(--font-size-ui-sm);
+}
+.nib-error__icon {
+  color: var(--error);
+  flex: none;
+}
+.nib-error__msg {
+  color: var(--text-secondary);
+}
+.nib-error__fix {
+  min-height: 28px;
+  padding: 4px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-elevated);
+  color: var(--accent);
+  font-size: var(--font-size-ui-sm);
+  font-weight: 500;
+}
+
+/* Stage layout now lives in canvas.css (.nib-body row + .nib-stage column) after
+   the S1.4b restructure; the old canvas+pen side-by-side rule was removed. */
+
+/* Pen palette stays in view while the canvas scrolls */
+.nib-pen {
+  position: sticky;
+  top: var(--space-2);
+  align-self: flex-start;
+}
+
+/* ---- Math display size (toolbar size toggle) ---- */
+.nib-block[data-math-size='display'] .nib-mathfield,
+.nib-block[data-math-size='display'] .nib-result {
+  font-size: var(--font-math-display);
+}
+
+/* ---- Starter content fade-out (design.md §4.5) ---- */
+.nib-block--fading {
+  opacity: 0;
+  transition: opacity 250ms ease;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nib-block--fading {
+    transition: none;
+  }
+}
+
+/* ---- Ghost text hint (empty doc) ---- */
+.nib-ghost {
+  position: absolute;
+  top: calc(var(--ruled-line-height) * 0.5);
+  left: var(--space-5);
+  z-index: 1;
+  color: var(--text-muted);
+  font-size: var(--font-math-inline);
+  opacity: 0;
+  transition: opacity 200ms ease;
+  pointer-events: none;
+  user-select: none;
+}
+.nib-ghost[data-visible='true'] {
+  opacity: 0.7;
+}
+
+/* ---- Contextual tip (design.md §4.5) ---- */
+.nib-tip {
+  position: fixed;
+  left: 50%;
+  bottom: var(--space-5);
+  transform: translateX(-50%);
+  z-index: 48;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  max-width: 460px;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-md);
+  background-color: var(--accent-subtle);
+  color: var(--text-primary);
+  font-size: var(--font-size-ui-sm);
+  box-shadow: var(--shadow-1);
+}
+.nib-tip__close {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--font-size-ui-sm);
+  line-height: 1;
+}

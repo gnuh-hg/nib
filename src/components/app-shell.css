@@ -1,0 +1,237 @@
+/* AppShell + TopChrome layout — colors/spacing strictly via tokens (no raw hex). */
+
+.nib-app {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+}
+
+.nib-shell {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 100%;
+}
+
+/* ---- Top strip (nav-dock-design §2): NO full-width header bar. The strip
+   surface is continuous with the desk below it (no band). Two cards sit on it,
+   each HUGGING a top screen corner like an attached tab (user 2026-06-18):
+   the free inner corner is convex (centre inside) while the two corners where
+   the card peels off the top/side edges are inverted/concave (centre outside).
+   Left card: [logo | doc-title] (display only). Right card: undo + redo. ---- */
+.nib-strip {
+  --card-r: 16px; /* convex free corner */
+  --concave-r: 8px; /* gentler inverted corners where the card peels off edges */
+  /* No header band: the strip is a transparent overlay floating over the canvas
+     (user 2026-06-18). Only the two corner cards paint; everything between them
+     is click-through so the document can scroll up to the very top edge unobscured. */
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10; /* float above the scrolling canvas + its blocks */
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  background: transparent;
+  pointer-events: none; /* let canvas receive pointer events between the cards */
+}
+
+.nib-strip__block {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 48px;
+  padding: 0 var(--space-3);
+  background-color: var(--bg-elevated);
+  pointer-events: auto; /* re-enable interaction on the cards themselves */
+}
+
+/* Left card — hugs the TOP-LEFT screen corner.
+   top-left: square (the screen corner) · bottom-right: convex (centre inside)
+   top-right + bottom-left: concave (centre outside) via radial-gradient patches. */
+.nib-strip__block--left {
+  gap: 10px;
+  min-width: 0;
+  border-bottom-right-radius: var(--card-r);
+}
+.nib-strip__block--left::before,
+.nib-strip__block--left::after {
+  content: '';
+  position: absolute;
+  width: var(--concave-r);
+  height: var(--concave-r);
+  background: radial-gradient(
+    circle at bottom right,
+    transparent var(--concave-r),
+    var(--bg-elevated) calc(var(--concave-r) + 0.5px)
+  );
+}
+.nib-strip__block--left::before {
+  top: 0;
+  left: 100%;
+} /* concave top-right */
+.nib-strip__block--left::after {
+  top: 100%;
+  left: 0;
+} /* concave bottom-left */
+
+/* Right card — mirror: hugs the TOP-RIGHT screen corner.
+   top-right: square · bottom-left: convex · top-left + bottom-right: concave. */
+.nib-strip__block--right {
+  gap: 2px;
+  padding: 0 6px;
+  border-bottom-left-radius: var(--card-r);
+}
+.nib-strip__block--right::before,
+.nib-strip__block--right::after {
+  content: '';
+  position: absolute;
+  width: var(--concave-r);
+  height: var(--concave-r);
+  background: radial-gradient(
+    circle at bottom left,
+    transparent var(--concave-r),
+    var(--bg-elevated) calc(var(--concave-r) + 0.5px)
+  );
+}
+.nib-strip__block--right::before {
+  top: 0;
+  right: 100%;
+} /* concave top-left */
+.nib-strip__block--right::after {
+  top: 100%;
+  right: 0;
+} /* concave bottom-right */
+
+/* Logo | title — display only, no interaction. */
+.nib-strip__logo {
+  flex: none;
+  color: var(--accent);
+}
+.nib-strip__divider {
+  flex: none;
+  width: 1px;
+  height: 20px;
+  background-color: var(--border);
+}
+.nib-strip__doctitle-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 360px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* Strip icon buttons — 44px square hit target (requirements §2). */
+.nib-strip__iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.nib-strip__iconbtn:hover {
+  background-color: var(--bg-subtle);
+  color: var(--text-secondary);
+}
+.nib-strip__iconbtn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* ---- Content area hosting the canvas (top-aligned, scrolls) ---- */
+.nib-content {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  overflow: auto;
+  padding: var(--space-4) 0 var(--space-7);
+}
+
+.nib-placeholder {
+  max-width: 560px;
+  text-align: center;
+  padding: var(--space-6);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background-color: var(--bg-surface);
+  box-shadow: var(--shadow-1);
+}
+
+.nib-placeholder__title {
+  margin: 0 0 var(--space-3);
+  font-size: var(--font-size-doc-heading);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.nib-placeholder__desc {
+  margin: 0 0 var(--space-4);
+  font-size: var(--font-size-doc-body);
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.nib-placeholder__meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--font-size-ui-sm);
+  color: var(--text-muted);
+}
+
+/* Token swatch strip — quick visual proof tokens load + theme switches */
+.nib-swatches {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: center;
+  margin-top: var(--space-5);
+}
+
+.nib-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+/* ---- Small-screen notice ---- */
+.nib-small-screen {
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+  text-align: center;
+}
+
+.nib-small-screen__inner {
+  max-width: 420px;
+  font-size: var(--font-size-doc-body);
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+/* Editor workspace — positioning context for the floating corner cards (strip
+   is position:absolute). The scrolling stage fills the full height; the cards
+   overlay its top corners. */
+.nib-workspace {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}

@@ -1,0 +1,77 @@
+/* Command palette (design.md §7 Lớp 3). Tokens only. */
+
+.nib-palette-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 12vh;
+  background-color: var(--overlay);
+  backdrop-filter: blur(2px);
+}
+
+.nib-palette {
+  width: min(560px, 92vw);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background-color: var(--bg-elevated);
+  box-shadow: var(--shadow-2);
+  overflow: hidden;
+}
+
+.nib-palette__input {
+  width: 100%;
+  padding: var(--space-4);
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--font-size-ui-md);
+  outline: none;
+}
+.nib-palette__input::placeholder {
+  color: var(--text-muted);
+}
+
+.nib-palette__list {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-1);
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.nib-palette__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: var(--font-size-ui-md);
+  cursor: pointer;
+}
+.nib-palette__item[data-active='true'] {
+  background-color: var(--accent-subtle);
+  color: var(--accent);
+}
+
+.nib-palette__kbd {
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-subtle);
+  color: var(--text-muted);
+  font-size: var(--font-size-ui-xs);
+  font-family: inherit;
+}
+
+.nib-palette__empty {
+  padding: var(--space-4);
+  color: var(--text-muted);
+  font-size: var(--font-size-ui-sm);
+  text-align: center;
+}

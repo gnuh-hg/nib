@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous" />
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: #6f747b; font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  .katex { font-size: 1.06em; }
+  [data-theme="light"]{
+    --bg-app:#F3F1EC;--bg-surface:#FBFAF7;--bg-elevated:#FFFFFF;--bg-subtle:#ECEAE4;
+    --text-primary:#1A1C20;--text-secondary:#4A4E57;--text-muted:#868A92;--text-on-accent:#FFFFFF;
+    --border:#E3DFD7;--border-strong:#CBC6BC;
+    --accent:#0E7C86;--accent-hover:#0A5F67;--accent-subtle:#DEF1F2;--caret:#0E7C86;
+    --ink:#0A5A62;--result:#4B3FBF;--result-subtle:#ECEAFB;
+    --approx:#7A5200;--approx-subtle:#FBF1DC;
+    --success:#137A52;--warning:#7A5200;--error:#B42318;--info:#0E7C86;
+    --shadow-1:0 1px 2px rgba(20,24,40,.06),0 1px 1px rgba(20,24,40,.04);
+    --shadow-2:0 6px 22px rgba(20,24,40,.12);
+  }
+  [data-theme="dark"]{
+    --bg-app:#15171A;--bg-surface:#1D2024;--bg-elevated:#24282D;--bg-subtle:#282C31;
+    --text-primary:#E8E6E1;--text-secondary:#ABAEB4;--text-muted:#767A81;--text-on-accent:#0C111B;
+    --border:#30343A;--border-strong:#434851;
+    --accent:#3FB6BE;--accent-hover:#5FCBD2;--accent-subtle:#103438;--caret:#5FD4DC;
+    --ink:#4FC9D1;--result:#9A8CF0;--result-subtle:#211E3A;
+    --approx:#D6A53E;--approx-subtle:#2E2613;
+    --success:#3FBE85;--warning:#D6A53E;--error:#E5675B;--info:#3FB6BE;
+    --shadow-1:0 1px 2px rgba(0,0,0,.40);
+    --shadow-2:0 8px 26px rgba(0,0,0,.55);
+  }
+  @keyframes nibblink { 0%,49%{opacity:1} 50%,100%{opacity:0} }
+  @keyframes nibspin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce){ *{ animation: none !important; } }
+</style>
+</helmet>
+
+<div style="min-width:100%; padding:40px 44px 72px; background:#6f747b;">
+
+  <!-- ============ HEADER / DESIGNER NOTE ============ -->
+  <div style="max-width:980px; margin:0 auto 44px;">
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+      <span style="display:inline-flex; align-items:center; justify-content:center; width:38px; height:38px; border-radius:10px; background:#0E7C86; color:#fff;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 L18 13 L12 21 L6 13 Z"/><line x1="12" y1="9.5" x2="12" y2="18"/><circle cx="12" cy="8" r="1"/></svg>
+      </span>
+      <div>
+        <div style="font-size:22px; font-weight:700; color:#fff; letter-spacing:-0.01em;">Nib — Màn editor chính</div>
+        <div style="font-size:13px; color:rgba(255,255,255,.72);">Hi-fi mock · giấy kẻ ngang · free-placement block · toolbar nổi · light + dark</div>
+      </div>
+    </div>
+    <div style="background:#fbfbfa; border-radius:14px; padding:22px 24px; box-shadow:0 8px 26px rgba(0,0,0,.18); color:#33373d; font-size:13.5px; line-height:1.62;">
+      <div style="font-weight:700; font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:#0E7C86; margin-bottom:10px;">Ghi chú của designer · giả định &amp; lý do</div>
+      <p style="margin:0 0 10px;">Mình bám <b>đúng hệ token đã [LOCKED]</b> trong <code style="background:#eee;padding:1px 5px;border-radius:4px;">requirements.md / design.md</code>: Teal Ink chủ đạo, nền giấy ấm <code style="background:#eee;padding:1px 5px;border-radius:4px;">#F3F1EC</code>, ruling 64px, kết quả <span style="color:#4B3FBF;font-weight:600;">indigo (exact)</span> / <span style="color:#7A5200;font-weight:600;">amber (approx)</span>, mực bút <span style="color:#0A5A62;font-weight:600;">teal đậm</span>. Đã áp bản cập nhật <code style="background:#eee;padding:1px 5px;border-radius:4px;">--approx #7A5200</code> (AA 6.63:1).</p>
+      <p style="margin:0 0 10px;">Bộ "Elementa" đính kèm là <b>design system game pixel-art</b> — không liên quan tới notepad toán, nên mình <b>bỏ qua</b> và theo token gốc của Nib. Báo mình nếu bạn thật sự muốn hướng khác.</p>
+      <p style="margin:0;">Toán render bằng <b>KaTeX = font Computer Modern</b> đúng spec §6.1. Khung <b>regular (~1360px laptop)</b>, UI <b>tiếng Việt</b>. Bên dưới: ① editor đầy đủ (light + dark) · ② vòng đời 1 block · ③ toolbar nổi theo loại · ④ quy tắc render kết quả.</p>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 1 — FULL EDITOR ============ -->
+  <div style="max-width:2820px; margin:0 auto 56px;">
+    <div style="margin-bottom:18px;">
+      <div style="font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:rgba(255,255,255,.6);">01 · Editor đầy đủ</div>
+      <div style="font-size:17px; font-weight:600; color:#fff;">Một trang đang làm việc — cả 2 theme cạnh nhau</div>
+    </div>
+    <div style="display:flex; gap:36px; flex-wrap:wrap;">
+
+      <!-- LIGHT EDITOR -->
+      <div>
+        <div style="font-size:12px; font-weight:600; color:rgba(255,255,255,.82); margin-bottom:9px;">A · Light — giấy ấm</div>
+        <div data-theme="light" data-editor style="width:1360px; border-radius:14px; overflow:hidden; box-shadow:0 14px 40px rgba(0,0,0,.28); border:1px solid var(--border-strong); background:var(--bg-app);">
+          <!-- top chrome -->
+          <div style="height:54px; display:flex; align-items:center; gap:14px; padding:0 16px; background:var(--bg-elevated); border-bottom:1px solid var(--border);">
+            <span style="display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; border-radius:8px; background:var(--accent); color:var(--text-on-accent);">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 L18 13 L12 21 L6 13 Z"/><line x1="12" y1="9.5" x2="12" y2="18"/><circle cx="12" cy="8" r="1"/></svg>
+            </span>
+            <span style="font-weight:700; font-size:15px; color:var(--text-primary); letter-spacing:-0.01em;">Nib</span>
+            <span style="width:1px; height:22px; background:var(--border);"></span>
+            <span style="font-size:14px; color:var(--text-secondary); font-weight:500;">Giải tích — Buổi 3</span>
+            <span style="flex:1;"></span>
+            <span data-iconbtn style="display:inline-flex; align-items:center; justify-content:center; width:38px; height:38px; border-radius:9px; color:var(--text-muted);"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7 L4 11 L8 15"/><path d="M4 11 h10 a5 5 0 1 1 0 10 h-2"/></svg></span>
+            <span data-iconbtn style="display:inline-flex; align-items:center; justify-content:center; width:38px; height:38px; border-radius:9px; color:var(--text-muted);"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 7 L20 11 L16 15"/><path d="M20 11 h-10 a5 5 0 1 0 0 10 h2"/></svg></span>
+            <span style="width:1px; height:22px; background:var(--border);"></span>
+            <span data-iconbtn style="display:inline-flex; align-items:center; justify-content:center; width:38px; height:38px; border-radius:9px; color:var(--text-muted);"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6.5" width="19" height="11" rx="2"/><line x1="6" y1="10" x2="6" y2="10"/><line x1="9.5" y1="10" x2="9.5" y2="10"/><line x1="13" y1="10" x2="13" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/></svg></span>
+            <span style="display:inline-flex; align-items:center; height:34px; padding:0 11px; border-radius:9px; border:1px solid var(--border); font-size:12.5px; font-weight:600; color:var(--text-secondary); gap:6px;">⌘K</span>
+            <span style="display:inline-flex; align-items:center; height:34px; padding:0 10px; border-radius:9px; background:var(--accent-subtle); color:var(--accent); font-size:12px; font-weight:700; letter-spacing:.02em;">VI</span>
+            <span data-iconbtn style="display:inline-flex; align-items:center; justify-content:center; width:38px; height:38px; border-radius:9px; color:var(--text-muted);"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"/><line x1="12" y1="2.5" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="21.5"/><line x1="2.5" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="21.5" y2="12"/><line x1="5.2" y1="5.2" x2="7" y2="7"/><line x1="17" y1="17" x2="18.8" y2="18.8"/><line x1="5.2" y1="18.8" x2="7" y2="17"/><line x1="17" y1="7" x2="18.8" y2="5.2"/></svg></span>
+          </div>
+          <!-- canvas -->
+          <div data-canvas style="position:relative; height:712px; padding-left:56px; background:var(--bg-app); background-image:repeating-linear-gradient(to bottom, transparent 0, transparent 63px, var(--border) 63px, var(--border) 64px); background-position:0 0;">
+
+            <!-- heading text block (L0) -->
+            <div style="position:absolute; left:56px; top:0; height:64px; display:flex; align-items:flex-end; padding-bottom:13px;">
+              <span style="font-size:20px; font-weight:600; color:var(--text-primary); letter-spacing:-0.01em;">Bài 3 · Đạo hàm và Tích phân</span>
+            </div>
+
+            <!-- result-exact short, same line (L1) + chips -->
+            <div style="position:absolute; left:56px; top:64px; display:flex; flex-direction:column; gap:6px;">
+              <div style="height:50px; display:flex; align-items:flex-end; padding-bottom:11px; gap:8px;">
+                <span data-tex="\int x^{2}\,dx" style="color:var(--text-primary); font-size:19px;"></span>
+                <span data-tex="=\ \dfrac{x^{3}}{3}+C" style="color:var(--result); font-size:19px;"></span>
+              </div>
+              <div style="display:flex; gap:4px; padding-left:2px;">
+                <span style="display:inline-flex; align-items:center; height:22px; padding:0 8px; border-radius:6px; font-size:11px; font-weight:500; background:var(--accent-subtle); color:var(--accent); border:1px solid color-mix(in srgb, var(--accent) 30%, transparent);">= Exact</span>
+                <span style="display:inline-flex; align-items:center; height:22px; padding:0 8px; border-radius:6px; font-size:11px; font-weight:500; background:transparent; color:var(--text-muted); border:1px solid var(--border);">≈ Decimal</span>
+              </div>
+            </div>
+
+            <!-- prose note, same line, right (L1) -->
+            <div style="position:absolute; left:560px; top:64px; height:50px; display:flex; align-items:flex-end; padding-bottom:13px;">
+              <span style="font-size:14px; color:var(--text-muted); font-style:italic;">— quy tắc lũy thừa, +C bất định</span>
+            </div>
+
+            <!-- long result wraps to next line (L3, L4) -->
+            <div style="position:absolute; left:56px; top:192px; height:50px; display:flex; align-items:flex-end; padding-bottom:11px;">
+              <span data-tex="\int e^{x}\sin x\,dx" style="color:var(--text-primary); font-size:19px;"></span>
+            </div>
+            <div style="position:absolute; left:56px; top:256px; height:50px; display:flex; align-items:flex-end; padding-bottom:11px;">
+              <span data-tex="=\ \tfrac{1}{2}e^{x}\left(\sin x-\cos x\right)+C" style="color:var(--result); font-size:19px;"></span>
+            </div>
+
+            <!-- ACTIVE editing-math block + floating toolbar (L6) -->
+            <div style="position:absolute; left:44px; top:384px;">
+              <!-- floating toolbar -->
+              <div style="position:absolute; top:-52px; left:12px; display:flex; align-items:center; gap:3px; height:44px; padding:0 7px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:11px; box-shadow:var(--shadow-2); white-space:nowrap;">
+                <span style="display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 13px; border-radius:8px; background:var(--accent); color:var(--text-on-accent); font-size:13.5px; font-weight:600;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="9" x2="11" y2="9"/><line x1="3" y1="14" x2="11" y2="14"/><path d="M14.5 11.5 H21 M18 8.5 l3 3 -3 3"/></svg>Tính</span>
+                <span style="width:1px; height:24px; background:var(--border); margin:0 3px;"></span>
+                <span style="display:inline-flex; align-items:center; gap:5px; height:32px; padding:0 9px; border-radius:8px; color:var(--text-secondary); font-size:13px; font-weight:600;">
+                  <span style="font-size:13px;">∑</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9 H18 M15 6 l3 3 -3 3"/><path d="M20 15 H6 M9 12 l-3 3 3 3"/></svg><span style="font-size:13px;">A</span></span>
+                <span data-iconbtn style="display:inline-flex; align-items:center; justify-content:center; width:34px; height:32px; border-radius:8px; color:var(--text-secondary);"><span style="font-size:14px; font-weight:700;">A</span><span style="font-size:18px; font-weight:700; margin-left:-1px;">A</span></span>
+                <span data-iconbtn style="display:inline-flex; align-items:center; justify-content:center; width:34px; height:32px; border-radius:8px;"><span style="width:15px; height:15px; border-radius:50%; background:var(--accent); border:1.5px solid var(--bg-elevated); box-shadow:0 0 0 1px var(--border);"></span></span>
+                <span data-iconbtn style="display:inline-flex; align-items:center; justify-content:center; width:34px; height:32px; border-radius:8px; color:var(--text-secondary);"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="3" width="11" height="11" rx="2"/><path d="M16 17 v2 a2 2 0 0 1 -2 2 H6 a2 2 0 0 1 -2 -2 V9 a2 2 0 0 1 2 -2 h2"/></svg></span>
+                <span style="width:1px; height:24px; background:var(--border); margin:0 3px;"></span>
+                <span data-iconbtn style="display:inline-flex; align-items:center; justify-content:center; width:34px; height:32px; border-radius:8px; color:var(--error);"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7 h16 M9 7 V5 a1 1 0 0 1 1 -1 h4 a1 1 0 0 1 1 1 v2 M6 7 l1 13 a2 2 0 0 0 2 2 h6 a2 2 0 0 0 2 -2 l1 -13"/></svg></span>
+              </div>
+              <!-- block body -->
+              <div style="position:relative; display:flex; align-items:flex-end; height:64px; padding:0 14px 11px; background:var(--accent-subtle); border-radius:8px;">
+                <span style="position:absolute; left:0; top:8px; bottom:8px; width:2px; background:var(--accent); border-radius:0;"></span>
+                <span data-tex="\dfrac{2}{3}+\dfrac{1}{4}" style="color:var(--text-primary); font-size:19px;"></span>
+                <span style="display:inline-block; width:2px; height:24px; background:var(--caret); margin-left:3px; margin-bottom:2px; animation:nibblink 1.06s steps(1) infinite;"></span>
+              </div>
+            </div>
+
+            <!-- approx-only block (L8 input, L9 result) -->
+            <div style="position:absolute; left:56px; top:512px; height:50px; display:flex; align-items:flex-end; padding-bottom:11px;">
+              <span data-tex="\int_{0}^{1} e^{x^{2}}\,dx" style="color:var(--text-primary); font-size:19px;"></span>
+            </div>
+            <div style="position:absolute; left:56px; top:576px; height:50px; display:flex; align-items:flex-end; padding-bottom:11px; gap:9px;">
+              <span title="Kết quả số gần đúng — không phải nghiệm chính xác" style="display:inline-flex; align-items:center; height:21px; padding:3px 7px; border-radius:6px; background:var(--approx-subtle); color:var(--approx); font-size:13px; font-weight:700;">≈</span>
+              <span data-tex="1.4627" style="color:var(--approx); font-size:19px;"></span>
+            </div>
+
+            <!-- INK-CAPTURE block (handwriting) + mini toolbar (right area) -->
+            <div style="position:absolute; left:700px; top:372px;">
+              <div style="position:absolute; top:-46px; left:8px; display:flex; align-items:center; gap:3px; height:42px; padding:0 7px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:11px; box-shadow:var(--shadow-2); white-space:nowrap;">
+                <span style="display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 12px; border-radius:8px; background:var(--accent); color:var(--text-on-accent); font-size:13px; font-weight:600;">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="9" x2="11" y2="9"/><line x1="3" y1="14" x2="11" y2="14"/><path d="M14.5 11.5 H21 M18 8.5 l3 3 -3 3"/></svg>Tính</span>
+                <span style="display:inline-flex; align-items:center; gap:5px; height:30px; padding:0 9px; border-radius:8px; color:var(--text-secondary); font-size:12.5px; font-weight:500;">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="2.6 2.6" stroke-linecap="round"><ellipse cx="12" cy="11" rx="8" ry="6.4"/></svg>Use as Math</span>
+              </div>
+              <div style="position:relative; height:64px; display:flex; align-items:center; padding:0 12px; background:var(--accent-subtle); border-radius:8px;">
+                <svg width="220" height="50" viewBox="0 0 220 50" fill="none" stroke="var(--ink)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M8 16 C 14 26, 22 36, 30 40 M30 16 C 22 26, 14 36, 8 40"/>
+                  <path d="M40 12 c 6 -4, 11 0, 8 5 c -3 4, -9 4, -8 8 c 1 3, 7 3, 11 1"/>
+                  <path d="M70 30 h 22"/>
+                  <path d="M104 16 C 110 26, 118 36, 126 40 M126 16 C 118 26, 110 36, 104 40"/>
+                  <path d="M136 12 c 6 -4, 11 0, 8 5 c -3 4, -9 4, -8 8 c 1 3, 7 3, 11 1"/>
+                  <path d="M150 9 c 5 -3, 9 0, 6 4 c -2 3, -6 3, -5 6"/>
+                </svg>
+              </div>
+            </div>
+
+            <!-- pen palette pinned right -->
+            <div data-penpalette style="position:absolute; right:16px; top:96px; display:flex; flex-direction:column; align-items:center; gap:6px; width:52px; padding:8px 6px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow-1);">
+              <span style="display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:10px; background:var(--accent-subtle); color:var(--accent);"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 L17 12 L12 19 L7 12 Z"/><line x1="12" y1="9" x2="12" y2="16"/></svg></span>
+              <span style="display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:10px; color:var(--text-secondary);"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18 l9 -12 4 3 -9 12 -5 1 1 -4 Z"/></svg></span>
+              <span style="display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:10px; color:var(--text-secondary);"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 l-3 -3 9 -9 6 6 -6 6 Z"/><line x1="4" y1="20" x2="14" y2="20"/></svg></span>
+              <span style="display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:10px; color:var(--text-secondary);"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="2.6 2.6" stroke-linecap="round"><ellipse cx="12" cy="11" rx="8" ry="6.4"/></svg></span>
+              <span style="width:30px; height:1px; background:var(--border); margin:2px 0;"></span>
+              <span style="display:inline-flex; align-items:center; justify-content:center; width:40px; height:24px;"><span style="width:6px; height:6px; border-radius:50%; background:var(--ink);"></span></span>
+              <span style="display:inline-flex; align-items:center; justify-content:center; width:40px; height:24px;"><span style="width:10px; height:10px; border-radius:50%; background:var(--ink);"></span></span>
+              <span style="display:inline-flex; align-items:center; justify-content:center; width:40px; height:24px;"><span style="width:14px; height:14px; border-radius:50%; background:var(--ink);"></span></span>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- DARK EDITOR -->
+      <div>
+        <div style="font-size:12px; font-weight:600; color:rgba(255,255,255,.82); margin-bottom:9px;">B · Dark — graphite ấm</div>
+        <div data-theme="dark" data-editor style="width:1360px; border-radius:14px; overflow:hidden; box-shadow:0 14px 40px rgba(0,0,0,.4); border:1px solid var(--border-strong); background:var(--bg-app);">
+          <div style="height:54px; display:flex; align-items:center; gap:14px; padding:0 16px; background:var(--bg-elevated); border-bottom:1px solid var(--border);">
+            <span style="display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; border-radius:8px; background:var(--accent); color:var(--text-on-accent);">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 L18 13 L12 21 L6 13 Z"/><line x1="12" y1="9.5" x2="12" y2="18"/><circle cx="12" cy="8" r="1"/></svg>
+            </span>
+            <span style="font-weight:700; font-size:15px; color:var(--text-primary); letter-spacing:-0.01em;">Nib</span>
+            <span style="width:1px; height:22px; background:var(--border);"></span>
+            <span style="font-size:14px; color:var(--text-secondary); font-weight:500;">Giải tích — Buổi 3</span>
+            <span style="flex:1;"></span>
+            <span data-iconbtn style="display:inline-flex; align-items:center; justify-content:center; width:38px; height:38px; border-radius:9px; color:var(--text-muted);"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7 L4 11 L8 15"/><path d="M4 11 h10 a5 5 0 1 1 0 10 h-2"/></svg></span>
+            <span data-iconbtn style="display:inline-flex; align-items:center; justify-content:center; width:38px; height:38px; border-radius:9px; color:var(--text-muted);"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 7 L20 11 L16 15"/><path d="M20 11 h-10 a5 5 0 1 0 0 10 h2"/></svg></span>
+            <span style="width:1px; height:22px; background:var(--border);"></span>
+            <span data-iconbtn style="display:inline-flex; align-items:center; justify-content:center; width:38px; height:38px; border-radius:9px; color:var(--text-muted);"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6.5" width="19" height="11" rx="2"/><line x1="6" y1="10" x2="6" y2="10"/><line x1="9.5" y1="10" x2="9.5" y2="10"/><line x1="13" y1="10" x2="13" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/></svg></span>
+            <span style="display:inline-flex; align-items:center; height:34px; padding:0 11px; border-radius:9px; border:1px solid var(--border); font-size:12.5px; font-weight:600; color:var(--text-secondary); gap:6px;">⌘K</span>
+            <span style="display:inline-flex; align-items:center; height:34px; padding:0 10px; border-radius:9px; background:var(--accent-subtle); color:var(--accent); font-size:12px; font-weight:700; letter-spacing:.02em;">VI</span>
+            <span data-iconbtn style="display:inline-flex; align-items:center; justify-content:center; width:38px; height:38px; border-radius:9px; color:var(--text-muted);"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5 A8 8 0 0 1 9.5 4 A6.4 6.4 0 1 0 20 14.5 Z"/></svg></span>
+          </div>
+          <div data-canvas style="position:relative; height:712px; padding-left:56px; background:var(--bg-app); background-image:repeating-linear-gradient(to bottom, transparent 0, transparent 63px, var(--border) 63px, var(--border) 64px); background-position:0 0;">
+
+            <div style="position:absolute; left:56px; top:0; height:64px; display:flex; align-items:flex-end; padding-bottom:13px;">
+              <span style="font-size:20px; font-weight:600; color:var(--text-primary); letter-spacing:-0.01em;">Bài 3 · Đạo hàm và Tích phân</span>
+            </div>
+
+            <div style="position:absolute; left:56px; top:64px; display:flex; flex-direction:column; gap:6px;">
+              <div style="height:50px; display:flex; align-items:flex-end; padding-bottom:11px; gap:8px;">
+                <span data-tex="\int x^{2}\,dx" style="color:var(--text-primary); font-size:19px;"></span>
+                <span data-tex="=\ \dfrac{x^{3}}{3}+C" style="color:var(--result); font-size:19px;"></span>
+              </div>
+              <div style="display:flex; gap:4px; padding-left:2px;">
+                <span style="display:inline-flex; align-items:center; height:22px; padding:0 8px; border-radius:6px; font-size:11px; font-weight:500; background:var(--accent-subtle); color:var(--accent); border:1px solid color-mix(in srgb, var(--accent) 30%, transparent);">= Exact</span>
+                <span style="display:inline-flex; align-items:center; height:22px; padding:0 8px; border-radius:6px; font-size:11px; font-weight:500; background:transparent; color:var(--text-muted); border:1px solid var(--border);">≈ Decimal</span>
+              </div>
+            </div>
+
+            <div style="position:absolute; left:560px; top:64px; height:50px; display:flex; align-items:flex-end; padding-bottom:13px;">
+              <span style="font-size:14px; color:var(--text-muted); font-style:italic;">— quy tắc lũy thừa, +C bất định</span>
+            </div>
+
+            <div style="position:absolute; left:56px; top:192px; height:50px; display:flex; align-items:flex-end; padding-bottom:11px;">
+              <span data-tex="\int e^{x}\sin x\,dx" style="color:var(--text-primary); font-size:19px;"></span>
+            </div>
+            <div style="position:absolute; left:56px; top:256px; height:50px; display:flex; align-items:flex-end; padding-bottom:11px;">
+              <span data-tex="=\ \tfrac{1}{2}e^{x}\left(\sin x-\cos x\right)+C" style="color:var(--result); font-size:19px;"></span>
+            </div>
+
+            <div style="position:absolute; left:44px; top:384px;">
+              <div style="position:absolute; top:-52px; left:12px; display:flex; align-items:center; gap:3px; height:44px; padding:0 7px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:11px; box-shadow:var(--shadow-2); white-space:nowrap;">
+                <span style="display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 13px; border-radius:8px; background:var(--accent); color:var(--text-on-accent); font-size:13.5px; font-weight:600;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="9" x2="11" y2="9"/><line x1="3" y1="14" x2="11" y2="14"/><path d="M14.5 11.5 H21 M18 8.5 l3 3 -3 3"/></svg>Tính</span>
+                <span style="width:1px; height:24px; background:var(--border); margin:0 3px;"></span>
+                <span style="display:inline-flex; align-items:center; gap:5px; height:32px; padding:0 9px; border-radius:8px; color:var(--text-secondary); font-size:13px; font-weight:600;">
+                  <span style="font-size:13px;">∑</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9 H18 M15 6 l3 3 -3 3"/><path d="M20 15 H6 M9 12 l-3 3 3 3"/></svg><span style="font-size:13px;">A</span></span>
+                <span data-iconbtn style="display:inline-flex; align-items:center; justify-content:center; width:34px; height:32px; border-radius:8px; color:var(--text-secondary);"><span style="font-size:14px; font-weight:700;">A</span><span style="font-size:18px; font-weight:700; margin-left:-1px;">A</span></span>
+                <span data-iconbtn style="display:inline-flex; align-items:center; justify-content:center; width:34px; height:32px; border-radius:8px;"><span style="width:15px; height:15px; border-radius:50%; background:var(--accent); border:1.5px solid var(--bg-elevated); box-shadow:0 0 0 1px var(--border);"></span></span>
+                <span data-iconbtn style="display:inline-flex; align-items:center; justify-content:center; width:34px; height:32px; border-radius:8px; color:var(--text-secondary);"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="3" width="11" height="11" rx="2"/><path d="M16 17 v2 a2 2 0 0 1 -2 2 H6 a2 2 0 0 1 -2 -2 V9 a2 2 0 0 1 2 -2 h2"/></svg></span>
+                <span style="width:1px; height:24px; background:var(--border); margin:0 3px;"></span>
+                <span data-iconbtn style="display:inline-flex; align-items:center; justify-content:center; width:34px; height:32px; border-radius:8px; color:var(--error);"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7 h16 M9 7 V5 a1 1 0 0 1 1 -1 h4 a1 1 0 0 1 1 1 v2 M6 7 l1 13 a2 2 0 0 0 2 2 h6 a2 2 0 0 0 2 -2 l1 -13"/></svg></span>
+              </div>
+              <div style="position:relative; display:flex; align-items:flex-end; height:64px; padding:0 14px 11px; background:var(--accent-subtle); border-radius:8px;">
+                <span style="position:absolute; left:0; top:8px; bottom:8px; width:2px; background:var(--accent);"></span>
+                <span data-tex="\dfrac{2}{3}+\dfrac{1}{4}" style="color:var(--text-primary); font-size:19px;"></span>
+                <span style="display:inline-block; width:2px; height:24px; background:var(--caret); margin-left:3px; margin-bottom:2px; animation:nibblink 1.06s steps(1) infinite;"></span>
+              </div>
+            </div>
+
+            <div style="position:absolute; left:56px; top:512px; height:50px; display:flex; align-items:flex-end; padding-bottom:11px;">
+              <span data-tex="\int_{0}^{1} e^{x^{2}}\,dx" style="color:var(--text-primary); font-size:19px;"></span>
+            </div>
+            <div style="position:absolute; left:56px; top:576px; height:50px; display:flex; align-items:flex-end; padding-bottom:11px; gap:9px;">
+              <span title="Kết quả số gần đúng — không phải nghiệm chính xác" style="display:inline-flex; align-items:center; height:21px; padding:3px 7px; border-radius:6px; background:var(--approx-subtle); color:var(--approx); font-size:13px; font-weight:700;">≈</span>
+              <span data-tex="1.4627" style="color:var(--approx); font-size:19px;"></span>
+            </div>
+
+            <div style="position:absolute; left:700px; top:372px;">
+              <div style="position:absolute; top:-46px; left:8px; display:flex; align-items:center; gap:3px; height:42px; padding:0 7px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:11px; box-shadow:var(--shadow-2); white-space:nowrap;">
+                <span style="display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 12px; border-radius:8px; background:var(--accent); color:var(--text-on-accent); font-size:13px; font-weight:600;">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="9" x2="11" y2="9"/><line x1="3" y1="14" x2="11" y2="14"/><path d="M14.5 11.5 H21 M18 8.5 l3 3 -3 3"/></svg>Tính</span>
+                <span style="display:inline-flex; align-items:center; gap:5px; height:30px; padding:0 9px; border-radius:8px; color:var(--text-secondary); font-size:12.5px; font-weight:500;">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="2.6 2.6" stroke-linecap="round"><ellipse cx="12" cy="11" rx="8" ry="6.4"/></svg>Use as Math</span>
+              </div>
+              <div style="position:relative; height:64px; display:flex; align-items:center; padding:0 12px; background:var(--accent-subtle); border-radius:8px;">
+                <svg width="220" height="50" viewBox="0 0 220 50" fill="none" stroke="var(--ink)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M8 16 C 14 26, 22 36, 30 40 M30 16 C 22 26, 14 36, 8 40"/>
+                  <path d="M40 12 c 6 -4, 11 0, 8 5 c -3 4, -9 4, -8 8 c 1 3, 7 3, 11 1"/>
+                  <path d="M70 30 h 22"/>
+                  <path d="M104 16 C 110 26, 118 36, 126 40 M126 16 C 118 26, 110 36, 104 40"/>
+                  <path d="M136 12 c 6 -4, 11 0, 8 5 c -3 4, -9 4, -8 8 c 1 3, 7 3, 11 1"/>
+                  <path d="M150 9 c 5 -3, 9 0, 6 4 c -2 3, -6 3, -5 6"/>
+                </svg>
+              </div>
+            </div>
+
+            <div data-penpalette style="position:absolute; right:16px; top:96px; display:flex; flex-direction:column; align-items:center; gap:6px; width:52px; padding:8px 6px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow-1);">
+              <span style="display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:10px; background:var(--accent-subtle); color:var(--accent);"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 L17 12 L12 19 L7 12 Z"/><line x1="12" y1="9" x2="12" y2="16"/></svg></span>
+              <span style="display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:10px; color:var(--text-secondary);"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18 l9 -12 4 3 -9 12 -5 1 1 -4 Z"/></svg></span>
+              <span style="display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:10px; color:var(--text-secondary);"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 l-3 -3 9 -9 6 6 -6 6 Z"/><line x1="4" y1="20" x2="14" y2="20"/></svg></span>
+              <span style="display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:10px; color:var(--text-secondary);"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="2.6 2.6" stroke-linecap="round"><ellipse cx="12" cy="11" rx="8" ry="6.4"/></svg></span>
+              <span style="width:30px; height:1px; background:var(--border); margin:2px 0;"></span>
+              <span style="display:inline-flex; align-items:center; justify-content:center; width:40px; height:24px;"><span style="width:6px; height:6px; border-radius:50%; background:var(--ink);"></span></span>
+              <span style="display:inline-flex; align-items:center; justify-content:center; width:40px; height:24px;"><span style="width:10px; height:10px; border-radius:50%; background:var(--ink);"></span></span>
+              <span style="display:inline-flex; align-items:center; justify-content:center; width:40px; height:24px;"><span style="width:14px; height:14px; border-radius:50%; background:var(--ink);"></span></span>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ SECTION 2 — BLOCK LIFECYCLE STATES ============ -->
+  <div style="max-width:1480px; margin:0 auto 56px;">
+    <div style="margin-bottom:18px;">
+      <div style="font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:rgba(255,255,255,.6);">02 · Vòng đời một block</div>
+      <div style="font-size:17px; font-weight:600; color:#fff;">Sáu trạng thái, tách riêng để soi — light theme</div>
+    </div>
+    <div data-theme="light" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:20px;">
+
+      <div data-statecard style="background:var(--bg-surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; box-shadow:var(--shadow-1);">
+        <div style="position:relative; height:128px; background:var(--bg-app); background-image:repeating-linear-gradient(to bottom, transparent 0, transparent 63px, var(--border) 63px, var(--border) 64px); padding:0 18px;">
+          <div style="position:relative; display:flex; align-items:flex-end; height:64px; padding:0 12px 11px; margin-left:-4px; background:var(--accent-subtle); border-radius:8px; width:fit-content;">
+            <span style="position:absolute; left:0; top:8px; bottom:8px; width:2px; background:var(--accent);"></span>
+            <span data-tex="x^{2}+2x" style="color:var(--text-primary); font-size:18px;"></span>
+            <span style="display:inline-block; width:2px; height:22px; background:var(--caret); margin-left:3px; margin-bottom:1px; animation:nibblink 1.06s steps(1) infinite;"></span>
+          </div>
+        </div>
+        <div style="padding:12px 16px; border-top:1px solid var(--border);"><div style="font-size:13px; font-weight:600; color:var(--text-primary);">EDITING-MATH</div><div style="font-size:12px; color:var(--text-muted); margin-top:2px;">Live render khi gõ · chưa tính · left-edge 2px + caret</div></div>
+      </div>
+
+      <div data-statecard style="background:var(--bg-surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; box-shadow:var(--shadow-1);">
+        <div style="position:relative; height:128px; background:var(--bg-app); background-image:repeating-linear-gradient(to bottom, transparent 0, transparent 63px, var(--border) 63px, var(--border) 64px); padding:0 18px;">
+          <div style="display:flex; align-items:flex-end; height:64px; padding-bottom:11px; gap:11px;">
+            <span data-tex="\int x^{2}\,dx" style="color:var(--text-primary); font-size:18px;"></span>
+            <span style="display:inline-block; width:16px; height:16px; border:2px solid var(--accent); border-top-color:transparent; border-radius:50%; animation:nibspin .7s linear infinite; margin-bottom:6px;"></span>
+          </div>
+        </div>
+        <div style="padding:12px 16px; border-top:1px solid var(--border);"><div style="font-size:13px; font-weight:600; color:var(--text-primary);">EVALUATING</div><div style="font-size:12px; color:var(--text-muted); margin-top:2px;">Spinner inline tại dấu = · debounce 150ms</div></div>
+      </div>
+
+      <div data-statecard style="background:var(--bg-surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; box-shadow:var(--shadow-1);">
+        <div style="position:relative; height:128px; background:var(--bg-app); background-image:repeating-linear-gradient(to bottom, transparent 0, transparent 63px, var(--border) 63px, var(--border) 64px); padding:0 18px;">
+          <div style="display:flex; flex-direction:column; gap:5px; padding-top:8px;">
+            <div style="display:flex; align-items:flex-end; height:46px; padding-bottom:8px; gap:8px;">
+              <span data-tex="\frac{d}{dx}\left(x^{2}\right)" style="color:var(--text-primary); font-size:18px;"></span>
+              <span data-tex="=\ 2x" style="color:var(--result); font-size:18px;"></span>
+            </div>
+            <div style="display:flex; gap:4px;">
+              <span style="display:inline-flex; align-items:center; height:22px; padding:0 8px; border-radius:6px; font-size:11px; font-weight:500; background:var(--accent-subtle); color:var(--accent); border:1px solid color-mix(in srgb, var(--accent) 30%, transparent);">= Exact</span>
+              <span style="display:inline-flex; align-items:center; height:22px; padding:0 8px; border-radius:6px; font-size:11px; font-weight:500; background:transparent; color:var(--text-muted); border:1px solid var(--border);">≈ Decimal</span>
+            </div>
+          </div>
+        </div>
+        <div style="padding:12px 16px; border-top:1px solid var(--border);"><div style="font-size:13px; font-weight:600; color:var(--text-primary);">RESULT-EXACT</div><div style="font-size:12px; color:var(--text-muted); margin-top:2px;">Indigo · prefix = · chip exact/decimal</div></div>
+      </div>
+
+      <div data-statecard style="background:var(--bg-surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; box-shadow:var(--shadow-1);">
+        <div style="position:relative; height:128px; background:var(--bg-app); background-image:repeating-linear-gradient(to bottom, transparent 0, transparent 63px, var(--border) 63px, var(--border) 64px); padding:0 18px;">
+          <div style="display:flex; flex-direction:column; gap:5px; padding-top:8px;">
+            <div style="display:flex; align-items:flex-end; height:46px; padding-bottom:8px;">
+              <span data-tex="\int_{0}^{1} e^{x^{2}}\,dx" style="color:var(--text-primary); font-size:18px;"></span>
+            </div>
+            <div style="display:flex; align-items:center; gap:9px;">
+              <span title="Kết quả số gần đúng — không phải nghiệm chính xác" style="display:inline-flex; align-items:center; height:21px; padding:3px 7px; border-radius:6px; background:var(--approx-subtle); color:var(--approx); font-size:13px; font-weight:700;">≈</span>
+              <span data-tex="1.4627" style="color:var(--approx); font-size:18px;"></span>
+            </div>
+          </div>
+        </div>
+        <div style="padding:12px 16px; border-top:1px solid var(--border);"><div style="font-size:13px; font-weight:600; color:var(--text-primary);">RESULT-APPROX</div><div style="font-size:12px; color:var(--text-muted); margin-top:2px;">Amber · badge ≈ (44px hit) · không có nghiệm đóng</div></div>
+      </div>
+
+      <div data-statecard style="background:var(--bg-surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; box-shadow:var(--shadow-1);">
+        <div style="position:relative; height:128px; background:var(--bg-app); background-image:repeating-linear-gradient(to bottom, transparent 0, transparent 63px, var(--border) 63px, var(--border) 64px); padding:0 18px;">
+          <div style="display:flex; flex-direction:column; gap:7px; padding-top:14px;">
+            <div style="display:flex; align-items:center; gap:9px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--error)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 L22 20 H2 Z"/><line x1="12" y1="10" x2="12" y2="14"/><line x1="12" y1="17" x2="12" y2="17"/></svg>
+              <span style="font-size:13.5px; color:var(--error); font-weight:500;">Không parse được công thức.</span>
+            </div>
+            <span style="display:inline-flex; align-items:center; width:fit-content; height:30px; padding:0 13px; border-radius:8px; border:1px solid var(--error); color:var(--error); font-size:12.5px; font-weight:600;">Sửa</span>
+          </div>
+        </div>
+        <div style="padding:12px 16px; border-top:1px solid var(--border);"><div style="font-size:13px; font-weight:600; color:var(--text-primary);">ERROR</div><div style="font-size:12px; color:var(--text-muted); margin-top:2px;">Icon ⚠ + message i18n + nút Sửa (parse/HTR/timeout)</div></div>
+      </div>
+
+      <div data-statecard style="background:var(--bg-surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; box-shadow:var(--shadow-1);">
+        <div style="position:relative; height:128px; background:var(--bg-app); background-image:repeating-linear-gradient(to bottom, transparent 0, transparent 63px, var(--border) 63px, var(--border) 64px); padding:0 18px;">
+          <div style="position:relative; display:flex; align-items:flex-end; height:64px; padding:0 12px 11px; margin-left:-4px; background:var(--accent-subtle); border-radius:8px; width:fit-content;">
+            <span style="position:absolute; left:0; top:8px; bottom:8px; width:2px; background:var(--accent);"></span>
+            <span style="font-size:16px; color:var(--text-primary);">Chú ý: dùng <b>L'Hôpital</b></span>
+          </div>
+        </div>
+        <div style="padding:12px 16px; border-top:1px solid var(--border);"><div style="font-size:13px; font-weight:600; color:var(--text-primary);">EDITING-TEXT</div><div style="font-size:12px; color:var(--text-muted); margin-top:2px;">Block chữ · B/I/U/S · 3 bậc cỡ · Convert → Toán</div></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ SECTION 3 — TOOLBAR VARIANTS ============ -->
+  <div style="max-width:1480px; margin:0 auto 56px;">
+    <div style="margin-bottom:18px;">
+      <div style="font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:rgba(255,255,255,.6);">03 · Floating toolbar</div>
+      <div style="font-size:17px; font-weight:600; color:#fff;">Ngữ cảnh hoá theo loại nội dung + trạng thái</div>
+    </div>
+    <div data-theme="light" style="display:flex; flex-wrap:wrap; gap:22px;">
+
+      <div style="display:flex; flex-direction:column; gap:9px;">
+        <span style="font-size:12px; color:rgba(255,255,255,.82); font-weight:600;">Block Toán · đang gõ</span>
+        <div style="display:flex; align-items:center; gap:3px; height:48px; padding:0 8px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-2);">
+          <span style="display:inline-flex; align-items:center; gap:6px; height:34px; padding:0 14px; border-radius:8px; background:var(--accent); color:var(--text-on-accent); font-size:13.5px; font-weight:600;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="9" x2="11" y2="9"/><line x1="3" y1="14" x2="11" y2="14"/><path d="M14.5 11.5 H21 M18 8.5 l3 3 -3 3"/></svg>Tính</span>
+          <span style="width:1px; height:26px; background:var(--border); margin:0 3px;"></span>
+          <span style="display:inline-flex; align-items:center; gap:5px; height:34px; padding:0 10px; border-radius:8px; color:var(--text-secondary); font-size:13px; font-weight:600;"><span>∑</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9 H18 M15 6 l3 3 -3 3"/><path d="M20 15 H6 M9 12 l-3 3 3 3"/></svg><span>A</span></span>
+          <span style="display:inline-flex; align-items:center; justify-content:center; width:36px; height:34px; border-radius:8px; color:var(--text-secondary);"><span style="font-size:13px; font-weight:700;">A</span><span style="font-size:17px; font-weight:700;">A</span></span>
+          <span style="display:inline-flex; align-items:center; justify-content:center; width:36px; height:34px; border-radius:8px;"><span style="width:15px; height:15px; border-radius:50%; background:var(--accent); box-shadow:0 0 0 1px var(--border);"></span></span>
+          <span style="width:1px; height:26px; background:var(--border); margin:0 3px;"></span>
+          <span style="display:inline-flex; align-items:center; justify-content:center; width:36px; height:34px; border-radius:8px; color:var(--text-secondary);"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="3" width="11" height="11" rx="2"/><path d="M16 17 v2 a2 2 0 0 1 -2 2 H6 a2 2 0 0 1 -2 -2 V9 a2 2 0 0 1 2 -2 h2"/></svg></span>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:9px;">
+        <span style="font-size:12px; color:rgba(255,255,255,.82); font-weight:600;">Block Toán · viết bút</span>
+        <div style="display:flex; align-items:center; gap:3px; height:48px; padding:0 8px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-2);">
+          <span style="display:inline-flex; align-items:center; gap:6px; height:34px; padding:0 14px; border-radius:8px; background:var(--accent); color:var(--text-on-accent); font-size:13.5px; font-weight:600;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="9" x2="11" y2="9"/><line x1="3" y1="14" x2="11" y2="14"/><path d="M14.5 11.5 H21 M18 8.5 l3 3 -3 3"/></svg>Tính</span>
+          <span style="width:1px; height:26px; background:var(--border); margin:0 3px;"></span>
+          <span style="display:inline-flex; align-items:center; gap:6px; height:34px; padding:0 11px; border-radius:8px; color:var(--text-secondary); font-size:13px; font-weight:500;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="2.6 2.6" stroke-linecap="round"><ellipse cx="12" cy="11" rx="8" ry="6.4"/></svg>Use as Math</span>
+          <span style="display:inline-flex; align-items:center; height:34px; padding:0 11px; border-radius:8px; color:var(--text-muted); font-size:13px; font-weight:500;">Use as Sketch</span>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:9px;">
+        <span style="font-size:12px; color:rgba(255,255,255,.82); font-weight:600;">Block Toán · đã có kết quả</span>
+        <div style="display:flex; align-items:center; gap:3px; height:48px; padding:0 8px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-2);">
+          <span style="display:inline-flex; align-items:center; gap:4px; height:34px; padding:0 4px; border-radius:8px;">
+            <span style="display:inline-flex; align-items:center; height:26px; padding:0 9px; border-radius:6px; background:var(--accent-subtle); color:var(--accent); border:1px solid color-mix(in srgb, var(--accent) 30%, transparent); font-size:11px; font-weight:600;">= Exact</span>
+            <span style="display:inline-flex; align-items:center; height:26px; padding:0 9px; border-radius:6px; color:var(--text-muted); border:1px solid var(--border); font-size:11px; font-weight:500;">≈ Decimal</span>
+          </span>
+          <span style="width:1px; height:26px; background:var(--border); margin:0 3px;"></span>
+          <span style="display:inline-flex; align-items:center; gap:6px; height:34px; padding:0 11px; border-radius:8px; color:var(--text-secondary); font-size:13px; font-weight:600;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="9" x2="11" y2="9"/><line x1="3" y1="14" x2="11" y2="14"/><path d="M14.5 11.5 H21 M18 8.5 l3 3 -3 3"/></svg>Tính lại</span>
+          <span style="display:inline-flex; align-items:center; justify-content:center; width:36px; height:34px; border-radius:8px; color:var(--text-secondary);"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="3" width="11" height="11" rx="2"/><path d="M16 17 v2 a2 2 0 0 1 -2 2 H6 a2 2 0 0 1 -2 -2 V9 a2 2 0 0 1 2 -2 h2"/></svg></span>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:9px;">
+        <span style="font-size:12px; color:rgba(255,255,255,.82); font-weight:600;">Block Chữ</span>
+        <div style="display:flex; align-items:center; gap:3px; height:48px; padding:0 8px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-2);">
+          <span style="display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:8px; color:var(--text-secondary); font-weight:700; font-size:14px;">B</span>
+          <span style="display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:8px; color:var(--text-secondary); font-style:italic; font-size:14px;">I</span>
+          <span style="display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:8px; color:var(--text-secondary); text-decoration:underline; font-size:14px;">U</span>
+          <span style="display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:8px; color:var(--text-secondary); text-decoration:line-through; font-size:14px;">S</span>
+          <span style="width:1px; height:26px; background:var(--border); margin:0 3px;"></span>
+          <span style="display:inline-flex; align-items:center; height:34px; padding:0 10px; border-radius:8px; color:var(--text-secondary); font-size:13px; font-weight:500; gap:5px;">Body<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9 l6 6 6 -6"/></svg></span>
+          <span style="display:inline-flex; align-items:center; justify-content:center; width:36px; height:34px; border-radius:8px;"><span style="width:15px; height:15px; border-radius:50%; background:var(--swatch, var(--accent)); box-shadow:0 0 0 1px var(--border);"></span></span>
+          <span style="width:1px; height:26px; background:var(--border); margin:0 3px;"></span>
+          <span style="display:inline-flex; align-items:center; gap:5px; height:34px; padding:0 11px; border-radius:8px; color:var(--text-secondary); font-size:13px; font-weight:600;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9 H18 M15 6 l3 3 -3 3"/><path d="M20 15 H6 M9 12 l-3 3 3 3"/></svg>Toán</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ SECTION 4 — RESULT RENDER RULES ============ -->
+  <div style="max-width:1480px; margin:0 auto;">
+    <div style="margin-bottom:18px;">
+      <div style="font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:rgba(255,255,255,.6);">04 · Quy tắc render kết quả</div>
+      <div style="font-size:17px; font-weight:600; color:#fff;">Liền mạch, không khung — phân biệt chỉ bằng màu</div>
+    </div>
+    <div data-theme="light" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:20px;">
+
+      <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; box-shadow:var(--shadow-1);">
+        <div style="position:relative; height:128px; background:var(--bg-app); background-image:repeating-linear-gradient(to bottom, transparent 0, transparent 63px, var(--border) 63px, var(--border) 64px); padding:0 18px;">
+          <div style="display:flex; align-items:flex-end; height:64px; padding-bottom:11px; gap:8px;">
+            <span data-tex="\frac{d}{dx}\left(x^{2}\right)" style="color:var(--text-primary); font-size:18px;"></span>
+            <span data-tex="=\ 2x" style="color:var(--result); font-size:18px;"></span>
+          </div>
+        </div>
+        <div style="padding:12px 16px; border-top:1px solid var(--border);"><div style="font-size:13px; font-weight:600; color:var(--text-primary);">Ngắn → cùng dòng</div><div style="font-size:12px; color:var(--text-muted); margin-top:2px;">Kết quả nối tiếp sau dấu = ngay trên cùng dòng kẻ</div></div>
+      </div>
+
+      <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; box-shadow:var(--shadow-1);">
+        <div style="position:relative; height:128px; background:var(--bg-app); background-image:repeating-linear-gradient(to bottom, transparent 0, transparent 63px, var(--border) 63px, var(--border) 64px); padding:0 18px;">
+          <div style="display:flex; align-items:flex-end; height:64px; padding-bottom:11px;">
+            <span data-tex="\int e^{x}\sin x\,dx" style="color:var(--text-primary); font-size:18px;"></span>
+          </div>
+          <div style="display:flex; align-items:flex-end; height:64px; padding-bottom:11px;">
+            <span data-tex="=\ \tfrac{1}{2}e^{x}\left(\sin x-\cos x\right)+C" style="color:var(--result); font-size:18px;"></span>
+          </div>
+        </div>
+        <div style="padding:12px 16px; border-top:1px solid var(--border);"><div style="font-size:13px; font-weight:600; color:var(--text-primary);">Dài → xuống dòng kẻ kế</div><div style="font-size:12px; color:var(--text-muted); margin-top:2px;">Vẫn không viền, không vạch ngăn input/result</div></div>
+      </div>
+
+      <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; box-shadow:var(--shadow-1);">
+        <div style="position:relative; height:128px; background:var(--bg-app); background-image:repeating-linear-gradient(to bottom, transparent 0, transparent 63px, var(--border) 63px, var(--border) 64px); padding:0 18px;">
+          <div style="display:flex; align-items:flex-end; height:64px; padding-bottom:11px;">
+            <span data-tex="\lim_{x\to 0}\frac{\sin x}{x}" style="color:var(--text-primary); font-size:18px;"></span>
+          </div>
+          <div style="display:flex; align-items:flex-end; height:64px; padding-bottom:11px;">
+            <span data-tex="=\ 1" style="color:var(--result); font-size:18px;"></span>
+          </div>
+        </div>
+        <div style="padding:12px 16px; border-top:1px solid var(--border);"><div style="font-size:13px; font-weight:600; color:var(--text-primary);">Ngữ cảnh cả trang</div><div style="font-size:12px; color:var(--text-muted); margin-top:2px;">Biến định nghĩa ở block khác vẫn có hiệu lực</div></div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  componentDidMount() {
+    this._tries = 0;
+    this.renderMath();
+  }
+  componentWillUnmount() {
+    if (this._t) clearTimeout(this._t);
+  }
+  renderMath() {
+    if (!window.katex || !window.katex.render) {
+      if (this._tries++ < 80) this._t = setTimeout(() => this.renderMath(), 60);
+      return;
+    }
+    document.querySelectorAll('[data-tex]').forEach((el) => {
+      if (el.getAttribute('data-rendered')) return;
+      try {
+        window.katex.render(el.getAttribute('data-tex'), el, {
+          throwOnError: false,
+          displayMode: el.getAttribute('data-display') === '1',
+        });
+        el.setAttribute('data-rendered', '1');
+      } catch (e) {}
+    });
+  }
+}
+</script>
+</body>
+</html>

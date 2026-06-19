@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box}html,body{margin:0}
+    body{font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+    [data-t="L"]{
+      --bg-elevated:#FFFFFF;--bg-subtle:#E7E4DD;--desk:#DAD6CD;
+      --text-secondary:#4A4E57;--text-muted:#868A92;--text-on-accent:#FFFFFF;
+      --border:#E3DFD7;--accent:#0E7C86;--accent-subtle:#DEF1F2;
+      --ink:#0A5A62;--result:#4B3FBF;--error:#B42318;
+      --sh1:0 1px 2px rgba(20,24,40,.06),0 1px 1px rgba(20,24,40,.04);
+      --sh2:0 8px 26px rgba(20,24,40,.16);
+      --sw-teal:#0E7C86;--sw-blue:#2563C9;--sw-green:#137A52;--sw-red:#B42318;
+      --sw-purple:#6D4BD6;--sw-rose:#C2255C;--sw-orange:#B7651B;--sw-slate:#475569;
+    }
+    [data-t="D"]{
+      --bg-elevated:#272B31;--bg-subtle:#15171A;--desk:#0F1113;
+      --text-secondary:#ABAEB4;--text-muted:#767A81;--text-on-accent:#0C111B;
+      --border:#33373D;--accent:#3FB6BE;--accent-subtle:#103438;
+      --ink:#4FC9D1;--result:#9A8CF0;--error:#E5675B;
+      --sh1:0 1px 2px rgba(0,0,0,.4);--sh2:0 10px 30px rgba(0,0,0,.55);
+      --sw-teal:#3FB6BE;--sw-blue:#6AA3F0;--sw-green:#3FBE85;--sw-red:#E5675B;
+      --sw-purple:#A78BF5;--sw-rose:#EC6FA0;--sw-orange:#E0A33E;--sw-slate:#94A3B8;
+    }
+    @keyframes tinhPulse  { 0%,100%{box-shadow:0 0 0 0 rgba(14,124,134,.3)} 55%{box-shadow:0 0 0 9px rgba(14,124,134,0)} }
+    @keyframes tinhPulseD { 0%,100%{box-shadow:0 0 0 0 rgba(63,182,190,.3)} 55%{box-shadow:0 0 0 9px rgba(63,182,190,0)} }
+  </style>
+</helmet>
+
+<div style="background:#434A52;min-height:100vh;padding:44px 48px 80px;">
+
+  <!-- HEADER -->
+  <div style="max-width:960px;margin:0 auto 28px;display:flex;align-items:center;gap:13px;">
+    <span style="display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;background:#0E7C86;color:#fff;flex:none;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 L18 13 L12 21 L6 13 Z"></path><line x1="12" y1="10" x2="12" y2="18"></line></svg></span>
+    <div>
+      <div style="font-size:20px;font-weight:700;color:#fff;letter-spacing:-.01em;">Nib · Tool Dock v2</div>
+      <div style="font-size:12.5px;color:rgba(255,255,255,.5);margin-top:1px;">Nav tách 2 nút · Loại bút cả 2 mode · Bỏ Copy/Xoá · Thu gọn hình vuông</div>
+    </div>
+  </div>
+
+  <!-- ═══ SECTION: LIVE INTERACTIVE DOCK ═══ -->
+  <div style="background:rgba(255,255,255,.07);border-radius:18px;padding:22px 28px;margin-bottom:22px;max-width:960px;">
+    <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.38);margin-bottom:4px;">Dock tương tác</div>
+    <div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:5px;">Bấm để thử · mode switch · flyouts · thu gọn</div>
+    <div style="font-size:13px;color:rgba(255,255,255,.45);margin-bottom:22px;">Bấm ▾ cycle Gõ↔Bút · Bấm ▸ bung flyout · Bấm ⊟ thu gọn / ⊞ mở rộng.</div>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+
+      <!-- ──── LIGHT INTERACTIVE ──── -->
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="font-size:11.5px;font-weight:600;color:rgba(255,255,255,.45);">Light · bấm thử</div>
+        <div data-t="L" style="display:flex;justify-content:flex-end;padding:14px;width:310px;min-height:200px;background:var(--desk);border-radius:16px;background-image:repeating-linear-gradient(to bottom,transparent,transparent 27px,rgba(0,0,0,.04) 28px);">
+
+          <div style="position:relative;width:56px;min-height:{{ dockMinH }};transition:min-height .3s cubic-bezier(.4,0,.2,1);">
+          <!-- EXPANDED DOCK -->
+          <div style="position:absolute;right:0;top:0;display:flex;flex-direction:column;align-items:center;width:56px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:18px;box-shadow:var(--sh2);padding:5px 0 7px;opacity:{{ expOp }};transform:{{ expTr }};pointer-events:{{ expPE }};transition:opacity .25s ease,transform .25s cubic-bezier(.4,0,.2,1);">
+
+            <!-- Drag -->
+            <div style="display:flex;align-items:center;justify-content:center;width:44px;height:17px;cursor:grab;color:var(--text-muted);"><svg width="18" height="8" viewBox="0 0 18 8" fill="currentColor"><circle cx="2" cy="2" r="1.3"></circle><circle cx="9" cy="2" r="1.3"></circle><circle cx="16" cy="2" r="1.3"></circle><circle cx="2" cy="6" r="1.3"></circle><circle cx="9" cy="6" r="1.3"></circle><circle cx="16" cy="6" r="1.3"></circle></svg></div>
+
+            <!-- Mode toggle C -->
+            <span onClick="{{ cycleMode }}" title="Gõ ↔ Bút" style-active="transform:scale(.88)" style="display:flex;align-items:center;justify-content:space-between;width:44px;height:30px;border-radius:9px;background:var(--accent-subtle);color:var(--accent);padding:0 9px;margin:3px 0 4px;cursor:pointer;transition:transform .1s;">{{ modeIcon }}<svg width="8" height="8" viewBox="0 0 10 10" fill="currentColor"><path d="M1 3 L5 7 L9 3 Z"></path></svg></span>
+
+            <span style="width:34px;height:1px;background:var(--border);margin:2px 0 4px;"></span>
+
+            <!-- Pointer tool (cursor / pan) — always -->
+            <span onClick="{{ togglePtrPop }}" title="Con trỏ / Kéo giấy" style-hover="background:var(--bg-subtle)" style-active="transform:scale(.92)" style="position:relative;display:flex;align-items:center;justify-content:center;width:44px;height:40px;border-radius:11px;cursor:pointer;transition:background .15s,transform .1s;background:{{ ptrBtnBg }};color:{{ ptrBtnColor }};">{{ ptrIcon }}<span style="position:absolute;right:5px;bottom:5px;color:var(--text-muted);"><svg width="6" height="6" viewBox="0 0 8 8" fill="currentColor"><path d="M0 8 L8 8 L8 0 Z"></path></svg></span></span>
+
+            <!-- Select tool (rect / lasso) — always -->
+            <span onClick="{{ toggleSelPop }}" title="Vùng chọn" style-hover="background:var(--bg-subtle)" style-active="transform:scale(.92)" style="position:relative;display:flex;align-items:center;justify-content:center;width:44px;height:40px;border-radius:11px;cursor:pointer;transition:background .15s,transform .1s;background:{{ selBtnBg }};color:{{ selBtnColor }};">{{ selIcon }}<span style="position:absolute;right:5px;bottom:5px;color:var(--text-muted);"><svg width="6" height="6" viewBox="0 0 8 8" fill="currentColor"><path d="M0 8 L8 8 L8 0 Z"></path></svg></span></span>
+
+            <!-- Pen type — always (Gõ: no eraser; Bút: +eraser) -->
+            <span onClick="{{ togglePenPop }}" title="Loại bút" style-hover="background:var(--bg-subtle)" style-active="transform:scale(.92)" style="position:relative;display:flex;align-items:center;justify-content:center;width:44px;height:40px;border-radius:11px;cursor:pointer;transition:background .15s,transform .1s;background:{{ penBtnBg }};color:{{ penBtnColor }};">{{ penIcon }}<span style="position:absolute;right:5px;bottom:5px;color:var(--text-muted);"><svg width="6" height="6" viewBox="0 0 8 8" fill="currentColor"><path d="M0 8 L8 8 L8 0 Z"></path></svg></span></span>
+
+            <span style="width:30px;height:1px;background:var(--border);margin:4px 0;"></span>
+
+            <!-- Size (mode-aware: Cỡ nét ↔ Cỡ chữ) -->
+            <span onClick="{{ toggleSizePop }}" title="{{ sizeTitle }}" style-hover="background:var(--bg-subtle)" style-active="transform:scale(.92)" style="position:relative;display:flex;align-items:center;justify-content:center;width:44px;height:40px;border-radius:11px;cursor:pointer;color:var(--text-secondary);transition:background .15s,transform .1s;">{{ sizeIcon }}<span style="position:absolute;right:5px;bottom:5px;color:var(--text-muted);"><svg width="6" height="6" viewBox="0 0 8 8" fill="currentColor"><path d="M0 8 L8 8 L8 0 Z"></path></svg></span></span>
+
+            <!-- Color — always -->
+            <span onClick="{{ toggleColorPop }}" title="Màu mực" style-hover="background:var(--bg-subtle)" style-active="transform:scale(.92)" style="position:relative;display:flex;align-items:center;justify-content:center;width:44px;height:40px;border-radius:11px;cursor:pointer;transition:background .15s,transform .1s;"><span style="width:16px;height:16px;border-radius:50%;background:var(--ink);box-shadow:0 0 0 1px var(--border);"></span><span style="position:absolute;right:5px;bottom:5px;color:var(--text-muted);"><svg width="6" height="6" viewBox="0 0 8 8" fill="currentColor"><path d="M0 8 L8 8 L8 0 Z"></path></svg></span></span>
+
+            <span style="width:30px;height:1px;background:var(--border);margin:4px 0;"></span>
+
+            <!-- Convert -->
+            <span title="Chuyển dạng" style-hover="background:var(--bg-subtle)" style-active="transform:scale(.92)" style="display:flex;align-items:center;justify-content:center;width:44px;height:38px;border-radius:11px;cursor:pointer;color:var(--text-secondary);transition:background .15s,transform .1s;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9 H17 M14 6 l3 3 -3 3"></path><path d="M20 15 H7 M10 12 l-3 3 3 3"></path></svg></span>
+
+            <!-- Định dạng — Gõ only -->
+            <div style="max-height:{{ fmtMaxH }};opacity:{{ fmtBtnOp }};overflow:hidden;pointer-events:{{ fmtBtnPE }};transition:max-height .24s cubic-bezier(.4,0,.2,1),opacity .2s ease;">
+              <span onClick="{{ toggleFmtPop }}" title="Định dạng" style-hover="background:var(--bg-subtle)" style-active="transform:scale(.92)" style="position:relative;display:flex;align-items:center;justify-content:center;width:44px;height:38px;border-radius:11px;cursor:pointer;color:var(--text-secondary);transition:background .15s,transform .1s;"><span style="font-size:16px;font-weight:700;line-height:1;font-family:Georgia,'Times New Roman',serif;">T</span><span style="position:absolute;right:5px;bottom:5px;color:var(--text-muted);"><svg width="6" height="6" viewBox="0 0 8 8" fill="currentColor"><path d="M0 8 L8 8 L8 0 Z"></path></svg></span></span>
+            </div>
+
+            <span style="width:30px;height:1px;background:var(--border);margin:4px 0;"></span>
+
+            <!-- Tính -->
+            <span title="Tính" style-active="transform:scale(.93)" style="display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:13px;background:var(--accent);color:var(--text-on-accent);box-shadow:var(--sh1);cursor:pointer;transition:transform .1s;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="9" x2="11" y2="9"></line><line x1="3" y1="14" x2="11" y2="14"></line><path d="M14.5 11.5 H21 M18 8.5 l3 3 -3 3"></path></svg></span>
+
+            <!-- Collapse button -->
+            <span onClick="{{ doCollapse }}" title="Thu gọn" style-hover="background:var(--bg-subtle)" style-active="transform:scale(.88)" style="display:flex;align-items:center;justify-content:center;width:38px;height:22px;margin-top:5px;border-radius:7px;cursor:pointer;color:var(--text-muted);transition:background .15s,transform .1s;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="6" y1="9" x2="18" y2="9"></line><line x1="6" y1="15" x2="18" y2="15"></line></svg></span>
+
+            <!-- ── FLYOUTS ── -->
+            <!-- Pointer flyout -->
+            <div style="position:absolute;right:64px;top:70px;width:182px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:12px;box-shadow:var(--sh2);padding:6px;z-index:20;transition:opacity .15s,transform .15s;opacity:{{ ptrPopOp }};transform:{{ ptrPopTr }};pointer-events:{{ ptrPopPE }};">
+              <div style="font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);padding:4px 8px 5px;">Con trỏ</div>
+              <div onClick="{{ setCursor }}" style-hover="background:var(--bg-subtle)" style="display:flex;align-items:center;gap:10px;height:34px;padding:0 9px;border-radius:8px;cursor:pointer;transition:background .1s;background:{{ cursorBg }};color:{{ cursorColor }};"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3 L19 11 L12.5 13 L10 20 Z"></path></svg><span style="font-size:13px;font-weight:500;">Con trỏ</span></div>
+              <div onClick="{{ setPan }}" style-hover="background:var(--bg-subtle)" style="display:flex;align-items:center;gap:10px;height:34px;padding:0 9px;border-radius:8px;cursor:pointer;transition:background .1s;background:{{ panBg }};color:{{ panColor }};"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11v-2a2 2 0 0 0-4 0v2M14 10V7a2 2 0 0 0-4 0v3M10 10V7a2 2 0 0 0-4 0v8l-1.5-1.5a1.5 1.5 0 0 0-2.12 2.12L6 19a6 6 0 0 0 12 0v-8a2 2 0 0 0-4 0v2"></path></svg><span style="font-size:13px;">Kéo thả giấy</span></div>
+            </div>
+
+            <!-- Select flyout -->
+            <div style="position:absolute;right:64px;top:110px;width:186px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:12px;box-shadow:var(--sh2);padding:6px;z-index:20;transition:opacity .15s,transform .15s;opacity:{{ selPopOp }};transform:{{ selPopTr }};pointer-events:{{ selPopPE }};">
+              <div style="font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);padding:4px 8px 5px;">Vùng chọn</div>
+              <div onClick="{{ setRect }}" style-hover="background:var(--bg-subtle)" style="display:flex;align-items:center;gap:10px;height:34px;padding:0 9px;border-radius:8px;cursor:pointer;transition:background .1s;background:{{ rectBg }};color:{{ rectColor }};"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-dasharray="3 2.4" stroke-linecap="round"><rect x="3.5" y="5.5" width="17" height="13" rx="1.5"></rect></svg><span style="font-size:13px;font-weight:500;">Chữ nhật</span></div>
+              <div onClick="{{ setLasso }}" style-hover="background:var(--bg-subtle)" style="display:flex;align-items:center;gap:10px;height:34px;padding:0 9px;border-radius:8px;cursor:pointer;transition:background .1s;background:{{ lassoBg }};color:{{ lassoColor }};"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-dasharray="2.8 2.6" stroke-linecap="round"><path d="M4 10 C4 5 20 5 20 10 C20 14 12 16 9 15"></path></svg><span style="font-size:13px;">Lasso tự do</span></div>
+            </div>
+
+            <!-- Pen type flyout -->
+            <div style="position:absolute;right:64px;top:150px;width:172px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:12px;box-shadow:var(--sh2);padding:6px;z-index:20;transition:opacity .15s,transform .15s;opacity:{{ penPopOp }};transform:{{ penPopTr }};pointer-events:{{ penPopPE }};">
+              <div style="font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);padding:4px 8px 5px;">Loại bút</div>
+              <div onClick="{{ setNib }}" style-hover="background:var(--bg-subtle)" style="display:flex;align-items:center;gap:10px;height:34px;padding:0 9px;border-radius:8px;cursor:pointer;transition:background .1s;background:{{ nibBg }};color:{{ nibColor }};"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 L18 13 L12 21 L6 13 Z"></path><line x1="12" y1="10" x2="12" y2="18"></line></svg><span style="font-size:13px;font-weight:500;">Bút ngòi</span></div>
+              <div onClick="{{ setMarker }}" style-hover="background:var(--bg-subtle)" style="display:flex;align-items:center;gap:10px;height:34px;padding:0 9px;border-radius:8px;cursor:pointer;transition:background .1s;background:{{ markerBg }};color:{{ markerColor }};"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18 l9 -12 4 3 -9 12 -5 1 1 -4 Z"></path><line x1="4" y1="21" x2="13" y2="21"></line></svg><span style="font-size:13px;">Bút nhớ</span></div>
+              <sc-if value="{{ isPen }}" hint-placeholder-val="{{ true }}">
+                <div onClick="{{ setEraser }}" style-hover="background:var(--bg-subtle)" style="display:flex;align-items:center;gap:10px;height:34px;padding:0 9px;border-radius:8px;cursor:pointer;transition:background .1s;background:{{ ersBg }};color:{{ ersColor }};"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 l-3 -3 9 -9 6 6 -6 6 Z"></path><line x1="4" y1="20" x2="16" y2="20"></line></svg><span style="font-size:13px;">Tẩy nét</span></div>
+              </sc-if>
+            </div>
+
+            <!-- Size flyout -->
+            <div style="position:absolute;right:64px;top:234px;width:148px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:12px;box-shadow:var(--sh2);padding:6px;z-index:20;transition:opacity .15s,transform .15s;opacity:{{ sizePopOp }};transform:{{ sizePopTr }};pointer-events:{{ sizePopPE }};">
+              <div style="font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);padding:4px 8px 5px;">{{ sizeTitle }}</div>
+              <sc-if value="{{ isPen }}" hint-placeholder-val="{{ true }}">
+                <div style-hover="background:var(--bg-subtle)" style="display:flex;align-items:center;gap:10px;height:32px;padding:0 9px;border-radius:8px;cursor:pointer;transition:background .1s;color:var(--text-secondary);"><span style="width:6px;height:6px;border-radius:50%;background:var(--ink);"></span><span style="font-size:13px;">Mảnh · 2px</span></div>
+                <div style="display:flex;align-items:center;gap:10px;height:32px;padding:0 9px;border-radius:8px;background:var(--accent-subtle);color:var(--accent);"><span style="width:11px;height:11px;border-radius:50%;background:var(--ink);"></span><span style="font-size:13px;font-weight:600;">Vừa · 4px</span></div>
+                <div style-hover="background:var(--bg-subtle)" style="display:flex;align-items:center;gap:10px;height:32px;padding:0 9px;border-radius:8px;cursor:pointer;transition:background .1s;color:var(--text-secondary);"><span style="width:15px;height:15px;border-radius:50%;background:var(--ink);"></span><span style="font-size:13px;">Đậm · 6px</span></div>
+              </sc-if>
+              <sc-if value="{{ isType }}" hint-placeholder-val="{{ false }}">
+                <div style-hover="background:var(--bg-subtle)" style="display:flex;align-items:center;gap:10px;height:32px;padding:0 9px;border-radius:8px;cursor:pointer;transition:background .1s;color:var(--text-secondary);"><span style="font-size:11px;font-weight:700;width:16px;text-align:center;">S</span><span style="font-size:13px;">Nhỏ · 14px</span></div>
+                <div style="display:flex;align-items:center;gap:10px;height:32px;padding:0 9px;border-radius:8px;background:var(--accent-subtle);color:var(--accent);"><span style="font-size:14px;font-weight:700;width:16px;text-align:center;">M</span><span style="font-size:13px;font-weight:600;">Vừa · 18px</span></div>
+                <div style-hover="background:var(--bg-subtle)" style="display:flex;align-items:center;gap:10px;height:32px;padding:0 9px;border-radius:8px;cursor:pointer;transition:background .1s;color:var(--text-secondary);"><span style="font-size:17px;font-weight:700;width:16px;text-align:center;">L</span><span style="font-size:13px;">Lớn · 24px</span></div>
+              </sc-if>
+            </div>
+
+            <!-- Format flyout (Gõ only) -->
+            <div style="position:absolute;right:64px;top:340px;width:186px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:12px;box-shadow:var(--sh2);padding:8px;z-index:20;transition:opacity .15s,transform .15s;opacity:{{ fmtPopOp }};transform:{{ fmtPopTr }};pointer-events:{{ fmtPopPE }};">
+              <div style="font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);padding:2px 4px 8px;">Định dạng</div>
+              <div style="display:flex;gap:5px;margin-bottom:8px;">
+                <span style-hover="background:var(--bg-subtle)" style="flex:1;display:flex;align-items:center;justify-content:center;height:32px;border-radius:8px;background:var(--accent-subtle);color:var(--accent);font-size:14px;font-weight:800;cursor:pointer;transition:background .1s;">B</span>
+                <span style-hover="background:var(--bg-subtle)" style="flex:1;display:flex;align-items:center;justify-content:center;height:32px;border-radius:8px;color:var(--text-secondary);font-size:14px;font-style:italic;font-weight:600;cursor:pointer;transition:background .1s;">I</span>
+                <span style-hover="background:var(--bg-subtle)" style="flex:1;display:flex;align-items:center;justify-content:center;height:32px;border-radius:8px;color:var(--text-secondary);font-size:14px;font-weight:600;text-decoration:underline;cursor:pointer;transition:background .1s;">U</span>
+                <span style-hover="background:var(--bg-subtle)" style="flex:1;display:flex;align-items:center;justify-content:center;height:32px;border-radius:8px;color:var(--text-secondary);font-size:14px;font-weight:600;text-decoration:line-through;cursor:pointer;transition:background .1s;">S</span>
+              </div>
+              
+              <div style="display:flex;gap:5px;">
+                
+                
+                
+              </div>
+            </div>
+
+            <!-- Color flyout -->
+            <div style="position:absolute;right:64px;top:274px;width:172px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:12px;box-shadow:var(--sh2);padding:8px;z-index:20;transition:opacity .15s,transform .15s;opacity:{{ colorPopOp }};transform:{{ colorPopTr }};pointer-events:{{ colorPopPE }};">
+              <div style="font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);padding:2px 4px 8px;">Màu mực</div>
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:9px;padding:0 3px;">
+                <span style-hover="transform:scale(1.15)" style="justify-self:center;width:24px;height:24px;border-radius:50%;background:var(--sw-teal);box-shadow:0 0 0 2px var(--bg-elevated),0 0 0 3px var(--accent);cursor:pointer;transition:transform .12s;"></span>
+                <span style-hover="transform:scale(1.15)" style="justify-self:center;width:24px;height:24px;border-radius:50%;background:var(--sw-blue);box-shadow:0 0 0 1px var(--border);cursor:pointer;transition:transform .12s;"></span>
+                <span style-hover="transform:scale(1.15)" style="justify-self:center;width:24px;height:24px;border-radius:50%;background:var(--sw-green);box-shadow:0 0 0 1px var(--border);cursor:pointer;transition:transform .12s;"></span>
+                <span style-hover="transform:scale(1.15)" style="justify-self:center;width:24px;height:24px;border-radius:50%;background:var(--sw-red);box-shadow:0 0 0 1px var(--border);cursor:pointer;transition:transform .12s;"></span>
+                <span style-hover="transform:scale(1.15)" style="justify-self:center;width:24px;height:24px;border-radius:50%;background:var(--sw-purple);box-shadow:0 0 0 1px var(--border);cursor:pointer;transition:transform .12s;"></span>
+                <span style-hover="transform:scale(1.15)" style="justify-self:center;width:24px;height:24px;border-radius:50%;background:var(--sw-rose);box-shadow:0 0 0 1px var(--border);cursor:pointer;transition:transform .12s;"></span>
+                <span style-hover="transform:scale(1.15)" style="justify-self:center;width:24px;height:24px;border-radius:50%;background:var(--sw-orange);box-shadow:0 0 0 1px var(--border);cursor:pointer;transition:transform .12s;"></span>
+                <span style-hover="transform:scale(1.15)" style="justify-self:center;width:24px;height:24px;border-radius:50%;background:var(--sw-slate);box-shadow:0 0 0 1px var(--border);cursor:pointer;transition:transform .12s;"></span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- COLLAPSED DOCK -->
+          <div onClick="{{ doExpand }}" style="position:absolute;right:0;top:0;display:flex;align-items:center;justify-content:center;width:56px;height:56px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:16px;box-shadow:var(--sh2);cursor:pointer;opacity:{{ colOp }};transform:{{ colTr }};pointer-events:{{ colPE }};transition:opacity .25s ease,transform .25s cubic-bezier(.4,0,.2,1);" style-hover="box-shadow:var(--sh2),0 0 0 2px var(--accent-subtle)">
+            <span style="display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;color:var(--text-secondary);">{{ penIcon }}</span>
+          </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ──── DARK STATIC (Bút mode, expanded) ──── -->
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="font-size:11.5px;font-weight:600;color:rgba(255,255,255,.4);">Dark · Bút · mở rộng</div>
+        <div data-t="D" style="display:flex;justify-content:flex-end;padding:14px;width:200px;background:var(--desk);border-radius:16px;background-image:repeating-linear-gradient(to bottom,transparent,transparent 27px,rgba(255,255,255,.03) 28px);">
+          <div style="display:flex;flex-direction:column;align-items:center;width:56px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:18px;box-shadow:var(--sh2);padding:5px 0 7px;">
+            <div style="display:flex;align-items:center;justify-content:center;width:44px;height:17px;color:var(--text-muted);"><svg width="18" height="8" viewBox="0 0 18 8" fill="currentColor"><circle cx="2" cy="2" r="1.3"></circle><circle cx="9" cy="2" r="1.3"></circle><circle cx="16" cy="2" r="1.3"></circle><circle cx="2" cy="6" r="1.3"></circle><circle cx="9" cy="6" r="1.3"></circle><circle cx="16" cy="6" r="1.3"></circle></svg></div>
+            <span style="display:flex;align-items:center;justify-content:space-between;width:44px;height:30px;border-radius:9px;background:var(--accent-subtle);color:var(--accent);padding:0 9px;margin:3px 0 4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 L18 13 L12 21 L6 13 Z"></path><line x1="12" y1="10" x2="12" y2="18"></line></svg><svg width="8" height="8" viewBox="0 0 10 10" fill="currentColor"><path d="M1 3 L5 7 L9 3 Z"></path></svg></span>
+            <span style="width:34px;height:1px;background:var(--border);margin:2px 0 4px;"></span>
+            <!-- Pointer -->
+            <span style="position:relative;display:flex;align-items:center;justify-content:center;width:44px;height:40px;border-radius:11px;color:var(--text-secondary);"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3 L19 11 L12.5 13 L10 20 Z"></path></svg><span style="position:absolute;right:5px;bottom:5px;color:var(--text-muted);"><svg width="6" height="6" viewBox="0 0 8 8" fill="currentColor"><path d="M0 8 L8 8 L8 0 Z"></path></svg></span></span>
+            <!-- Select -->
+            <span style="position:relative;display:flex;align-items:center;justify-content:center;width:44px;height:40px;border-radius:11px;color:var(--text-secondary);"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-dasharray="3 2.4" stroke-linecap="round"><rect x="3.5" y="5.5" width="17" height="13" rx="1.5"></rect></svg><span style="position:absolute;right:5px;bottom:5px;color:var(--text-muted);"><svg width="6" height="6" viewBox="0 0 8 8" fill="currentColor"><path d="M0 8 L8 8 L8 0 Z"></path></svg></span></span>
+            <!-- Pen type -->
+            <span style="position:relative;display:flex;align-items:center;justify-content:center;width:44px;height:40px;border-radius:11px;background:var(--accent-subtle);color:var(--accent);"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 L18 13 L12 21 L6 13 Z"></path><line x1="12" y1="10" x2="12" y2="18"></line></svg><span style="position:absolute;right:5px;bottom:5px;color:var(--accent);opacity:.5;"><svg width="6" height="6" viewBox="0 0 8 8" fill="currentColor"><path d="M0 8 L8 8 L8 0 Z"></path></svg></span></span>
+            <span style="width:30px;height:1px;background:var(--border);margin:4px 0;"></span>
+            <!-- Size -->
+            <span style="position:relative;display:flex;align-items:center;justify-content:center;width:44px;height:38px;border-radius:11px;color:var(--text-secondary);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><line x1="5" y1="7" x2="19" y2="7" stroke-width="1.2"></line><line x1="5" y1="12" x2="19" y2="12" stroke-width="2.6"></line><line x1="5" y1="17" x2="19" y2="17" stroke-width="4.2"></line></svg><span style="position:absolute;right:5px;bottom:5px;color:var(--text-muted);"><svg width="6" height="6" viewBox="0 0 8 8" fill="currentColor"><path d="M0 8 L8 8 L8 0 Z"></path></svg></span></span>
+            <!-- Color -->
+            <span style="position:relative;display:flex;align-items:center;justify-content:center;width:44px;height:38px;border-radius:11px;"><span style="width:16px;height:16px;border-radius:50%;background:var(--ink);box-shadow:0 0 0 1px var(--border);"></span><span style="position:absolute;right:5px;bottom:5px;color:var(--text-muted);"><svg width="6" height="6" viewBox="0 0 8 8" fill="currentColor"><path d="M0 8 L8 8 L8 0 Z"></path></svg></span></span>
+            <span style="width:30px;height:1px;background:var(--border);margin:4px 0;"></span>
+            <!-- Convert -->
+            <span style="display:flex;align-items:center;justify-content:center;width:44px;height:36px;border-radius:11px;color:var(--text-secondary);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9 H17 M14 6 l3 3 -3 3"></path><path d="M20 15 H7 M10 12 l-3 3 3 3"></path></svg></span>
+            <span style="width:30px;height:1px;background:var(--border);margin:4px 0;"></span>
+            <!-- Tính -->
+            <span style="display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:13px;background:var(--accent);color:var(--text-on-accent);box-shadow:var(--sh1);"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="9" x2="11" y2="9"></line><line x1="3" y1="14" x2="11" y2="14"></line><path d="M14.5 11.5 H21 M18 8.5 l3 3 -3 3"></path></svg></span>
+            <!-- Collapse -->
+            <span style="display:flex;align-items:center;justify-content:center;width:38px;height:22px;margin-top:5px;border-radius:7px;color:var(--text-muted);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="6" y1="9" x2="18" y2="9"></line><line x1="6" y1="15" x2="18" y2="15"></line></svg></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ──── DARK COLLAPSED ──── -->
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="font-size:11.5px;font-weight:600;color:rgba(255,255,255,.4);">Dark · thu gọn</div>
+        <div data-t="D" style="display:flex;justify-content:flex-end;padding:14px;width:120px;min-height:140px;background:var(--desk);border-radius:16px;background-image:repeating-linear-gradient(to bottom,transparent,transparent 27px,rgba(255,255,255,.03) 28px);">
+          <div style="display:flex;align-items:center;justify-content:center;width:56px;height:56px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:16px;box-shadow:var(--sh2);cursor:pointer;">
+            <span style="display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;color:var(--text-secondary);"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 L18 13 L12 21 L6 13 Z"></path><line x1="12" y1="10" x2="12" y2="18"></line></svg></span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══ SECTION: NOTES ═══ -->
+  <div style="background:rgba(255,255,255,.07);border-radius:18px;padding:20px 28px;max-width:960px;">
+    <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.38);margin-bottom:10px;">Thay đổi v2</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px 28px;">
+      <div style="display:flex;gap:9px;"><span style="flex:none;color:#3FB6BE;font-weight:700;font-size:13px;">→</span><span style="font-size:13px;color:rgba(255,255,255,.6);line-height:1.5;"><b style="color:#fff;">Nav tách 2 nút.</b> Nút 1: con trỏ + kéo giấy (pointer). Nút 2: vùng chữ nhật + lasso (selection). Mỗi nút ▸ flyout riêng.</span></div>
+      <div style="display:flex;gap:9px;"><span style="flex:none;color:#3FB6BE;font-weight:700;font-size:13px;">→</span><span style="font-size:13px;color:rgba(255,255,255,.6);line-height:1.5;"><b style="color:#fff;">Loại bút cả 2 mode.</b> Gõ: ngòi + nhớ (bỏ tẩy). Bút: ngòi + nhớ + tẩy. Luôn hiện, cùng animation transition.</span></div>
+      <div style="display:flex;gap:9px;"><span style="flex:none;color:#3FB6BE;font-weight:700;font-size:13px;">→</span><span style="font-size:13px;color:rgba(255,255,255,.6);line-height:1.5;"><b style="color:#fff;">Context gọn.</b> Chỉ giữ Convert (⇄). Bỏ Copy · Nhân đôi · Xoá — chuyển sang menu ngữ cảnh long-press hoặc chuột phải.</span></div>
+      <div style="display:flex;gap:9px;"><span style="flex:none;color:#3FB6BE;font-weight:700;font-size:13px;">→</span><span style="font-size:13px;color:rgba(255,255,255,.6);line-height:1.5;"><b style="color:#fff;">Thu gọn mới.</b> Nút ═ ở đáy. Trạng thái gọn: hình vuông 56×56px bo 16px, hiện icon bút active. Bấm vào bung lại.</span></div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { mode: 'pen', openPop: null, collapsed: false, ptrTool: 'cursor', selTool: 'rect', penTool: 'nib' };
+
+  renderVals() {
+    const s = this.state;
+    const isPen = s.mode === 'pen';
+    const C = React.createElement;
+
+    const mkSvg = (w, h, sw, extra, ch) =>
+      C('svg', Object.assign({ width: String(w), height: String(h), viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: String(sw || 1.7), strokeLinecap: 'round', strokeLinejoin: 'round' }, extra || {}), ...ch);
+
+    const kbdIcon = mkSvg(15, 15, 1.8, {}, [
+      C('rect', { key: 'r', x: '2', y: '6', width: '20', height: '13', rx: '2.5' }),
+      C('circle', { key: 'c1', cx: '6', cy: '11', r: '1.4', fill: 'currentColor', stroke: 'none' }),
+      C('circle', { key: 'c2', cx: '10', cy: '11', r: '1.4', fill: 'currentColor', stroke: 'none' }),
+      C('circle', { key: 'c3', cx: '14', cy: '11', r: '1.4', fill: 'currentColor', stroke: 'none' }),
+      C('circle', { key: 'c4', cx: '18', cy: '11', r: '1.4', fill: 'currentColor', stroke: 'none' }),
+      C('line',   { key: 'l', x1: '7', y1: '15', x2: '17', y2: '15', strokeWidth: '1.7' }),
+    ]);
+    const nibIcon = mkSvg(15, 15, 1.9, {}, [
+      C('path', { key: 'p', d: 'M12 3 L18 13 L12 21 L6 13 Z' }),
+      C('line', { key: 'l', x1: '12', y1: '10', x2: '12', y2: '18' }),
+    ]);
+
+    const ptrIcons = {
+      cursor: mkSvg(17, 17, 1.7, {}, [C('path', { key: 'p', d: 'M5 3 L19 11 L12.5 13 L10 20 Z' })]),
+      pan:    mkSvg(17, 17, 1.7, {}, [C('path', { key: 'p', d: 'M18 11v-2a2 2 0 0 0-4 0v2M14 10V7a2 2 0 0 0-4 0v3M10 10V7a2 2 0 0 0-4 0v8l-1.5-1.5a1.5 1.5 0 0 0-2.12 2.12L6 19a6 6 0 0 0 12 0v-8a2 2 0 0 0-4 0v2' })]),
+    };
+    const selIcons = {
+      rect:  mkSvg(17, 17, 1.7, { strokeDasharray: '3 2.4' }, [C('rect', { key: 'r', x: '3.5', y: '5.5', width: '17', height: '13', rx: '1.5' })]),
+      lasso: mkSvg(17, 17, 1.7, { strokeDasharray: '2.8 2.6' }, [C('path', { key: 'p', d: 'M4 10 C4 5 20 5 20 10 C20 14 12 16 9 15' })]),
+    };
+    const penIcons = {
+      nib:    mkSvg(17, 17, 1.8, {}, [C('path', { key: 'p', d: 'M12 3 L18 13 L12 21 L6 13 Z' }), C('line', { key: 'l', x1: '12', y1: '10', x2: '12', y2: '18' })]),
+      marker: mkSvg(17, 17, 1.7, {}, [C('path', { key: 'p', d: 'M6 18 l9 -12 4 3 -9 12 -5 1 1 -4 Z' }), C('line', { key: 'l', x1: '4', y1: '21', x2: '13', y2: '21' })]),
+      eraser: mkSvg(17, 17, 1.7, {}, [C('path', { key: 'p', d: 'M7 17 l-3 -3 9 -9 6 6 -6 6 Z' }), C('line', { key: 'l', x1: '4', y1: '20', x2: '16', y2: '20' })]),
+    };
+    const sizeIconPen = C('svg', { width:'18', height:'18', viewBox:'0 0 24 24', fill:'none', stroke:'currentColor', strokeLinecap:'round' },
+      C('line', { key:'a', x1:'5', y1:'7',  x2:'19', y2:'7',  strokeWidth:'1.2' }),
+      C('line', { key:'b', x1:'5', y1:'12', x2:'19', y2:'12', strokeWidth:'2.6' }),
+      C('line', { key:'c', x1:'5', y1:'17', x2:'19', y2:'17', strokeWidth:'4.2' })
+    );
+    const sizeIconType = C('svg', { width:'17', height:'17', viewBox:'0 0 24 24', fill:'none', stroke:'currentColor', strokeWidth:'1.7', strokeLinecap:'round', strokeLinejoin:'round' },
+      C('path', { key:'p', d:'M4 7 h16 M12 7 v13 M8 20 h8' })
+    );
+
+    const tog = k => () => this.setState(p => ({ openPop: p.openPop === k ? null : k }));
+    const vis = k => {
+      const open = s.openPop === k;
+      return { op: open ? '1' : '0', pe: open ? 'auto' : 'none', tr: open ? 'translateX(0) scale(1)' : 'translateX(9px) scale(.97)' };
+    };
+    const row = (v, k) => ({ bg: s[k] === v ? 'var(--accent-subtle)' : 'transparent', color: s[k] === v ? 'var(--accent)' : 'var(--text-secondary)' });
+
+    const ptr = vis('ptr'), sel = vis('sel'), pen = vis('pen'), sz = vis('size'), cl = vis('color'), fmt = vis('fmt');
+    const isExp = !s.collapsed;
+
+    return {
+      isPen, isType: !isPen,
+      modeIcon: isPen ? nibIcon : kbdIcon,
+      cycleMode: () => this.setState(p => ({ mode: p.mode === 'type' ? 'pen' : 'type', openPop: null })),
+
+      // Collapse / expand crossfade
+      expOp: isExp ? '1' : '0',
+      expTr: isExp ? 'scale(1)' : 'scale(.92)',
+      expPE: isExp ? 'auto' : 'none',
+      colOp: isExp ? '0' : '1',
+      colTr: isExp ? 'scale(.92)' : 'scale(1)',
+      colPE: isExp ? 'none' : 'auto',
+      dockMinH: isExp ? '460px' : '56px',
+      doCollapse: () => this.setState({ collapsed: true, openPop: null }),
+      doExpand:   () => this.setState({ collapsed: false }),
+
+      // Định dạng — Gõ only (slide in/out)
+      fmtMaxH:  isPen ? '0px' : '46px',
+      fmtBtnOp: isPen ? '0' : '1',
+      fmtBtnPE: isPen ? 'none' : 'auto',
+      toggleFmtPop: tog('fmt'),
+      fmtPopOp: fmt.op, fmtPopTr: fmt.tr, fmtPopPE: fmt.pe,
+
+      ptrIcon: ptrIcons[s.ptrTool],
+      togglePtrPop: tog('ptr'),
+      ptrBtnBg:    s.openPop === 'ptr' ? 'var(--accent-subtle)' : 'transparent',
+      ptrBtnColor: s.openPop === 'ptr' ? 'var(--accent)' : 'var(--text-secondary)',
+      ptrPopOp: ptr.op, ptrPopTr: ptr.tr, ptrPopPE: ptr.pe,
+      cursorBg: row('cursor','ptrTool').bg, cursorColor: row('cursor','ptrTool').color,
+      panBg:    row('pan','ptrTool').bg,    panColor:    row('pan','ptrTool').color,
+      setCursor: () => this.setState({ ptrTool: 'cursor', openPop: null }),
+      setPan:    () => this.setState({ ptrTool: 'pan',    openPop: null }),
+
+      selIcon: selIcons[s.selTool],
+      toggleSelPop: tog('sel'),
+      selBtnBg:    s.openPop === 'sel' ? 'var(--accent-subtle)' : 'transparent',
+      selBtnColor: s.openPop === 'sel' ? 'var(--accent)' : 'var(--text-secondary)',
+      selPopOp: sel.op, selPopTr: sel.tr, selPopPE: sel.pe,
+      rectBg:  row('rect','selTool').bg,  rectColor:  row('rect','selTool').color,
+      lassoBg: row('lasso','selTool').bg, lassoColor: row('lasso','selTool').color,
+      setRect:  () => this.setState({ selTool: 'rect',  openPop: null }),
+      setLasso: () => this.setState({ selTool: 'lasso', openPop: null }),
+
+      penIcon: penIcons[s.penTool],
+      togglePenPop: tog('pen'),
+      penBtnBg:    s.openPop === 'pen' ? 'var(--accent-subtle)' : 'transparent',
+      penBtnColor: s.openPop === 'pen' ? 'var(--accent)' : 'var(--text-secondary)',
+      penPopOp: pen.op, penPopTr: pen.tr, penPopPE: pen.pe,
+      nibBg:    row('nib','penTool').bg,    nibColor:    row('nib','penTool').color,
+      markerBg: row('marker','penTool').bg, markerColor: row('marker','penTool').color,
+      ersBg:    row('eraser','penTool').bg, ersColor:    row('eraser','penTool').color,
+      setNib:    () => this.setState({ penTool: 'nib',    openPop: null }),
+      setMarker: () => this.setState({ penTool: 'marker', openPop: null }),
+      setEraser: () => this.setState({ penTool: 'eraser', openPop: null }),
+
+      sizeTitle: isPen ? 'Cỡ nét' : 'Cỡ chữ',
+      sizeIcon:  isPen ? sizeIconPen : sizeIconType,
+      toggleSizePop:  tog('size'),
+      sizePopOp: sz.op, sizePopTr: sz.tr, sizePopPE: sz.pe,
+
+      toggleColorPop: tog('color'),
+      colorPopOp: cl.op, colorPopTr: cl.tr, colorPopPE: cl.pe,
+    };
+  }
+}
+</script>
+</body>
+</html>
