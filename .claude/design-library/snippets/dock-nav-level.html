@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<!--
+  SNIPPET: dock-nav-level.html
+  Pattern: Dock dọc NAV level (UnifiedDock — level="nav" đang hiện)
+  Component thật: src/components/UnifiedDock/UnifiedDock.tsx
+                  src/components/UnifiedDock/NavLevel.tsx
+                  src/components/UnifiedDock/DragHandle.tsx
+  CSS thật được link: tokens.css + dock.css
+  DOM khớp: UnifiedDock.tsx dòng 305–495, NavLevel.tsx dòng 33–84
+
+  CÁCH DÙNG:
+  1. Copy vào docs/design-artifacts/<tên>.html
+  2. Đổi đường dẫn CSS:
+       tokens.css → ../../src/styles/tokens.css
+       dock.css   → ../../src/components/UnifiedDock/dock.css
+  3. Xoá override ".nib-dock-anchor { position: absolute }" bên dưới
+     (thật app dùng position:fixed portaled vào body; override chỉ cho demo tĩnh)
+  4. Verify:
+       grep -rnE "#[0-9a-fA-F]{3,8}" <file>   = rỗng
+       grep -n "nib-dock__nav-btn" <file>      = rỗng   (class cũ, đã xoá)
+       grep -n "nib-dock__account" <file>      = rỗng   (account chip đã bỏ 2026-06-18)
+       grep -n "src/components" <file>         ≥ 1
+-->
+<html lang="en" data-theme="dark" style="min-width:1024px;height:100%">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1024">
+  <title>Dock NAV Level — Nib Design Snippet</title>
+
+  <!-- CSS component thật — KHÔNG viết lại inline -->
+  <link rel="stylesheet" href="../../../src/styles/tokens.css">
+  <link rel="stylesheet" href="../../../src/components/UnifiedDock/dock.css">
+
+  <style>
+    /* ── Demo setup only — KHÔNG copy vào artifact ── */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      font-family: var(--font-ui);
+      color: var(--text-primary);
+      background-color: var(--desk);
+    }
+    /* Demo canvas: ruled paper background để dock trông đúng context */
+    .demo-bg {
+      position: relative;
+      width: 100%;
+      min-height: 100vh;
+      background-image: repeating-linear-gradient(
+        to bottom,
+        transparent 0,
+        transparent 63px,
+        var(--border) 63px,
+        var(--border) 64px
+      );
+      background-color: var(--bg-app);
+    }
+    /*
+     * DEMO OVERRIDE: dock thật dùng position:fixed (portal vào body).
+     * Override sang absolute để hiển thị trong snippet tĩnh.
+     * XOÁ block này khi copy vào artifact thật.
+     */
+    .nib-dock-anchor {
+      position: absolute !important;
+      left: 24px;
+      top: 100px;
+    }
+    /* Demo label annotation */
+    .demo-label {
+      position: absolute;
+      left: 96px;
+      top: 110px;
+      font-size: var(--font-size-ui-xs);
+      color: var(--text-muted);
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: var(--space-2) var(--space-3);
+      line-height: 1.6;
+      max-width: 260px;
+      box-shadow: var(--shadow-1);
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="demo-bg">
+
+    <!-- ══════════════════════════════════════════════════════════════
+         DOCK ANCHOR — UnifiedDock.tsx dòng 306–521
+         Thật: position:fixed, portal vào document.body; left/top từ pos state
+         ══════════════════════════════════════════════════════════════ -->
+    <div class="nib-dock-anchor">
+
+      <!-- Expanded shell (L315–495): opacity+scale animation
+           data-collapsed → ẩn (opacity:0 scale:0.92 pointer-events:none)
+           data-expand-up → expand lên thay vì xuống -->
+      <div class="nib-dock__expanded"
+           aria-label="Tool dock"
+           data-i18n-aria-label="dock.label">
+
+        <!-- DragHandle (DragHandle.tsx → .nib-dock__drag, L321–327)
+             44px wide × 17px tall, grab cursor, 6-dot SVG icon -->
+        <div class="nib-dock__drag"
+             role="presentation"
+             data-i18n-title="dock.drag_handle"
+             title="Kéo để đặt lại vị trí">
+          <!-- IconDragHandle — icons.tsx L306–314: fill=currentColor, 6 dots at cx=2/9/16 -->
+          <svg width="18" height="8" viewBox="0 0 18 8" fill="currentColor"
+               aria-hidden="true" focusable="false">
+            <circle cx="2" cy="2" r="1.3"/>
+            <circle cx="9" cy="2" r="1.3"/>
+            <circle cx="16" cy="2" r="1.3"/>
+            <circle cx="2" cy="6" r="1.3"/>
+            <circle cx="9" cy="6" r="1.3"/>
+            <circle cx="16" cy="6" r="1.3"/>
+          </svg>
+        </div>
+
+        <!-- Wide divider (L328) -->
+        <span class="nib-dock__divider nib-dock__divider--wide" aria-hidden="true"></span>
+
+        <!-- Level body NAV (L331–340)
+             data-level attr + key remount for fade animation -->
+        <div class="nib-dock__level" data-level="nav">
+
+          <!-- NavLevel content (NavLevel.tsx dòng 33–84)
+               .nib-dock__nav: flex-column, align-center, width:100% -->
+          <div class="nib-dock__nav" role="group"
+               data-i18n-aria-label="dock.label"
+               aria-label="Navigation">
+
+            <!-- Library (L36–43) — nib-dock__btn + nib-dock__navbtn (margin:1px 0) -->
+            <button type="button"
+                    class="nib-dock__btn nib-dock__navbtn"
+                    data-i18n-title="dock.nav.library"
+                    title="Thư viện" aria-label="Thư viện">
+              <!-- IconLayoutGrid — icons.tsx L163–170: viewBox 0 0 24 24, strokeWidth=1.7, rects at 3/14 -->
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="1.7"
+                   stroke-linecap="round" stroke-linejoin="round"
+                   aria-hidden="true" focusable="false">
+                <rect x="3" y="3" width="7" height="7" rx="1"/>
+                <rect x="14" y="3" width="7" height="7" rx="1"/>
+                <rect x="3" y="14" width="7" height="7" rx="1"/>
+                <rect x="14" y="14" width="7" height="7" rx="1"/>
+              </svg>
+            </button>
+
+            <!-- Settings (L44–51) -->
+            <button type="button"
+                    class="nib-dock__btn nib-dock__navbtn"
+                    data-i18n-title="dock.nav.settings"
+                    title="Cài đặt" aria-label="Cài đặt">
+              <!-- IconSettings — icons.tsx L174–179: lobed gear (NOT sun/spokes), viewBox 0 0 24 24 -->
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="1.5"
+                   stroke-linecap="round" stroke-linejoin="round"
+                   aria-hidden="true" focusable="false">
+                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+
+            <!-- Divider (L53) -->
+            <span class="nib-dock__divider" aria-hidden="true"></span>
+
+            <!-- Type/Gõ mode entry (L55–63) -->
+            <button type="button"
+                    class="nib-dock__btn nib-dock__navbtn"
+                    data-i18n-title="dock.nav.type"
+                    title="Gõ" aria-label="Gõ">
+              <!-- IconKbd — icons.tsx L332–352: viewBox 0 0 24 24, strokeWidth=1.8, rx=2.5, 4 filled dots + space bar -->
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="1.8"
+                   stroke-linecap="round" stroke-linejoin="round"
+                   aria-hidden="true" focusable="false">
+                <rect x="2" y="6" width="20" height="13" rx="2.5"/>
+                <circle cx="6" cy="11" r="1.4" fill="currentColor" stroke="none"/>
+                <circle cx="10" cy="11" r="1.4" fill="currentColor" stroke="none"/>
+                <circle cx="14" cy="11" r="1.4" fill="currentColor" stroke="none"/>
+                <circle cx="18" cy="11" r="1.4" fill="currentColor" stroke="none"/>
+                <line x1="7" y1="15" x2="17" y2="15" stroke-width="1.7"/>
+              </svg>
+            </button>
+
+            <!-- Write/Viết mode entry (L64–72) -->
+            <button type="button"
+                    class="nib-dock__btn nib-dock__navbtn"
+                    data-i18n-title="dock.nav.write"
+                    title="Viết" aria-label="Viết">
+              <!-- IconPenNib — icons.tsx L110–115: diamond M12 3 L17 12 L12 19 L7 12 Z + vertical line -->
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="1.8"
+                   stroke-linecap="round" stroke-linejoin="round"
+                   aria-hidden="true" focusable="false">
+                <path d="M12 3 L17 12 L12 19 L7 12 Z"/>
+                <line x1="12" y1="9" x2="12" y2="16"/>
+              </svg>
+            </button>
+
+            <!-- Help (L73–81) -->
+            <button type="button"
+                    class="nib-dock__btn nib-dock__navbtn"
+                    data-i18n-title="dock.nav.help"
+                    title="Trợ giúp" aria-label="Trợ giúp">
+              <!-- IconHelp — icons.tsx L182–188: viewBox 0 0 24 24, r=9, q-mark path, dot at cy=17.2 -->
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="1.5"
+                   stroke-linecap="round" stroke-linejoin="round"
+                   aria-hidden="true" focusable="false">
+                <circle cx="12" cy="12" r="9"/>
+                <path d="M9.3 9.3a2.7 2.7 0 0 1 5.2 1c0 1.8-2.7 2.3-2.7 4"/>
+                <circle cx="12" cy="17.2" r="0.6" fill="currentColor" stroke="none"/>
+              </svg>
+            </button>
+
+          </div><!-- /.nib-dock__nav -->
+        </div><!-- /.nib-dock__level[nav] -->
+
+        <!-- Collapse button (L486–494): 38×22, cuối dock -->
+        <button type="button" class="nib-dock__collapse"
+                data-i18n-title="dock.collapse"
+                title="Thu gọn" aria-label="Thu gọn">
+          <!-- IconDockCollapse — icons.tsx L502–517: viewBox 0 0 24 24, strokeWidth=2, 2 horizontal lines y=9 y=15 -->
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2"
+               stroke-linecap="round"
+               aria-hidden="true" focusable="false">
+            <line x1="6" y1="9" x2="18" y2="9"/>
+            <line x1="6" y1="15" x2="18" y2="15"/>
+          </svg>
+        </button>
+
+      </div><!-- /.nib-dock__expanded -->
+
+      <!-- Collapsed square (L498–520): visible khi data-collapsed="true".
+           Tap để expand; drag để repositon. Hiện icon penTool hiện tại. -->
+      <button type="button" class="nib-dock__collapsed"
+              data-i18n-title="dock.expand"
+              title="Mở rộng" aria-label="Mở rộng"
+              aria-hidden="true" tabindex="-1">
+        <span class="nib-dock__collapsed-icon" aria-hidden="true">
+          <!-- IconNib — icons.tsx L355–371: viewBox 0 0 24 24, wider diamond M12 3 L18 13 L12 21 L6 13 Z + line y10→y18 -->
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="1.8"
+               stroke-linecap="round" stroke-linejoin="round"
+               aria-hidden="true" focusable="false">
+            <path d="M12 3 L18 13 L12 21 L6 13 Z"/>
+            <line x1="12" y1="10" x2="12" y2="18"/>
+          </svg>
+        </span>
+      </button>
+
+    </div><!-- /.nib-dock-anchor -->
+
+    <!-- Demo annotation -->
+    <div class="demo-label" aria-hidden="true">
+      <strong>Dock — level NAV</strong><br>
+      Thư viện → Library overlay<br>
+      Cài đặt → Settings overlay<br>
+      Gõ / Viết → drill vào TOOLS level<br>
+      <span style="color:var(--accent)">Mọi màu: var(--token)</span>
+    </div>
+
+  </div><!-- /.demo-bg -->
+</body>
+</html>

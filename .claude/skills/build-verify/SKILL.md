@@ -33,6 +33,7 @@ Chỉ chạy phần liên quan tới task của bạn. Mỗi lệnh tính từ t
 | Lint (nếu cấu hình) | `npm run lint` | exit 0 |
 | Render block | MathLive block render `x^2` → console **0 error**, ra `x²` đúng superscript | quan sát + console sạch |
 | Yêu cầu nền (task chạm UI — `docs/requirements.md`) | i18n: chuỗi đi qua i18n + có cả `en.json`+`vi.json`; theme: màu từ token `tokens.css`, **0 hex rời** trong component, light+dark đúng; thiết bị: không vỡ ở 1024px | grep hex + quan sát light/dark |
+| **Design-library sync** (khi task chạm UI/UX component có mapping — xem `design-library/INDEX.md §MAPPING`) | Snippet `.claude/design-library/snippets/<X>.html` đã cập nhật DOM/icon khớp src thay đổi; `grep nib-demo <snippet>` = rỗng | design-library không stale |
 
 ```bash
 npm run build            # cwd: root frontend (nơi có package.json)

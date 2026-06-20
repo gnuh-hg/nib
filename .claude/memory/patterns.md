@@ -3,6 +3,10 @@
 > Pattern đã pass: stack/cấu trúc + done-criteria khách quan đã đạt. Đọc trước khi thiết kế / chọn cách làm.
 > LUÔN append (`## YYYY-MM-DD HH:MM — slug`), không overwrite. Dùng 10 entry mới nhất.
 
+## 2026-06-20 14:00 — design-library-snippet-fidelity
+
+Design-library snippet PHẢI: (1) link CSS component thật (không chỉ tokens.css) — thiếu link = CSS inline xấp xỉ = render lệch; (2) dùng class/DOM đọc trực tiếp từ .tsx + .css của component; (3) KHÔNG tự đặt class mới (.nib-demo*). Fidelity gate: grep nib-demo=rỗng + grep src/components≥1 + class grep pass src/. Visual match = USER smoke (agent không reach browser — ISSUE-8/13).
+
 ---
 
 ## 2026-06-11 12:30 — agent-team-setup-bootstrap

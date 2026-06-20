@@ -57,5 +57,9 @@ Cấm gate cảm tính ("render đẹp", "ổn rồi").
 | `nib-editor-rebuild` | long-plan (Phase 0 re-align) | Rebuild 5 vùng UI (tokens/header/canvas-paper/rail/library) khớp `Nib Editor.dc.html`. 1 phase / 5 session. Landscape-only. UnifiedDock không đụng. | 🔄 |
 | `nav-dock-redesign` | long-plan (Phase 0 nav overhaul) | Dock drill-down 2 level (NAV/TOOLS) + TopStrip mỏng + bỏ SidebarRail/TopChrome/ModeToggle + Settings overlay + AccountChip. Spec: `docs/nav-dock-design.md`. 1 phase / 3 session. | 🔄 |
 | `settings-redesign` | long-plan (Phase 0 add-on) | Thiết kế lại + mở rộng SettingsOverlay: sidebar-nav layout + section registry + 3 section MVP (Account mock · Language · Theme). 2 phase / 4 session. | 🔄 |
+| `design-agent-library` | roadmap | Thay agent design-figma bằng agent design code-native + thư viện .claude/design-library/. 4 phase. Executor: team-ops. Phase 3 = HUMAN-GATE. Mỗi phase = 1 long-plan riêng nested. | 🔄 |
+| `design-agent-library/phase-1-catalog` | long-plan (Phase 1) | Sinh 5 artifact .claude/design-library/ (INDEX + tokens + components + patterns + snippets). 3 session. | 🔄 |
+| `design-agent-library/phase-2-agent-skill` | long-plan (Phase 2) | Sinh .claude/agents/design.md + .claude/skills/design/SKILL.md. 2 session. | ⬜ |
+| `design-agent-library/phase-4-proof-run` | long-plan (Phase 4) | Agent `design` dựng `docs/design-artifacts/settings-overlay.html` (proof run bộ đôi agent+library). 1 phase / 1 session. Gate = 6 DC Bash verify PASS. | ⬜ |
 
 > Cập nhật bảng này mỗi khi tạo/đóng một plan. Trạng thái: ⬜ chưa bắt đầu · 🔄 đang chạy · ✅ done.

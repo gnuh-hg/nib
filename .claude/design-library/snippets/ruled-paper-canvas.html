@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<!--
+  SNIPPET: ruled-paper-canvas.html
+  Pattern: Canvas giấy kẻ ngang 664px + TopStrip + block toán inline
+  Component thật: src/components/Canvas.tsx, src/components/TopStrip.tsx
+  CSS thật được link:
+    tokens.css      — design tokens
+    app-shell.css   — nib-workspace, nib-strip, nib-strip__*, nib-desk (từ canvas.css)
+    canvas.css      — nib-desk, nib-paper, nib-ruled-paper, nib-margin-line,
+                      nib-editor-host, nib-pm, nib-block, nib-block__*
+    blocks.css      — nib-result, nib-result__*, nib-result__value[data-kind],
+                      nib-block__content[data-text-scale], nib-mathfield, …
+
+  DOM khớp:
+    TopStrip.tsx  dòng 25–53 (.nib-strip)
+    Canvas.tsx    dòng 20–40 (.nib-desk … .nib-pm)
+    canvas.css    "Block (NodeView)" section
+    blocks.css    "nib-result" section
+
+  CÁCH DÙNG:
+  1. Copy vào docs/design-artifacts/<tên>.html
+  2. Đổi đường dẫn CSS:
+       tokens.css    → ../../src/styles/tokens.css
+       app-shell.css → ../../src/components/app-shell.css
+       canvas.css    → ../../src/components/canvas.css
+       blocks.css    → ../../src/components/blocks.css
+  3. Điền block thật (top = lineIndex×64px; left = xOffset px)
+  4. Verify:
+       grep -rnE "#[0-9a-fA-F]{3,8}" <file>       = rỗng
+       grep -n "nib-strip__logo-dot" <file>         = rỗng  (class cũ, đã xoá)
+       grep -n "nib-approx" <file>                  = rỗng  (class fake, đã xoá)
+       grep -n "src/components" <file>              ≥ 1
+-->
+<html lang="en" data-theme="dark" style="min-width:1024px;height:100%">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1024">
+  <title>Ruled Paper Canvas — Nib Design Snippet</title>
+
+  <!-- CSS component thật — KHÔNG viết lại inline.
+       Thứ tự import quan trọng: tokens trước, rồi component CSS. -->
+  <link rel="stylesheet" href="../../../src/styles/tokens.css">
+  <link rel="stylesheet" href="../../../src/components/app-shell.css">
+  <link rel="stylesheet" href="../../../src/components/canvas.css">
+  <link rel="stylesheet" href="../../../src/components/blocks.css">
+
+  <style>
+    /* ── Demo setup only — KHÔNG copy vào artifact ── */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-ui);
+      color: var(--text-primary);
+      background-color: var(--desk);
+    }
+    /* Demo sizing: workspace + desk fill viewport (thật: flex:1 trong app shell) */
+    .nib-workspace { min-height: 100vh; }
+    .nib-desk      { min-height: 100vh; }
+  </style>
+</head>
+<body>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       WORKSPACE — positioning context cho TopStrip absolute overlay
+       app-shell.css: position:relative, flex-column, flex:1
+       ══════════════════════════════════════════════════════════════ -->
+  <div class="nib-workspace">
+
+    <!-- TopStrip (TopStrip.tsx dòng 25–53)
+         app-shell.css .nib-strip: position:absolute top-0, transparent bg,
+         pointer-events:none; .nib-strip__block: pointer-events:auto -->
+    <header class="nib-strip">
+
+      <!-- Left card: Logo | divider | doc-title (L27–31) -->
+      <div class="nib-strip__block nib-strip__block--left">
+        <!-- nib-strip__logo: color:var(--accent) (TopStrip.tsx L28: <IconLogo width=20 height=20 />)
+             IconLogo — icons.tsx L26–32: diamond M12 3 L18 13 L12 21 L6 13 Z + vertical line + ink dot circle -->
+        <svg class="nib-strip__logo" width="20" height="20"
+             viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="1.5"
+             stroke-linecap="round" stroke-linejoin="round"
+             aria-hidden="true" focusable="false">
+          <path d="M12 3 L18 13 L12 21 L6 13 Z"/>
+          <line x1="12" y1="9.5" x2="12" y2="18"/>
+          <circle cx="12" cy="8" r="1"/>
+        </svg>
+
+        <!-- Divider dọc (L29) -->
+        <span class="nib-strip__divider" aria-hidden="true"></span>
+
+        <!-- Doc title (L30) -->
+        <span class="nib-strip__doctitle-text"
+              data-i18n="app.doc_title">
+          Untitled
+        </span>
+      </div>
+
+      <!-- Right card: Undo + Redo (L33–50) -->
+      <div class="nib-strip__block nib-strip__block--right">
+        <!-- Undo — nib-strip__iconbtn: 44×44, ghost, focus ring accent -->
+        <button type="button" class="nib-strip__iconbtn"
+                data-i18n-title="strip.undo"
+                title="Undo" aria-label="Undo">
+          <!-- IconUndo 19px -->
+          <svg width="19" height="19" viewBox="0 0 19 19" fill="none"
+               aria-hidden="true" focusable="false">
+            <path d="M4 9a6 6 0 1 1 1.8 4.3" stroke="currentColor"
+                  stroke-width="1.6" stroke-linecap="round"/>
+            <path d="M4 5v4h4" stroke="currentColor"
+                  stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+
+        <!-- Redo -->
+        <button type="button" class="nib-strip__iconbtn"
+                data-i18n-title="strip.redo"
+                title="Redo" aria-label="Redo">
+          <!-- IconRedo 19px -->
+          <svg width="19" height="19" viewBox="0 0 19 19" fill="none"
+               aria-hidden="true" focusable="false">
+            <path d="M15 9a6 6 0 1 0-1.8 4.3" stroke="currentColor"
+                  stroke-width="1.6" stroke-linecap="round"/>
+            <path d="M15 5v4h-4" stroke="currentColor"
+                  stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+
+    </header>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         DESK + PAPER (Canvas.tsx dòng 27–39)
+         canvas.css .nib-desk: position:static (WAJIB — xem RISK#2 canvas.css),
+         flex:1, justify-content:center, padding:30px 0, bg:var(--desk)
+         ══════════════════════════════════════════════════════════════ -->
+    <div class="nib-desk">
+
+      <!-- Paper 664px (Canvas.tsx L28) -->
+      <div class="nib-paper">
+
+        <!-- Margin line trái 44px (L29) -->
+        <div class="nib-margin-line" aria-hidden="true"></div>
+
+        <!-- Ruling: repeating-linear-gradient 1px mỗi 64px (L30) -->
+        <div class="nib-ruled-paper" aria-hidden="true"></div>
+
+        <!-- Editor host: positioned context cho blocks absolute (L32) -->
+        <div class="nib-editor-host">
+
+          <!-- ────────────────────────────────────────────────────
+               BLOCK 1: Math input (active, đang edit)
+               lineIndex=1 → top=64px; xOffset=56px
+               data-active="true"   → accent-subtle nền surface
+               data-show-edge="true" → đường trái 2px accent (chỉ EDITING)
+               ──────────────────────────────────────────────────── -->
+          <div class="nib-block"
+               data-active="true"
+               data-show-edge="true"
+               style="top:64px; left:56px;">
+            <div class="nib-block__surface">
+              <div class="nib-block__content"
+                   data-i18n-aria-label="block.math_content"
+                   aria-label="Math block: x squared plus 2x plus 1">
+                x² + 2x + 1
+              </div>
+              <!-- Left-edge indicator (opacity:1 khi data-show-edge) -->
+              <div class="nib-block__edge" aria-hidden="true"></div>
+            </div>
+          </div>
+
+          <!-- ────────────────────────────────────────────────────
+               BLOCK 2: Kết quả symbolic exact
+               blocks.css .nib-result: inline-flex, font-size:19px
+               .nib-result__value[data-kind='exact']: color:var(--result)
+               lineIndex=2 → top=128px
+               ──────────────────────────────────────────────────── -->
+          <div class="nib-block" style="top:128px; left:56px;">
+            <div class="nib-block__surface">
+              <!-- nib-result structure từ ResultView.tsx dòng 39–74 -->
+              <div class="nib-result"
+                   aria-label="Kết quả: (x + 1) bình phương">
+                <span class="nib-result__input">x² + 2x + 1</span>
+                <span class="nib-result__eq" aria-hidden="true">=</span>
+                <span class="nib-result__value" data-kind="exact">(x + 1)²</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ────────────────────────────────────────────────────
+               BLOCK 3: Text label (data-text-scale='body')
+               blocks.css .nib-block__content[data-text-scale='body']:
+               font-size: var(--font-size-doc-body); line-height:1.65
+               lineIndex=4 → top=256px
+               ──────────────────────────────────────────────────── -->
+          <div class="nib-block" style="top:256px; left:56px;">
+            <div class="nib-block__surface">
+              <div class="nib-block__content"
+                   data-text-scale="body"
+                   data-i18n-aria-label="block.text_content">
+                <span data-i18n="app.sample_text">Đạo hàm của f(x):</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ────────────────────────────────────────────────────
+               BLOCK 4: Math input
+               lineIndex=5 → top=320px
+               ──────────────────────────────────────────────────── -->
+          <div class="nib-block" style="top:320px; left:56px;">
+            <div class="nib-block__surface">
+              <div class="nib-block__content"
+                   aria-label="Math block: f(x) equals x cubed minus 3x">
+                f(x) = x³ − 3x
+              </div>
+            </div>
+          </div>
+
+          <!-- ────────────────────────────────────────────────────
+               BLOCK 5: Kết quả đạo hàm (exact)
+               lineIndex=6 → top=384px
+               ──────────────────────────────────────────────────── -->
+          <div class="nib-block" style="top:384px; left:56px;">
+            <div class="nib-block__surface">
+              <div class="nib-result"
+                   aria-label="Đạo hàm: f mũ (x) = 3x bình trừ 3">
+                <span class="nib-result__input">f(x)</span>
+                <span class="nib-result__eq" aria-hidden="true">f′ =</span>
+                <span class="nib-result__value" data-kind="exact">3x² − 3</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ────────────────────────────────────────────────────
+               BLOCK 6: Kết quả số gần đúng (approx)
+               .nib-result__value[data-kind='approx']: color:var(--approx)
+               lineIndex=8 → top=512px
+               ──────────────────────────────────────────────────── -->
+          <div class="nib-block" style="top:512px; left:56px;">
+            <div class="nib-block__surface">
+              <div class="nib-result"
+                   aria-label="Kết quả gần đúng: căn 2 xấp xỉ 1.414">
+                <span class="nib-result__input">√2</span>
+                <span class="nib-result__eq" aria-hidden="true">≈</span>
+                <span class="nib-result__value" data-kind="approx">1.41421…</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ────────────────────────────────────────────────────
+               BLOCK 7: Placeholder (rỗng, chưa nhập)
+               .nib-block__placeholder: absolute bottom-aligned, --text-muted
+               lineIndex=10 → top=640px
+               ──────────────────────────────────────────────────── -->
+          <div class="nib-block" style="top:640px; left:56px;">
+            <div class="nib-block__surface">
+              <span class="nib-block__placeholder"
+                    data-i18n="block.placeholder">
+                Nhập công thức hoặc gõ \ để chèn ký hiệu…
+              </span>
+            </div>
+          </div>
+
+        </div><!-- /.nib-editor-host -->
+
+        <!-- Selection overlay (hidden by default, display:none in canvas.css) -->
+        <div class="nib-selection-overlay" aria-hidden="true"></div>
+
+      </div><!-- /.nib-paper -->
+    </div><!-- /.nib-desk -->
+
+  </div><!-- /.nib-workspace -->
+</body>
+</html>

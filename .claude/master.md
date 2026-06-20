@@ -31,7 +31,7 @@
 | `planner` (**TÁI DÙNG**) | `planner.md` | WHAT — phân loại scope + sinh plan artifact (roadmap/long/short). KHÔNG implement. | Read, Write, Edit, Grep, Glob | plan markdown (inline / `plan/<slug>/`) |
 | `researcher` | `researcher.md` | Gom context repo (CLAUDE.md + plan/ + src/) + WebSearch docs kỹ thuật (MathLive/TipTap/SymPy/Tauri) + đọc memory → tóm tắt. | Read, Grep, Glob, WebSearch, TaskGet, TaskUpdate, TaskList, SendMessage | prose 4 mục (Đã biết / Rủi ro / Câu hỏi còn chặn / Nguồn) |
 | `architect` | `architect.md` | HOW — component tree, API contract, data flow, file structure đủ để implementer không phải đoán. (planner=WHAT, architect=HOW.) | Read, Grep, Glob, TaskGet, TaskUpdate, TaskList, SendMessage | prose 5 mục (A breakdown / B API contract / C data flow / D file structure / E rủi ro) |
-| `design-figma` | `design-figma.md` | Thiết kế visual trong Figma (layout, design system, component visual, token Figma) → xuất Figma URL + screenshot + token spec + i18n key list en/vi cho editor-frontend. KHÔNG ghi src/; KHÔNG quyết WHAT/scope; bám 3 req nền [LOCKED]. | Figma MCP (17 tool) + Read, Write, Edit, Glob, Grep, TaskGet, TaskUpdate, TaskList, SendMessage | Figma file URL + screenshot ref + token spec bảng + i18n key list en/vi |
+| `design` | `design.md` | Thiết kế visual code-native (mockup HTML/CSS pixel-accurate) → xuất `docs/design-artifacts/<slug>.html` link tokens.css + class Nib, kèm i18n key list en/vi + motion-intent spec cho editor-frontend. KHÔNG ghi src/; KHÔNG dùng Figma; KHÔNG quyết WHAT/scope; bám 3 req nền [LOCKED]. | Read, Write, Edit, Glob, Grep, Bash, TaskGet, TaskUpdate, TaskList, SendMessage | `docs/design-artifacts/<slug>.html` + i18n key list en/vi + motion-intent spec |
 | `editor-frontend` | `editor-frontend.md` | Agent A §12 — đường găng §8.1: Tauri scaffold + React/TS/Vite + TipTap/Lexical block + MathLive block. | Read, Write, Edit, Bash, TaskGet, TaskUpdate, TaskList, SendMessage | file + evidence (`npm run build` 0 / `tsc --noEmit` 0 / block render `x²`) |
 | `backend-cas` | `backend-cas.md` | Agent B §12 — §8.2–8.3: FastAPI + SymPy + pipeline LaTeX→SymPy + timeout + numeric fallback. | Read, Write, Edit, Bash, TaskGet, TaskUpdate, TaskList, SendMessage | file + evidence (`pytest` pass / `POST /eval` trả LaTeX chính xác ≥3 fixture) |
 | `handwriting` | `handwriting.md` | Agent C §12: MyScript iink, bút→LaTeX, palm rejection, gesture. **Human gate §11.2 (license) bắt buộc trước khi implement.** | Read, Write, Edit, Bash, TaskGet, TaskUpdate, TaskList, SendMessage | file + evidence (bút→LaTeX ≥1 ký hiệu / `npm run build` 0) — chỉ sau §11.2 chốt |
@@ -95,7 +95,7 @@ LEAD nhận user_request
         │    researcher  → [gate: câu-hỏi-còn-chặn? → hỏi user]
         │    → planner   → [gate: Goal/Done-criteria đo được? WHAT không HOW?]
         │    → architect → [gate: pipeline+API contract+file structure đủ để implementer không đoán?]
-        │    → design-figma (song song architect, khi task cần visual design Figma)
+        │    → design (song song architect, khi task cần visual design mockup HTML/CSS)
         │    → implementer (editor-frontend/backend-cas/handwriting/glue-packaging)
         │                 → self-verify build-verify → nộp evidence
         │
@@ -138,7 +138,7 @@ LEAD nhận user_request
 |---|---|---|
 | Xây tính năng mới multi-file / domain mới (vd MathLive block, pipeline LaTeX→SymPy) | researcher → **planner (BẮT BUỘC, plan-gate)** → architect → implementer | full chain — **plan artifact PASS trước khi architect/implementer chạy** (xem PLAN-GATE §3) |
 | Sửa có yêu cầu user mới trên code đã có (vd "thêm toggle exact↔decimal") | planner (light) → implementer | bỏ researcher/architect; implementer đọc code hiện có TRƯỚC, Edit phẫu thuật, KHÔNG ghi đè |
-| Chỉ thiết kế UI/visual (Figma) — multi-screen, design system | researcher → planner → **design-figma** | bỏ implementer; design-figma xuất Figma URL + token spec + i18n key list |
+| Chỉ thiết kế UI/visual — multi-screen, design system, mockup HTML/CSS | researcher → planner → **design** | bỏ implementer; design xuất `docs/design-artifacts/*.html` + i18n key list + motion-intent spec |
 | Chỉ thiết kế (chưa build, không cần Figma) | researcher → planner → architect | bỏ implementer |
 | Yêu cầu nhỏ rõ, 1 stack | planner (light) → implementer | bỏ researcher/architect |
 | FIX sự cố phối hợp team (teammate câm / sai scope / playbook lỗi) | team-ops | đọc `.claude/teams/issues.md`; KHÔNG đụng code sản phẩm |
@@ -216,7 +216,7 @@ Done-criteria cảm tính ("render đẹp", "hoạt động tốt") → **KHÔNG
 | Issue queue (sự cố phối hợp team — `team-ops` sở hữu) | `.claude/teams/issues.md` |
 | Skill build + verify (implementer gate) | `.claude/skills/build-verify/SKILL.md` |
 | Skill memory (đọc/ghi store) | `.claude/skills/memory/SKILL.md` |
-| Skill Figma design — dùng cho vai `design-figma` (workflow + planKey + Done-criteria gate design) | `.claude/skills/figma-design/SKILL.md` |
+| Skill design code-native — dùng cho vai `design` (workflow 5 bước + done-criteria gate + motion-intent spec) | `.claude/skills/design/SKILL.md` |
 | Memory store note-ch team | `.claude/memory/` (context / mistakes / patterns / global) |
 | Project brief (LOCKED + rủi ro + câu hỏi mở + workstream) | `CLAUDE.md` (§3–§6, §8, §11, §12, §13) |
 | **Spec sản phẩm — yêu cầu nền [LOCKED]** (song ngữ en/vi · thiết bị desktop-class + 3 input · theme light/dark/system + **root màu/design tokens**). Mọi task chạm UI BẮT BUỘC bám. | `docs/requirements.md` |

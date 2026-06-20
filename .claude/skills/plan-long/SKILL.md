@@ -146,6 +146,35 @@ Slug: kebab-case từ tên task, không dấu, không space (vd `editor-mathlive
 | YYYY-MM-DD | Created from `PLAN.md` | @planner |
 ```
 
+## Session granularity — context-budget per session
+
+> **Nguyên tắc:** 1 session = 1 đơn vị deliverable **có context bounded**. Context overload → output đi tắt (skeleton, class bịa, thiếu DOM) → phải redo. Phòng ngừa từ plan.
+
+### Định nghĩa "session nặng"
+
+Session là **nặng** khi cần làm ≥1 trong:
+- Đọc ≥1 file source lớn (≥80 dòng `.tsx` / `.css` / `.py`) để trích/tái hiện DOM, logic, fixture chính xác.
+- Output ≥150 dòng code/markup.
+- Tái hiện cấu trúc phức tạp (DOM nhiều lớp, pipeline multi-step, nhiều fixture cùng lúc).
+
+### Quy tắc session granularity
+
+1. **1 heavy deliverable = 1 session.** Không gộp nhiều unit nặng vào 1 session dù chúng trông "tương tự" hay "đơn giản".
+2. **Phase có N deliverable nặng → N session**, gate giữa từng session (lead verify → phát hiện divergence sớm).
+   - Ví dụ đúng: Phase tạo 3 snippet HTML (mỗi cái cần đọc ≥1 component .tsx+.css lớn) → Session 1.1 = snippet 1, Session 1.2 = snippet 2, Session 1.3 = snippet 3.
+   - Ví dụ sai: Session 1.3 = "tạo cả 3 snippet" → context quá tải → phát sinh ISSUE-13 (snippet bịa class, thiếu DOM).
+3. **Gộp CHỈ khi** cả hai điều kiện đúng: (a) mỗi unit nhỏ thật sự (output < 50 dòng, không cần đọc source lớn) VÀ (b) cùng pattern copy-adjust (không cần đọc nguồn mới).
+
+### Dấu hiệu session quá to (red flags khi viết plan)
+
+- Scope dùng từ "tất cả", "cả", "toàn bộ" cho nhiều artifact cùng kiểu.
+- Scope list ≥2 object phức tạp cùng kiểu (vd "3 HTML snippets", "5 test fixtures", "N component").
+- Output artifact list có ≥3 file mỗi cái cần đọc nguồn khác nhau.
+
+→ Gặp red flag → chia nhỏ thành N session (1 unit/session).
+
+---
+
 ## Gate idiom (note-ch) — STOP gate phải đo được bằng stack thật
 
 - **Frontend:** `npm run build` exit 0; `tsc --noEmit` 0 error; vitest pass; block mount + render đúng (console 0 error).
@@ -177,6 +206,7 @@ Slug: kebab-case từ tên task, không dấu, không space (vd `editor-mathlive
 | Quên update `plan/README.md` / `plan/ROADMAP.md` | Bước cuối bắt buộc trước khi return |
 | Rải artifact phụ ra ngoài `plan/<roadmap>/<slug>/` | Mọi file của plan nằm gọn trong thư mục slug (nested dưới roadmap) |
 | Đặt long-plan phẳng `plan/<slug>/` thành sibling của ROADMAP.md | Nested dưới roadmap: `plan/<roadmap>/<slug>/` (user chốt ISSUE-4) |
+| **Gộp N deliverable nặng vào 1 session** ("Session 1.3 = tạo cả 3 snippet HTML") | Context overload → output đi tắt (skeleton, class bịa, thiếu DOM) → PHẢI redo. Áp session granularity: 1 heavy unit = 1 session. Gate giữa từng session. (bài học ISSUE-14/ISSUE-13) |
 
 ## Liên quan
 

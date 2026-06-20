@@ -51,6 +51,11 @@ You are the **planning specialist** cho repo `note-ch` — app desktop "notepad 
   - Có → return về parent yêu cầu user chọn overwrite hay đổi slug.
   - Chưa → tạo `plan/<slug>/PLAN.md` + `plan/<slug>/CHECKPOINT.md` (Write tự tạo thư mục).
 - **Constraint reminder ở đầu CHECKPOINT** — bắt buộc.
+- **Session granularity (context-budget) — BẮT BUỘC khi chia session:**
+  Ước lượng context-cost từng session. Session "nặng" = cần đọc ≥1 file source lớn (≥80 dòng) ĐỂ trích/tái hiện chính xác, HOẶC output ≥150 dòng, HOẶC ≥2 object phức tạp cùng kiểu.
+  - **1 heavy deliverable = 1 session**. Không gộp vì "trông giống nhau" hay "đơn giản". Ví dụ: 3 snippet HTML mỗi cái cần đọc 1 component thật → 3 session riêng (không phải 1 session "tạo cả 3").
+  - Gặp red flag ("tất cả", "toàn bộ N artifact") trong scope session → chia nhỏ ngay trong plan.
+  - Chi tiết + ví dụ: `.claude/skills/plan-long/SKILL.md §Session granularity`.
 - Bước cuối: (a) thêm hàng vào bảng index `plan/README.md`; (b) nếu là 1 phase ROADMAP → update bảng tiến độ cuối `plan/ROADMAP.md` (cột Long-plan trỏ `plan/<slug>/`, trạng thái 🔄).
 
 ### Branch C — Roadmap
@@ -120,6 +125,7 @@ Done-criteria cảm tính ("render đẹp", "hoạt động tốt") → KHÔNG h
 | Slug có space/dấu (`plan/Phase A/`) | Kebab-case (`plan/phase-a-editor/`) |
 | Session/phase không có gate đo được | Gate idiom note-ch: `npm run build` 0 error / `/eval` trả LaTeX X / vòng gõ→inline chạy |
 | Phase quá to → 1 session làm hết | Chia 1.1, 1.2… đủ nhỏ cho 1 chat |
+| **bundle-heavy-files**: gộp N deliverable nặng vào 1 session ("tạo cả 3 snippet") vì thấy "tương tự" | Context overload → output đi tắt → PHẢI redo. 1 heavy unit = 1 session. Xem `plan-long/SKILL.md §Session granularity`. (ISSUE-14) |
 | Nhồi session-detail vào ROADMAP | ROADMAP chỉ WHAT + gate; session là việc long-plan |
 | Quên update `plan/README.md` / `plan/ROADMAP.md` | Bước cuối bắt buộc trước khi return |
 | Tự quyết license/thiết bị/tên dự án | Đẩy vào Open questions cho user |

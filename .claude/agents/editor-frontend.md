@@ -84,6 +84,63 @@ Chi tiết: section "GitNexus — Code Intelligence" trong root `CLAUDE.md`.
 
 Cấm gate cảm tính ("trông ổn"). Không chạy được lệnh → nói thẳng "chưa verify được" + lý do, đừng phán PASS. Nộp evidence theo format ở `build-verify/SKILL.md` §2.
 
+## Đồng bộ design-library (BẮT BUỘC khi task chạm UI/UX component có mapping)
+
+`.claude/design-library/` là **tham chiếu hình ảnh app** dùng cho agent `design`. Style/token tự sync (snippet link CSS thật); nhưng **DOM/class/icon là copy tĩnh** → stale khi bạn sửa `.tsx` mà quên cập nhật snippet.
+
+### Khi nào cần cập nhật
+
+**PHẢI cập nhật** (điều kiện = thay đổi là UI/UX):
+- Đổi DOM structure (thêm/bớt element, đổi wrapper)
+- Đổi class name (`.nib-dock__navbtn` → class mới)
+- Đổi icon (path SVG trong `icons.tsx` thay đổi)
+- Thêm/bỏ nút, section, slot trong component
+
+**KHÔNG cần cập nhật** (logic thuần, không đổi UI):
+- State machine / event handler / hooks
+- Performance optimization (memo, callback)
+- IPC / data fetching
+
+### Bảng mapping (xem đầy đủ ở `.claude/design-library/INDEX.md §MAPPING`)
+
+| Component | Snippet phải sync |
+|---|---|
+| UnifiedDock (`UnifiedDock.tsx`, `NavLevel.tsx`, `dock.css`) | `snippets/dock-nav-level.html` |
+| LibraryOverlay (`LibraryOverlay.tsx`, `LibraryToolbar.tsx`, `library-overlay.css`) | `snippets/overlay-panel.html` |
+| Canvas / TopStrip (`Canvas.tsx`, `TopStrip.tsx`, `canvas.css`, `app-shell.css`, `blocks.css`) | `snippets/ruled-paper-canvas.html` |
+| `src/components/icons.tsx` (bất kỳ icon nào thay đổi) | Mọi snippet dùng icon đó (cập nhật `viewBox/d`) |
+| SettingsOverlay / CommandPalette / NibBlock | `components.md` §3/§6/§7 *(cập nhật class list)* |
+
+### Cách cập nhật + re-verify
+
+1. Sau khi sửa `src/`, mở file snippet tương ứng trong `.claude/design-library/snippets/`.
+2. Cập nhật DOM/class/icon cho khớp component thật vừa sửa.
+3. Serve để visual-verify:
+   ```bash
+   # Serve từ REPO ROOT (KHÔNG --directory snippets):
+   # link ../../../src/... cần resolve từ root; nếu serve subfolder → CSS 404 → render vỡ.
+   # cwd: /home/gnuh/Documents/project/Nib
+   python3 -m http.server 8081
+   # Mở: http://localhost:8081/.claude/design-library/snippets/<tên-snippet>.html
+   # So sánh với app thật (npm run dev :1420)
+   ```
+4. Chạy fidelity gate nhanh:
+   ```bash
+   grep -n "nib-demo" .claude/design-library/snippets/<snippet>.html  # kỳ vọng rỗng
+   grep -n "src/components" .claude/design-library/snippets/<snippet>.html  # ≥1 match
+   grep -rnE "#[0-9a-fA-F]{3,8}" .claude/design-library/snippets/<snippet>.html  # rỗng
+   ```
+
+### Anti-pattern
+
+| Sai | Đúng |
+|---|---|
+| Sửa DOM/class trong `src/` nhưng KHÔNG cập nhật snippet → design-library stale | Cập nhật snippet trong CÙNG task; ghi vào report done |
+| Cập nhật snippet khi chỉ sửa logic (state/event) | Điều kiện: chỉ khi UI/UX thay đổi (xem ở trên) |
+| Bỏ qua visual-verify (chỉ grep) khi icon đổi path | Icon path phải so mắt với app thật |
+
+---
+
 ## Ghi memory (cuối task, nếu có bài học)
 
 Theo `.claude/skills/memory/SKILL.md`: gate FAIL rồi fix được → append `mistakes.md` (lỗi + file/lệnh + nguyên nhân + cách confirm); cấu trúc/stack pass đáng tái dùng → append `patterns.md` (format `## YYYY-MM-DD HH:MM — slug`, luôn `>>` append). Trạng thái task → để lead ghi `context.md`.

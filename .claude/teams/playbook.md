@@ -23,7 +23,7 @@ Lập team **không phải mặc định** — tốn token + tăng coordination 
 | Dựng **pipeline LaTeX→SymPy** + timeout + numeric fallback (backend §8.2–8.3, nhiều fixture) → full chain | Đọc `CLAUDE.md` §8 trả lời "rủi ro lớn nhất là gì" | Tra **MathLive API**: lệnh xuất MathJSON từ `<math-field>` — câu hỏi đóng |
 | Tích hợp **IPC frontend↔Python sidecar** + đóng gói Tauri desktop (glue §12, đường găng cross-stack) → full chain | Đổi `timeout` từ 5s→8s trong 1 hàm backend đã có (scope rõ, ≤3 file) | Tra **SymPy**: `integrate` có hỗ trợ hàm X không — tra cứu đóng |
 | Thêm tính năng "toggle exact↔decimal" chạm cả editor + CAS (≥2 stack) → chain rút gọn (planner-light → implementer) | Trả lời "file nào giữ block model" / `grep` 1 symbol | Tra **latex2sympy2**: cú pháp `\frac{d}{dx}` parse ra gì — 1 shot |
-| **Thiết kế visual Figma multi-screen** (design system, layout ≥2 frame, token đồng bộ) → researcher → planner → design-figma | Xem Figma URL / đọc screenshot đã có — không tạo mới | **Tra Figma URL / screenshot** hiện có (get_metadata / get_screenshot 1 shot, không follow-up) |
+| **Thiết kế visual multi-screen** (mockup HTML/CSS pixel-accurate, design system, component mới) → researcher → planner → design | Đọc mockup HTML đã có (`docs/design-artifacts/`) — không tạo mới | **Đọc artifact HTML** hiện có + grep class/token tham chiếu (1 shot, không follow-up) |
 
 > **Dấu hiệu BẮT BUỘC spawn team** (bất kỳ 1): deliverable > 3 file hoặc > 1 stack/domain · cần
 > research context trước khi plan · cần thiết kế HOW (architect) trước khi code · cần self-verify
@@ -37,7 +37,7 @@ Lập team **không phải mặc định** — tốn token + tăng coordination 
 > architect→code khi chưa có plan gate được. (Bỏ planner chỉ khi "yêu cầu nhỏ rõ 1 stack"/"trivial".)
 >
 > **Quy tắc size:** spawn **tối thiểu cần thiết**. Full chain note-ch tối đa 6 vai
-> (researcher → planner → architect → design-figma → editor-frontend → backend-cas; design-figma song song architect khi cần visual). Over-staffing = anti-pattern
+> (researcher → planner → architect → design → editor-frontend → backend-cas; design song song architect khi cần visual mockup HTML/CSS). Over-staffing = anti-pattern
 > Lead #2. **1 team tại 1 thời điểm** — TeamDelete team cũ trước khi TeamCreate mới (xem §9).
 
 ---
@@ -110,7 +110,7 @@ output_format: <lead expect nhận gì — trỏ "Output format" trong agent bod
 - **researcher** — `input` + gợi ý nguồn cần đọc (CLAUDE.md §X, docs MathLive/TipTap/SymPy/Tauri). **STOP**: trả 4 mục (Đã biết / Rủi ro / Câu hỏi còn chặn / Nguồn); `câu-hỏi-còn-chặn` chỉ câu **thực sự chặn** (không "nice to know").
 - **planner** — `input` + research output (paste) + verdict trước (nếu re-plan). **STOP**: Goal 1 câu đo được + mỗi done-criteria có cách kiểm khách quan + Steps là **WHAT không HOW** + markdown KHÔNG JSON.
 - **architect** — plan WHAT (paste) + research. **STOP**: 5 mục A–E (breakdown / API contract / data flow / file structure / rủi ro) đủ để implementer **không phải đoán** + ≥1 cảnh báo rủi ro kỹ thuật cụ thể.
-- **design-figma** — `input`: brief planner + planKey (`team::1618919057199763712`) + Figma link (nếu có). **STOP**: Figma file URL + screenshot ref (bytes>0) + token spec bảng (Figma variable ↔ CSS token, light+dark) + i18n key list en/vi; gate ≥5 điều kiện Done-criteria (xem `.claude/skills/figma-design/SKILL.md` §4); 0 hex rời; frame ≥1024px.
+- **design** — `input`: brief planner + slug màn cần thiết kế + context app (docs/design.md / docs/sidebar-design.md nếu liên quan). **STOP**: `docs/design-artifacts/<slug>.html` tồn tại + link tokens.css + 0 hex rời + data-i18n key + min-width 1024px + link CSS component thật + i18n key list en/vi + motion-intent spec (nếu có animation); gate 8 DC (xem `.claude/skills/design/SKILL.md` §2); nộp Bash evidence.
 - **editor-frontend** — plan + thiết kế architect (paste). **STOP**: file ghi đúng path + self-verify `npm run build` exit 0 + `tsc --noEmit` 0 error + ≥1 MathLive block render `x^2` (console 0 error); nộp evidence.
 - **backend-cas** — plan + thiết kế (paste) + danh sách fixture cần pass. **STOP**: `pytest` pass + `POST /eval` trả LaTeX **chính xác** cho ≥3 fixture + timeout config có trong code; nộp evidence.
 - **handwriting** — **TRƯỚC tiên** xác nhận §11.2 (license MyScript) đã chốt (xem §10 human gate). Sau đó: thiết kế bút→LaTeX. **STOP**: bút→LaTeX nhận diện ≥1 ký hiệu + `npm run build` exit 0; nộp evidence.
@@ -205,7 +205,7 @@ Mapping triệu chứng → code: không ack/báo xong = `SILENT`; cần resend 
 | `researcher` | 4 mục đầy đủ (Đã biết / Rủi ro / Câu hỏi còn chặn / Nguồn); "Đã biết" nêu mục tiêu cụ thể; rủi ro có bằng chứng; câu-hỏi-còn-chặn chỉ câu **thực sự chặn** (không "nice to know") |
 | `planner` | Goal 1 câu **đo được**; Steps là **WHAT không HOW**; mỗi done-criteria có cách kiểm khách quan; output là markdown **KHÔNG JSON** |
 | `architect` | pipeline/component tree + API contract + file structure đủ để implementer **không phải đoán**; có **≥1 cảnh báo rủi ro kỹ thuật cụ thể** |
-| `design-figma` | Figma file URL trả được + `get_screenshot` bytes>0 ≥1 frame + token spec bảng (Figma variable↔CSS, light+dark) + i18n key list en/vi + gate ≥5 điều kiện Done-criteria (`skills/figma-design/SKILL.md` §4) PASS + 0 hex rời + frame ≥1024px |
+| `design` | `docs/design-artifacts/<slug>.html` tồn tại + link tokens.css + 0 hex rời + data-i18n ≥ số chuỗi + min-width 1024px + link CSS component thật (DC-7) + 0 class bịa (DC-8) + i18n key list en/vi kèm theo + motion-intent spec nếu có animation (`.claude/skills/design/SKILL.md` §2 8 DC PASS) |
 | `editor-frontend` | `npm run build` exit 0 + `tsc --noEmit` 0 error + ≥1 MathLive block render `x^2` không lỗi console |
 | `backend-cas` | `pytest` pass + `POST /eval` trả LaTeX **chính xác** cho ≥3 fixture + **timeout config có trong code** |
 | `handwriting` | **chỉ PASS sau khi §11.2 (license) đã chốt**; sau đó: bút→LaTeX nhận diện ≥1 ký hiệu + `npm run build` exit 0 |
@@ -310,7 +310,7 @@ tmux move-window -r -s 1:1 && tmux select-layout main-vertical && tmux join-pane
 > Tested Ubuntu + tmux 3.x pattern. Nếu index lệch sau renumber → fallback `tmux select-layout tiled`.
 > Zellij/Windows: adapt thủ công (hoặc dùng `in-process`).
 >
-> **N=6** (full chain với design-figma): researcher → planner → architect → design-figma → editor-frontend → backend-cas. Layout: fallback `tmux select-layout tiled` (6 pane khó chia đẹp hơn N=5 — tiled đảm bảo tất cả thấy được). Hoặc dùng in-process.
+> **N=6** (full chain với design): researcher → planner → architect → design → editor-frontend → backend-cas. Layout: fallback `tmux select-layout tiled` (6 pane khó chia đẹp hơn N=5 — tiled đảm bảo tất cả thấy được). Hoặc dùng in-process.
 
 ---
 

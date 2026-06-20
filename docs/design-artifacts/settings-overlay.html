@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<!--
+  ARTIFACT: settings-overlay.html
+  Phase 4 Proof Run — agent `design` (code-native)
+  Pattern: Overlay lớn (Settings kiểu LibraryOverlay)
+  Component thật: src/components/SettingsOverlay/SettingsOverlay.tsx
+                  src/components/SettingsOverlay/SettingsNav.tsx
+                  src/components/SettingsOverlay/AccountSection.tsx
+                  src/components/SettingsOverlay/AppearanceSection.tsx
+  CSS thật được link: tokens.css + settings-overlay.css
+  DOM khớp: SettingsOverlay.tsx + SettingsNav.tsx + AccountSection.tsx + AppearanceSection.tsx
+  Icons thật: IconArrowLeft, IconUser, IconSun, IconText, IconKbd từ src/components/icons.tsx
+  i18n keys: settings.* + app.lang.* + library.cancel
+  Tất cả màu qua var(--token). 0 hex rời.
+-->
+<html lang="en" data-theme="light" style="min-width:1024px;height:100%">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1024">
+  <title>Settings Overlay — Nib Design Artifact</title>
+
+  <!-- CSS component thật — KHÔNG viết lại inline.
+       Đường dẫn tính từ docs/design-artifacts/ → ../../src/... -->
+  <link rel="stylesheet" href="../../src/styles/tokens.css">
+  <link rel="stylesheet" href="../../src/components/SettingsOverlay/settings-overlay.css">
+
+  <style>
+    /* ── Demo setup only — KHÔNG copy vào src/ ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      min-height: 100vh;
+      font-family: var(--font-ui);
+      color: var(--text-primary);
+      background-color: var(--desk);
+    }
+
+    /* Mock workspace nền: desk → paper (giống Workspace.tsx) */
+    .demo-workspace {
+      position: relative;
+      width: 100%;
+      min-height: 100vh;
+      background-color: var(--desk);
+      overflow: hidden;
+      display: flex;
+      align-items: stretch;
+    }
+
+    /* Paper 664px phía sau scrim — gợi ý canvas đang mounted */
+    .demo-paper-bg {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 664px;
+      background-color: var(--bg-app);
+      box-shadow: var(--sheet-shadow);
+      border-radius: 5px 5px 0 0;
+      pointer-events: none;
+    }
+
+    /* Theme toggle nhanh (demo helper) */
+    .demo-theme-toggle {
+      position: fixed;
+      top: var(--space-3);
+      right: var(--space-3);
+      z-index: 200;
+      display: flex;
+      gap: var(--space-2);
+    }
+    .demo-theme-toggle button {
+      padding: var(--space-1) var(--space-3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      font-size: var(--font-size-ui-xs);
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .demo-theme-toggle button:hover {
+      background: var(--bg-subtle);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Theme toggle helper (demo only) -->
+  <div class="demo-theme-toggle" aria-hidden="true">
+    <button onclick="document.documentElement.setAttribute('data-theme','light')">Light</button>
+    <button onclick="document.documentElement.setAttribute('data-theme','dark')">Dark</button>
+  </div>
+
+  <!-- Mock workspace (nền sau overlay) -->
+  <div class="demo-workspace">
+    <!-- Gợi ý paper 664px đang mounted bên dưới scrim -->
+    <div class="demo-paper-bg" aria-hidden="true"></div>
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         SETTINGS OVERLAY
+         DOM từ: SettingsOverlay.tsx (dòng 31–61) + SettingsNav.tsx (dòng 19–48)
+                 AccountSection.tsx (dòng 14–62) + AppearanceSection.tsx (dòng 33–73)
+
+         data-open="true"  → hiện (opacity:1, pointer-events:auto)
+         data-open="false" → ẩn  (opacity:0, pointer-events:none)
+         ══════════════════════════════════════════════════════════════════════ -->
+    <div class="nib-settings-overlay" data-open="true" id="settings-overlay">
+
+      <!-- Scrim: click-to-close (SettingsOverlay.tsx dòng 32) -->
+      <div class="nib-settings__scrim" aria-hidden="true"
+           onclick="document.getElementById('settings-overlay').setAttribute('data-open','false')">
+      </div>
+
+      <!-- Panel: role="dialog" aria-modal="true" (SettingsOverlay.tsx dòng 34–60) -->
+      <div class="nib-settings__panel"
+           role="dialog"
+           aria-modal="true"
+           aria-labelledby="settings-heading-label">
+
+        <!-- Header (SettingsOverlay.tsx dòng 40–51): [Back ←] [Settings] -->
+        <div class="nib-settings__header">
+
+          <!-- nib-settings__back: 44×44, ghost, icon-only (settings-overlay.css dòng 77–100) -->
+          <!-- Dùng library.cancel theo SettingsOverlay.tsx dòng 46 (en: "Cancel", vi: "Huỷ") -->
+          <button
+            type="button"
+            class="nib-settings__back"
+            data-i18n-title="library.cancel"
+            title="Cancel"
+            aria-label="Cancel"
+            onclick="document.getElementById('settings-overlay').setAttribute('data-open','false')"
+          >
+            <!-- IconArrowLeft — icons.tsx dòng 191–196
+                 Base strokeWidth="1.8": viewBox 0 0 24 24, line x19→x5 + polyline -->
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.8"
+                 stroke-linecap="round" stroke-linejoin="round"
+                 aria-hidden="true" focusable="false">
+              <line x1="19" y1="12" x2="5" y2="12"/>
+              <polyline points="12 19 5 12 12 5"/>
+            </svg>
+          </button>
+
+          <!-- nib-settings__heading: flex:1, bold, font-size ui-md (dòng 102–108) -->
+          <span id="settings-heading-label"
+                class="nib-settings__heading"
+                data-i18n="settings.title">Settings</span>
+        </div><!-- /.nib-settings__header -->
+
+        <!-- Inner: nav (top) + content (below) — SettingsOverlay.tsx dòng 53–58 -->
+        <div class="nib-settings__inner">
+
+          <!-- ── Nav tab bar (SettingsNav.tsx dòng 19–48)
+               .nib-settings__nav: height 48px, padding 0 36px, border-bottom
+               .nib-settings__nav-list: flex row, height 100%, align stretch ── -->
+          <nav class="nib-settings__nav" data-i18n-aria-label="settings.title" aria-label="Settings">
+            <ul class="nib-settings__nav-list">
+
+              <!-- Tab 1: Account (active) -->
+              <li>
+                <button
+                  type="button"
+                  class="nib-settings__nav-item"
+                  data-active="true"
+                  aria-current="page"
+                  onclick="switchTab('account')"
+                >
+                  <span class="nib-settings__nav-icon" aria-hidden="true">
+                    <!-- IconUser — icons.tsx dòng 520–525
+                         Base (strokeWidth 1.5): circle cx12 cy8 r4 + path d="M5.5 20a6.5 6.5 0 0 1 13 0" -->
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="1.5"
+                         stroke-linecap="round" stroke-linejoin="round"
+                         aria-hidden="true" focusable="false">
+                      <circle cx="12" cy="8" r="4"/>
+                      <path d="M5.5 20a6.5 6.5 0 0 1 13 0"/>
+                    </svg>
+                  </span>
+                  <span class="nib-settings__nav-label" data-i18n="settings.nav.account">Account</span>
+                </button>
+              </li>
+
+              <!-- Tab 2: Appearance -->
+              <li>
+                <button
+                  type="button"
+                  class="nib-settings__nav-item"
+                  data-active="false"
+                  onclick="switchTab('appearance')"
+                >
+                  <span class="nib-settings__nav-icon" aria-hidden="true">
+                    <!-- IconSun — icons.tsx dòng 57–69
+                         Base (strokeWidth 1.5): circle cx12 cy12 r4.2 + 8 radial lines -->
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="1.5"
+                         stroke-linecap="round" stroke-linejoin="round"
+                         aria-hidden="true" focusable="false">
+                      <circle cx="12" cy="12" r="4.2"/>
+                      <line x1="12" y1="2.5" x2="12" y2="5"/>
+                      <line x1="12" y1="19" x2="12" y2="21.5"/>
+                      <line x1="2.5" y1="12" x2="5" y2="12"/>
+                      <line x1="19" y1="12" x2="21.5" y2="12"/>
+                      <line x1="5.2" y1="5.2" x2="7" y2="7"/>
+                      <line x1="17" y1="17" x2="18.8" y2="18.8"/>
+                      <line x1="5.2" y1="18.8" x2="7" y2="17"/>
+                      <line x1="17" y1="7" x2="18.8" y2="5.2"/>
+                    </svg>
+                  </span>
+                  <span class="nib-settings__nav-label" data-i18n="settings.nav.appearance">Appearance</span>
+                </button>
+              </li>
+
+              <!-- Tab 3: Editor (coming soon) -->
+              <li>
+                <button
+                  type="button"
+                  class="nib-settings__nav-item"
+                  data-coming-soon="true"
+                  disabled
+                >
+                  <span class="nib-settings__nav-icon" aria-hidden="true">
+                    <!-- IconText — icons.tsx dòng 285–289
+                         Base (strokeWidth 1.5): path d="M5 6h14M12 6v13M9 19h6" -->
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="1.5"
+                         stroke-linecap="round" stroke-linejoin="round"
+                         aria-hidden="true" focusable="false">
+                      <path d="M5 6h14M12 6v13M9 19h6"/>
+                    </svg>
+                  </span>
+                  <span class="nib-settings__nav-label" data-i18n="settings.nav.future.editor">Editor</span>
+                  <span class="nib-settings__nav-badge" data-i18n="settings.nav.coming_soon">Coming soon</span>
+                </button>
+              </li>
+
+              <!-- Tab 4: Shortcuts (coming soon) -->
+              <li>
+                <button
+                  type="button"
+                  class="nib-settings__nav-item"
+                  data-coming-soon="true"
+                  disabled
+                >
+                  <span class="nib-settings__nav-icon" aria-hidden="true">
+                    <!-- IconKbd — icons.tsx dòng 332–351
+                         Own SVG: width=15 height=15, viewBox 0 0 24 24, strokeWidth=1.8
+                         rect x2 y6 w20 h13 rx2.5 + 4 filled circles + line -->
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="1.8"
+                         stroke-linecap="round" stroke-linejoin="round"
+                         aria-hidden="true" focusable="false">
+                      <rect x="2" y="6" width="20" height="13" rx="2.5"/>
+                      <circle cx="6" cy="11" r="1.4" fill="currentColor" stroke="none"/>
+                      <circle cx="10" cy="11" r="1.4" fill="currentColor" stroke="none"/>
+                      <circle cx="14" cy="11" r="1.4" fill="currentColor" stroke="none"/>
+                      <circle cx="18" cy="11" r="1.4" fill="currentColor" stroke="none"/>
+                      <line x1="7" y1="15" x2="17" y2="15" stroke-width="1.7"/>
+                    </svg>
+                  </span>
+                  <span class="nib-settings__nav-label" data-i18n="settings.nav.future.shortcuts">Shortcuts</span>
+                  <span class="nib-settings__nav-badge" data-i18n="settings.nav.coming_soon">Coming soon</span>
+                </button>
+              </li>
+
+            </ul>
+          </nav><!-- /.nib-settings__nav -->
+
+          <!-- ── Content area — AccountSection.tsx (khi tab account active) ── -->
+
+          <!-- ACCOUNT SECTION (AccountSection.tsx dòng 14–62) -->
+          <div class="nib-settings__content" id="tab-account" style="display:block">
+            <div class="nib-settings-account">
+
+              <!-- Section title -->
+              <h2 class="nib-settings__section-title"
+                  data-i18n="settings.account.title">Account</h2>
+
+              <!-- Identity row: avatar + photo btn -->
+              <div class="nib-settings-account__identity">
+                <!-- Avatar tròn 64×64, initials auto-derived, --avatar-color từ swatch -->
+                <!-- AccountSection.tsx dòng 18–24: style={{ '--avatar-color': `var(${profile.avatarColor})` }} -->
+                <div
+                  class="nib-settings-account__avatar"
+                  style="--avatar-color: var(--swatch-teal)"
+                  aria-hidden="true"
+                >NH</div>
+
+                <!-- Photo upload (post-MVP, disabled, coming soon badge) -->
+                <!-- AccountSection.tsx dòng 25–35 -->
+                <button
+                  type="button"
+                  class="nib-settings-account__photo-btn"
+                  disabled
+                  data-i18n-title="settings.account.avatar_coming_soon"
+                  title="Coming soon"
+                >
+                  <span data-i18n="settings.account.avatar_photo">Change photo</span>
+                  <span class="nib-settings-account__badge"
+                        data-i18n="settings.account.avatar_coming_soon">Coming soon</span>
+                </button>
+              </div><!-- /.nib-settings-account__identity -->
+
+              <!-- Display Name field — AccountSection.tsx dòng 38–49 -->
+              <label class="nib-settings-field">
+                <span class="nib-settings-field__label"
+                      data-i18n="settings.account.display_name">Display name</span>
+                <input
+                  type="text"
+                  class="nib-settings-field__input"
+                  data-i18n-placeholder="settings.account.display_name_placeholder"
+                  placeholder="Your name"
+                  value="Nguyen Hai"
+                />
+              </label>
+
+              <!-- Email field — AccountSection.tsx dòng 51–60 -->
+              <label class="nib-settings-field">
+                <span class="nib-settings-field__label"
+                      data-i18n="settings.account.email">Email (optional)</span>
+                <input
+                  type="email"
+                  class="nib-settings-field__input"
+                  data-i18n-placeholder="settings.account.email_placeholder"
+                  placeholder="your@email.com"
+                  value=""
+                />
+              </label>
+
+            </div><!-- /.nib-settings-account -->
+          </div><!-- /#tab-account -->
+
+          <!-- APPEARANCE SECTION (AppearanceSection.tsx dòng 33–73) — ẩn khi Account active -->
+          <div class="nib-settings__content" id="tab-appearance" style="display:none">
+            <div class="nib-settings-appearance">
+
+              <!-- Section title -->
+              <h2 class="nib-settings__section-title"
+                  data-i18n="settings.appearance.title">Appearance</h2>
+
+              <!-- Theme group — AppearanceSection.tsx dòng 36–52 -->
+              <section class="nib-settings__group">
+                <span class="nib-settings__label"
+                      data-i18n="settings.appearance.theme">Theme</span>
+                <div class="nib-settings__seg" role="group">
+                  <button type="button" class="nib-settings__opt"
+                          data-active="true" aria-pressed="true"
+                          data-i18n="settings.appearance.theme.light">Light</button>
+                  <button type="button" class="nib-settings__opt"
+                          data-active="false" aria-pressed="false"
+                          data-i18n="settings.appearance.theme.dark">Dark</button>
+                  <button type="button" class="nib-settings__opt"
+                          data-active="false" aria-pressed="false"
+                          data-i18n="settings.appearance.theme.system">System</button>
+                </div>
+              </section>
+
+              <!-- Language group — AppearanceSection.tsx dòng 54–70 -->
+              <section class="nib-settings__group">
+                <span class="nib-settings__label"
+                      data-i18n="settings.appearance.language">Language</span>
+                <div class="nib-settings__seg" role="group">
+                  <button type="button" class="nib-settings__opt"
+                          data-active="true" aria-pressed="true"
+                          data-i18n="app.lang.en">English</button>
+                  <button type="button" class="nib-settings__opt"
+                          data-active="false" aria-pressed="false"
+                          data-i18n="app.lang.vi">Tiếng Việt</button>
+                </div>
+              </section>
+
+            </div><!-- /.nib-settings-appearance -->
+          </div><!-- /#tab-appearance -->
+
+        </div><!-- /.nib-settings__inner -->
+      </div><!-- /.nib-settings__panel -->
+    </div><!-- /.nib-settings-overlay -->
+
+  </div><!-- /.demo-workspace -->
+
+  <!-- Demo tab switching (static mockup only) -->
+  <script>
+    function switchTab(tabId) {
+      // Ẩn tất cả content
+      document.getElementById('tab-account').style.display = 'none';
+      document.getElementById('tab-appearance').style.display = 'none';
+
+      // Hiện content được chọn
+      document.getElementById('tab-' + tabId).style.display = 'block';
+
+      // Cập nhật data-active trên nav-items
+      var items = document.querySelectorAll('.nib-settings__nav-item:not([data-coming-soon])');
+      items.forEach(function(btn) {
+        var label = btn.querySelector('[data-i18n]');
+        var key = label ? label.getAttribute('data-i18n') : '';
+        var isActive = key === 'settings.nav.' + tabId;
+        btn.setAttribute('data-active', isActive ? 'true' : 'false');
+        if (isActive) {
+          btn.setAttribute('aria-current', 'page');
+        } else {
+          btn.removeAttribute('aria-current');
+        }
+      });
+    }
+  </script>
+
+</body>
+</html>

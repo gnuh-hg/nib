@@ -7,9 +7,9 @@ interface SettingsNavProps {
 }
 
 /**
- * Section navigation. Layout-neutral: the HTML carries no width/position — the
- * three layout variants (rail / tabs / grid) are pure CSS driven by the
- * `data-settings-layout` attribute on the panel. Each item ≥44px hit target.
+ * Section navigation rendered as a horizontal tab bar (settings-overlay.css).
+ * Layout-neutral: the HTML carries no width/position — the visual layout lives
+ * entirely in CSS. Each item ≥44px hit target.
  */
 export function SettingsNav({ sections }: SettingsNavProps) {
   const { t } = useI18n();

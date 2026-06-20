@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<!--
+  SNIPPET: overlay-panel.html
+  Pattern: Overlay lớn (LibraryOverlay)
+  Component thật: src/components/LibraryOverlay/LibraryOverlay.tsx
+                  src/components/LibraryOverlay/LibraryToolbar.tsx
+                  src/components/LibraryOverlay/DocCard.tsx
+  CSS thật được link: tokens.css + library-overlay.css
+  DOM khớp: LibraryOverlay.tsx dòng 72–161, LibraryToolbar.tsx, DocCard.tsx
+
+  CÁCH DÙNG:
+  1. Copy vào docs/design-artifacts/<tên-màn>.html
+  2. Đổi đường dẫn CSS:
+       tokens.css        → ../../src/styles/tokens.css
+       library-overlay.css → ../../src/components/LibraryOverlay/library-overlay.css
+  3. Thay data-i18n key + nội dung cho đúng màn
+  4. Verify:
+       grep -rnE "#[0-9a-fA-F]{3,8}" <file>   = rỗng
+       grep -n "nib-demo" <file>               = rỗng
+       grep -n "src/components" <file>         ≥ 1 (đã link CSS component thật)
+-->
+<html lang="en" data-theme="dark" style="min-width:1024px;height:100%">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1024">
+  <title>Library Overlay — Nib Design Snippet</title>
+
+  <!-- CSS component thật — KHÔNG viết lại inline.
+       Đường dẫn tính từ .claude/design-library/snippets/ -->
+  <link rel="stylesheet" href="../../../src/styles/tokens.css">
+  <link rel="stylesheet" href="../../../src/components/LibraryOverlay/library-overlay.css">
+
+  <style>
+    /* ── Demo setup only — KHÔNG copy vào artifact ── */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      font-family: var(--font-ui);
+      color: var(--text-primary);
+      background-color: var(--desk);
+    }
+    /* Mock canvas nền sau overlay */
+    .demo-canvas {
+      position: relative;
+      width: 100%;
+      min-height: 100vh;
+      background-color: var(--bg-app);
+      overflow: hidden;
+    }
+    /* Gợi ý paper 664px phía sau scrim */
+    .demo-paper-bg {
+      position: absolute;
+      inset: 0;
+      margin: auto;
+      width: 664px;
+      height: min(100%, 800px);
+      background-color: var(--bg-app);
+      box-shadow: var(--sheet-shadow);
+      border-radius: 5px 5px 0 0;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Mock canvas (nền sau overlay) -->
+  <div class="demo-canvas">
+    <div class="demo-paper-bg" aria-hidden="true"></div>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         LIBRARY OVERLAY — DOM từ LibraryOverlay.tsx dòng 72–161
+         data-open="true"  → hiện (opacity:1, pointer-events:auto)
+         data-open="false" → ẩn  (opacity:0, pointer-events:none)
+         ══════════════════════════════════════════════════════════════ -->
+    <div class="nib-library-overlay" data-open="true">
+
+      <!-- Scrim: click-to-close (L74) -->
+      <div class="nib-library__scrim" aria-hidden="true"></div>
+
+      <!-- Panel: role="dialog" aria-modal="true" (L76) -->
+      <div class="nib-library__panel" role="dialog" aria-modal="true"
+           aria-labelledby="snippet-lib-heading">
+
+        <!-- Header (L78–93): Back ← | "Thư viện" | + Tài liệu mới -->
+        <div class="nib-library__header">
+          <!-- nib-library__back: 36×36, ghost, icon-only (L79–86) -->
+          <button type="button" class="nib-library__back"
+                  data-i18n-title="library.title" title="Thư viện"
+                  aria-label="Thư viện">
+            <!-- IconArrowLeft — icons.tsx L191–196: viewBox 0 0 24 24, strokeWidth=1.8, line x19→x5 + polyline -->
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.8"
+                 stroke-linecap="round" stroke-linejoin="round"
+                 aria-hidden="true" focusable="false">
+              <line x1="19" y1="12" x2="5" y2="12"/>
+              <polyline points="12 19 5 12 12 5"/>
+            </svg>
+          </button>
+
+          <!-- nib-library__heading: flex:1, bold (L88) -->
+          <span id="snippet-lib-heading" class="nib-library__heading"
+                data-i18n="library.title">Thư viện</span>
+
+          <!-- nib-library__new: accent fill, 34px, gap icon+text (L89–92) -->
+          <button type="button" class="nib-library__new"
+                  data-i18n="library.new_doc">
+            <!-- IconPlus — icons.tsx L199–204: viewBox 0 0 24 24, strokeWidth=2.2, 2 crossing lines -->
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2.2"
+                 stroke-linecap="round"
+                 aria-hidden="true" focusable="false">
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            + Tài liệu mới
+          </button>
+        </div>
+
+        <!-- LibraryToolbar (LibraryToolbar.tsx dòng 34–81)
+             nib-lib-toolbar: flex row, gap 8px, border-bottom -->
+        <div class="nib-lib-toolbar">
+
+          <!-- Search: nib-lib-search (L35–43) -->
+          <div class="nib-lib-search">
+            <!-- IconSearch — icons.tsx L207–212: viewBox 0 0 24 24, strokeWidth=1.8, cx=11 r=6.5 + line to 20.5 -->
+            <svg class="nib-lib-search__icon" width="14" height="14"
+                 viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                 aria-hidden="true" focusable="false">
+              <circle cx="11" cy="11" r="6.5"/>
+              <line x1="16" y1="16" x2="20.5" y2="20.5"/>
+            </svg>
+            <input type="text" class="nib-lib-search__input"
+                   data-i18n-placeholder="library.search_placeholder"
+                   placeholder="Tìm tài liệu…"
+                   aria-label="Tìm tài liệu…">
+          </div>
+
+          <!-- Grid/List toggle: nib-lib-viewtoggle (L45–68) -->
+          <div class="nib-lib-viewtoggle" role="group">
+            <!-- Grid button — active (data-active="true") -->
+            <button type="button" class="nib-lib-viewtoggle__btn"
+                    data-active="true"
+                    data-i18n-title="library.view_grid" title="Lưới"
+                    aria-label="Lưới" aria-pressed="true">
+              <!-- IconLayoutGrid — icons.tsx L163–170: viewBox 0 0 24 24, strokeWidth=1.7, rects at 3/14 -->
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="1.7"
+                   stroke-linecap="round" stroke-linejoin="round"
+                   aria-hidden="true" focusable="false">
+                <rect x="3" y="3" width="7" height="7" rx="1"/>
+                <rect x="14" y="3" width="7" height="7" rx="1"/>
+                <rect x="3" y="14" width="7" height="7" rx="1"/>
+                <rect x="14" y="14" width="7" height="7" rx="1"/>
+              </svg>
+            </button>
+            <!-- List button — inactive -->
+            <button type="button" class="nib-lib-viewtoggle__btn"
+                    data-i18n-title="library.view_list" title="Danh sách"
+                    aria-label="Danh sách" aria-pressed="false">
+              <!-- IconList — icons.tsx L215–224: viewBox 0 0 24 24, strokeWidth=1.7, 3 lines + 3 filled dots -->
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
+                   aria-hidden="true" focusable="false">
+                <line x1="9" y1="6" x2="20" y2="6"/>
+                <line x1="9" y1="12" x2="20" y2="12"/>
+                <line x1="9" y1="18" x2="20" y2="18"/>
+                <circle cx="5" cy="6" r="1.2" fill="currentColor" stroke="none"/>
+                <circle cx="5" cy="12" r="1.2" fill="currentColor" stroke="none"/>
+                <circle cx="5" cy="18" r="1.2" fill="currentColor" stroke="none"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Sort button: nib-lib-sortbtn (L70–79) -->
+          <button type="button" class="nib-lib-sortbtn"
+                  data-i18n-title="library.sort" title="Sắp xếp">
+            <!-- IconSortLines — icons.tsx L227–233: viewBox 0 0 24 24, strokeWidth=1.7, 3 descending lines -->
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
+                 aria-hidden="true" focusable="false">
+              <line x1="4" y1="6" x2="14" y2="6"/>
+              <line x1="4" y1="12" x2="11" y2="12"/>
+              <line x1="4" y1="18" x2="8" y2="18"/>
+            </svg>
+            <span data-i18n="library.sort_modified">Sửa gần nhất</span>
+            <!-- IconChevronDown — icons.tsx L318–322: viewBox 0 0 10 10, fill=currentColor, filled triangle ▾ -->
+            <svg width="9" height="9" viewBox="0 0 10 10" fill="currentColor"
+                 aria-hidden="true" focusable="false">
+              <path d="M1 3 L5 7 L9 3 Z"/>
+            </svg>
+          </button>
+
+        </div><!-- /.nib-lib-toolbar -->
+
+        <!-- Body: nib-library__body > nib-library__grid (L104–131, viewMode='grid') -->
+        <div class="nib-library__body">
+          <div class="nib-library__grid">
+
+            <!-- DocCard 1 (DocCard.tsx dòng 33–63) -->
+            <!-- nib-lib-card: border, radius-10px, hover lift -->
+            <div class="nib-lib-card" role="button" tabindex="0"
+                 title="Bài tập giải tích">
+              <!-- nib-lib-card__preview: 100px, repeating ruling (var(--border)) -->
+              <div class="nib-lib-card__preview" aria-hidden="true"></div>
+              <div class="nib-lib-card__footer">
+                <div class="nib-lib-card__name">Bài tập giải tích</div>
+                <div class="nib-lib-card__time"
+                     data-i18n="sidebar.doc_updated"
+                     data-i18n-vars='{"time":"2 phút trước"}'>
+                  Cập nhật 2 phút trước
+                </div>
+              </div>
+              <!-- nib-lib-card__ctx: ⋯ button absolute top-right -->
+              <button type="button" class="nib-lib-card__ctx"
+                      data-i18n-title="library.more" title="Tùy chọn"
+                      aria-label="Tùy chọn">
+                <!-- IconDotsHorizontal — icons.tsx L236–249: viewBox 0 0 24 24, fill=currentColor, 3 dots cx=5/12/19 r=2 -->
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"
+                     aria-hidden="true" focusable="false">
+                  <circle cx="5" cy="12" r="2"/>
+                  <circle cx="12" cy="12" r="2"/>
+                  <circle cx="19" cy="12" r="2"/>
+                </svg>
+              </button>
+            </div><!-- /.nib-lib-card 1 -->
+
+            <!-- DocCard 2 -->
+            <div class="nib-lib-card" role="button" tabindex="0"
+                 title="Đại số tuyến tính">
+              <div class="nib-lib-card__preview" aria-hidden="true"></div>
+              <div class="nib-lib-card__footer">
+                <div class="nib-lib-card__name">Đại số tuyến tính</div>
+                <div class="nib-lib-card__time"
+                     data-i18n="sidebar.doc_updated"
+                     data-i18n-vars='{"time":"hôm qua"}'>
+                  Cập nhật hôm qua
+                </div>
+              </div>
+              <button type="button" class="nib-lib-card__ctx"
+                      data-i18n-title="library.more" title="Tùy chọn"
+                      aria-label="Tùy chọn">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"
+                     aria-hidden="true" focusable="false">
+                  <circle cx="2" cy="6" r="1.2" fill="currentColor"/>
+                  <circle cx="6" cy="6" r="1.2" fill="currentColor"/>
+                  <circle cx="10" cy="6" r="1.2" fill="currentColor"/>
+                </svg>
+              </button>
+            </div><!-- /.nib-lib-card 2 -->
+
+            <!-- DocCard 3 -->
+            <div class="nib-lib-card" role="button" tabindex="0"
+                 title="Ghi chú xác suất">
+              <div class="nib-lib-card__preview" aria-hidden="true"></div>
+              <div class="nib-lib-card__footer">
+                <div class="nib-lib-card__name">Ghi chú xác suất</div>
+                <div class="nib-lib-card__time"
+                     data-i18n="sidebar.doc_updated"
+                     data-i18n-vars='{"time":"3 ngày trước"}'>
+                  Cập nhật 3 ngày trước
+                </div>
+              </div>
+              <button type="button" class="nib-lib-card__ctx"
+                      data-i18n-title="library.more" title="Tùy chọn"
+                      aria-label="Tùy chọn">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"
+                     aria-hidden="true" focusable="false">
+                  <circle cx="2" cy="6" r="1.2" fill="currentColor"/>
+                  <circle cx="6" cy="6" r="1.2" fill="currentColor"/>
+                  <circle cx="10" cy="6" r="1.2" fill="currentColor"/>
+                </svg>
+              </button>
+            </div><!-- /.nib-lib-card 3 -->
+
+            <!-- DocCard 4 -->
+            <div class="nib-lib-card" role="button" tabindex="0"
+                 title="Tích phân và ứng dụng">
+              <div class="nib-lib-card__preview" aria-hidden="true"></div>
+              <div class="nib-lib-card__footer">
+                <div class="nib-lib-card__name">Tích phân và ứng dụng</div>
+                <div class="nib-lib-card__time"
+                     data-i18n="sidebar.doc_updated"
+                     data-i18n-vars='{"time":"1 tuần trước"}'>
+                  Cập nhật 1 tuần trước
+                </div>
+              </div>
+              <button type="button" class="nib-lib-card__ctx"
+                      data-i18n-title="library.more" title="Tùy chọn"
+                      aria-label="Tùy chọn">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"
+                     aria-hidden="true" focusable="false">
+                  <circle cx="2" cy="6" r="1.2" fill="currentColor"/>
+                  <circle cx="6" cy="6" r="1.2" fill="currentColor"/>
+                  <circle cx="10" cy="6" r="1.2" fill="currentColor"/>
+                </svg>
+              </button>
+            </div><!-- /.nib-lib-card 4 -->
+
+          </div><!-- /.nib-library__grid -->
+        </div><!-- /.nib-library__body -->
+
+      </div><!-- /.nib-library__panel -->
+    </div><!-- /.nib-library-overlay -->
+
+  </div><!-- /.demo-canvas -->
+</body>
+</html>
