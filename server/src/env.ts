@@ -1,8 +1,8 @@
 /**
  * env.ts — fail-fast environment variable access.
  *
- * Pure module (no side effects). Used by index.ts (SUPABASE_JWT_SECRET) and,
- * in C.2, by persistence.ts (SUPABASE_URL + SUPABASE_SERVICE_KEY).
+ * Pure module (no side effects). Used by index.ts (SUPABASE_URL for the JWKS
+ * endpoint) and by persistence.ts (SUPABASE_URL + SUPABASE_SERVICE_KEY).
  */
 
 /**

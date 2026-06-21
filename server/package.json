@@ -12,11 +12,10 @@
   "dependencies": {
     "@hocuspocus/server": "^4.3.0",
     "@supabase/supabase-js": "^2.45.0",
-    "jsonwebtoken": "^9.0.2",
+    "jose": "^5.9.0",
     "yjs": "^13.6.0"
   },
   "devDependencies": {
-    "@types/jsonwebtoken": "^9.0.6",
     "@types/node": "^22.0.0",
     "ts-node": "^10.9.0",
     "typescript": "^5.4.0"
