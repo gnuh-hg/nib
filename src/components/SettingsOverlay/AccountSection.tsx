@@ -10,6 +10,11 @@ export function AccountSection() {
   const { t } = useI18n();
   const { profile, setDisplayName, setEmail } = useProfile();
 
+  // Since Phase A, profile is null when signed out (guest). The signed-out
+  // state (sign-in form) is rendered by LoginModal — wired in the next A.3-UI
+  // task. Until then, render nothing rather than crash on a null profile.
+  if (!profile) return null;
+
   return (
     <div className="nib-settings-account">
       <h2 className="nib-settings__section-title">{t('settings.account.title')}</h2>

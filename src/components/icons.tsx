@@ -523,3 +523,21 @@ export const IconUser = (p: IconProps) => (
     <path d="M5.5 20a6.5 6.5 0 0 1 13 0" />
   </Base>
 );
+
+/** Alert circle — inline error in LoginModal (circle + exclamation). */
+export const IconAlertCircle = (p: IconProps) => (
+  <Base {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <line x1="12" y1="8" x2="12" y2="13" />
+    <circle cx="12" cy="16.5" r="0.7" fill="currentColor" stroke="none" />
+  </Base>
+);
+
+/** Log out — account menu sign-out action. Door + arrow out. */
+export const IconLogOut = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+    <polyline points="16 17 21 12 16 7" />
+    <line x1="21" y1="12" x2="9" y2="12" />
+  </Base>
+);

@@ -199,7 +199,17 @@
   2. `.claude/skills/design/SKILL.md` — thêm **§1 Bước 6 "Motion-intent spec"** (5 điểm: ghi comment HTML + liệt report + vocab GSAP ease names + reduced-motion fallback bắt buộc + cấm code GSAP trong mockup) + 1 row anti-pattern mới ("Màn có chuyển động nhưng không ghi motion-intent → ghi §1 Bước 6 kèm reduced-motion"). Gate: grep "motion|gsap" SKILL.md ≥5 match ✓.
 - **note**: Create-time gap (Phase 2 build design agent body, team-ops quên port đoạn motion-intent từ design-figma.md → design.md). KHÔNG high-impact (chỉ agent body + skill, không đụng master/playbook/settings.json) → áp ngay + báo lead diff. Rà soát convention rớt: phần còn lại của design-figma.md (planKey Figma, `skill://figma-use`, whoami...) = Figma-specific, KHÔNG áp cho code-native design → không cần port.
 
-## Status tổng quan (2026-06-20)
-Open issues: (không còn — tất cả đã fixed)
+## ISSUE-16 — OTHER (lead spawn KHÔNG đọc §13 hard-gate + sai recipe spawn) — open
+
+- **time**: 2026-06-21
+- **teammate**: `team-lead` (workstream "Accounts + Cloud Sync" — user chốt hướng C)
+- **symptom**: User giao "khởi động researcher rồi planner". Lead **spawn thẳng `Agent(subagent_type=researcher)` chạy nền** mà:
+  1. **CHƯA đọc** `.claude/master.md` + `.claude/teams/playbook.md` + `.claude/memory/context.md` — vi phạm **hard-gate CLAUDE.md §13** ("đọc đủ 3 file TRƯỚC khi spawn bất kỳ team nào"). User phải nhắc ("vì không đọc @master và @playbook nên đã spam sai cách").
+  2. **Sai recipe spawn (playbook §2):** brief nhét thẳng vào prompt `Agent` thay vì `TaskCreate` brief 4 phần (§3) để gate; KHÔNG chờ ack (§2 bước 3); KHÔNG áp tmux layout §8 sau spawn; researcher không gắn vào TaskList nên không có Task để gate theo §7.
+- **target**: `.claude/` — đề xuất `team-ops` cân nhắc (CHƯA sửa). Lưu ý: rule §13/§3 đã TỒN TẠI đầy đủ trong CLAUDE.md/master/playbook — đây là **lead non-compliance**, không phải thiếu rule. Mới 1 lần → log để theo dõi tái diễn (như ISSUE-3 lần đầu). Nếu lặp ≥2 → cứng-hoá (vd thêm checklist "đã đọc 3 file?" vào recipe §2 bước 0, hoặc reminder ở §13).
+- **note**: Lead tự khắc phục trong-phiên: đọc đủ 3 file, ghi issue này. Researcher (dù spawn sai recipe) đã hoàn thành với output PASS gate §7 (4 mục đầy đủ, câu-hỏi-còn-chặn thực sự chặn) → KHÔNG re-run identical (lãng phí token); gate output đã có + tiếp chain ĐÚNG recipe từ planner trở đi (TaskCreate brief 4 phần + plan-gate). N hiện tại = 1 pane (researcher đã rest) → không cần layout §8.
+
+## Status tổng quan (2026-06-21)
+Open issues: #16
 Fixed issues: #0, #1, #2, #3, #4, #5, #6, #7, #8, #9, #10, #11, #12, #13, #14, #15
-(Cập nhật 2026-06-20 sau khi user duyệt Phase C diff)
+(Cập nhật 2026-06-21 — ISSUE-16 lead spawn sai gate/recipe, mới 1 lần, theo dõi tái diễn)

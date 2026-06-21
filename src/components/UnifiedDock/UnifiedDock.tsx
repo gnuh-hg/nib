@@ -79,6 +79,8 @@ export interface UnifiedDockProps {
   onOpenLibrary?: () => void;
   /** Open the Settings overlay from the NAV [Settings] button. */
   onOpenSettings?: () => void;
+  /** Open the LoginModal from the NAV account chip (when signed out). */
+  onOpenLogin?: () => void;
 }
 
 function readMode(): DockMode {
@@ -108,9 +110,14 @@ const PEN_ICONS: Record<PenTool, typeof IconNib> = {
  * Tính → evalBlock, Convert → convertNibBlock, Format → toggleMark on the real
  * editor. Pen/size/color stay local UI state (no real ink in Phase 0).
  */
-export function UnifiedDock({ editor, onOpenLibrary, onOpenSettings }: UnifiedDockProps) {
+export function UnifiedDock({
+  editor,
+  onOpenLibrary,
+  onOpenSettings,
+  onOpenLogin,
+}: UnifiedDockProps) {
   const { t } = useI18n();
-  const { activeBlockId } = useEditorContext();
+  const { ydoc, activeBlockId } = useEditorContext();
 
   const [mode, setMode] = useState<DockMode>(readMode);
   // Drill-down level — in-memory only, always starts at NAV (S1.1 Q1, not persisted).
@@ -203,6 +210,10 @@ export function UnifiedDock({ editor, onOpenLibrary, onOpenSettings }: UnifiedDo
     onOpenSettings?.();
     setOpenPop(null);
   }, [onOpenSettings]);
+  const onAccount = useCallback(() => {
+    onOpenLogin?.();
+    setOpenPop(null);
+  }, [onOpenLogin]);
   const navPlaceholder = useCallback(() => {
     /* TODO: wire Help. */
   }, []);
@@ -294,8 +305,8 @@ export function UnifiedDock({ editor, onOpenLibrary, onOpenSettings }: UnifiedDo
 
   // Editor-affecting actions (Session 2.1). No-op without an active block.
   const onCalc = useCallback(() => {
-    if (editor && activeBlockId) void evalBlock(editor, activeBlockId);
-  }, [editor, activeBlockId]);
+    if (editor && activeBlockId) void evalBlock(editor, ydoc, activeBlockId);
+  }, [editor, ydoc, activeBlockId]);
   const onConvert = useCallback(() => {
     if (editor && activeBlockId) editor.commands.convertNibBlock(activeBlockId);
   }, [editor, activeBlockId]);
@@ -337,6 +348,7 @@ export function UnifiedDock({ editor, onOpenLibrary, onOpenSettings }: UnifiedDo
               onType={goType}
               onWrite={goWrite}
               onHelp={navPlaceholder}
+              onAccount={onAccount}
             />
           ) : (
             <>

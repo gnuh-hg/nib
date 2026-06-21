@@ -30,7 +30,8 @@
 | `.nib-dock__format-glyph` | Glyph "T" trong nút Format |
 
 **Sub-components:**
-- `NavLevel.tsx` — level NAV (5 nút nav: Library/Settings/Type/Write/Help; **account chip bỏ 2026-06-18**)
+- `NavLevel.tsx` — level NAV (Library/Settings/Type/Write/Help + **AccountChip** re-added 2026-06-21 cuối nav, sau 1 divider)
+- `AccountChip.tsx` — entry tài khoản (signed-out = nút `nib-dock__navbtn` IconUser mở LoginModal; signed-in = `nib-account-chip` avatar + portal menu Đăng xuất). Xem §8.
 - `CalcBtn.tsx` — nút Tính (accent fill, `.nib-dock__calc`, 44×44)
 - `DragHandle.tsx` — ⋮⋮ handle kéo (class: `.nib-dock__drag`, KHÔNG phải `.nib-dock__drag-handle`)
 - `FlyoutPanel.tsx` + 6 flyout (Pointer/Select/PenType/Size/Color/Format) — popover nổi phải dock
@@ -56,7 +57,9 @@
         <button class="nib-dock__btn nib-dock__navbtn" title="Gõ"><!-- icon --></button>
         <button class="nib-dock__btn nib-dock__navbtn" title="Viết"><!-- icon --></button>
         <button class="nib-dock__btn nib-dock__navbtn" title="Trợ giúp"><!-- icon --></button>
-        <!-- KHÔNG có account chip (bỏ 2026-06-18) -->
+        <span class="nib-dock__divider"></span>
+        <!-- AccountChip (signed-out form) — IconUser, mở LoginModal -->
+        <button class="nib-dock__btn nib-dock__navbtn" title="Đăng nhập"><!-- IconUser --></button>
       </div>
     </div>
     <button class="nib-dock__collapse" aria-label="Thu gọn"></button>
@@ -304,6 +307,47 @@
 **Data attributes:**
 - `data-active="true"` → `--accent-subtle` nền surface
 - `data-show-edge="true"` → left-edge 2px accent visible (chỉ EDITING, không INK-CAPTURE)
+
+---
+
+## 8. LoginModal + AccountChip
+
+**File:** `src/components/LoginModal/LoginModal.tsx` + `login-modal.css`; `src/components/UnifiedDock/AccountChip.tsx` + `account-chip.css`
+**Mockup nguồn (đã duyệt):** `docs/design-artifacts/login-modal.html`
+
+**Mô tả:** Overlay auth (đăng nhập/đăng ký) — pattern scrim + panel centered nhất quán SettingsOverlay/LibraryOverlay, nhưng panel hẹp (480px). 1 panel, 2 mode (login/signup) toggle bằng React state (KHÔNG `[data-mode]` CSS như mockup tĩnh — render có điều kiện). Motion bằng GSAP (`useGSAP` + `gsap.matchMedia` reduced-motion): overlay fade 0.20s + panel translateY(8→0) 0.22s + error expand 0.18s + mode crossfade 0.12s. Field tái dùng `.nib-settings-field` (settings-overlay.css). Google OAuth = nút disabled placeholder.
+
+**Class CSS chính (login-modal.css):**
+
+| Class | Mô tả |
+|---|---|
+| `.nib-login-overlay` | Container `position:absolute; inset:0; **z-90**`; `data-open` gate pointer-events; opacity do GSAP. z-90 (scrim) / z-100 (panel) vượt dock anchor (z-30, portal body) + account-menu (z-80) — vì `.nib-app` không phải stacking context nên overlay phải cao hơn dock ở root level |
+| `.nib-login__scrim` | Scrim `var(--scrim)` z-90, click-to-close |
+| `.nib-login__panel` | Panel 480×560 centered (`inset:0;margin:auto`) **z-100**, `--bg-elevated` + `--shadow-2`; opacity/transform do GSAP |
+| `.nib-login__header` / `__back` / `__heading-wrap` | Header 57px mirror nib-settings__header; Back 44×44 |
+| `.nib-login__body` | Body scroll, flex column; `key={mode}` remount cho crossfade |
+| `.nib-login__welcome` / `__logo` / `__welcome-title` / `__welcome-sub` | Khối branding (IconLogo) |
+| `.nib-login__form` | Form flex column gap |
+| `.nib-login__forgot` | Link quên mật khẩu (chỉ login; placeholder) |
+| `.nib-login__error` / `__error-icon` | Alert lỗi (`color-mix --error`), IconAlertCircle; render khi có lỗi |
+| `.nib-login__submit` | CTA full-width accent fill, min-height 44px |
+| `.nib-login__mode-toggle` | Link đổi mode login↔signup |
+| `.nib-login__divider` / `__divider-line` / `__divider-text` | OR divider |
+| `.nib-login__oauth-btn` / `__oauth-icon` / `__oauth-badge` | Google disabled + badge "Coming soon" |
+| `.nib-login__shared-footer` | Wrapper OR + OAuth |
+
+**AccountChip class (account-chip.css):**
+
+| Class | Mô tả |
+|---|---|
+| signed-out | `nib-dock__btn nib-dock__navbtn` (IconUser) — tái dùng dock button, mở LoginModal |
+| `.nib-account-chip` | signed-in: nút 44×44 chứa avatar disc |
+| `.nib-account-chip__disc` | đĩa 28px, `background: var(--avatar-color)` (swatch token từ profile), initials |
+| `.nib-account-menu` | portal menu `position:fixed` clamp viewport (mistakes.md), `--shadow-2` |
+| `.nib-account-menu__identity` / `__label` / `__email` | header menu (email) |
+| `.nib-account-menu__item` | item Đăng xuất (IconLogOut) |
+
+**i18n:** `login.*` (15) + `signup.*` (10) + `account.*` (4: open_login/menu/signed_in_as/sign_out) en+vi. Tái dùng `library.cancel`, `settings.nav.coming_soon`.
 
 ---
 

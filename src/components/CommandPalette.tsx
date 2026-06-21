@@ -25,7 +25,7 @@ interface Command {
 export function CommandPalette({ editor, open, onClose }: CommandPaletteProps) {
   const { t, toggleLang } = useI18n();
   const { cycleTheme } = useTheme();
-  const { activeBlockId } = useEditorContext();
+  const { ydoc, activeBlockId } = useEditorContext();
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
   const [index, setIndex] = useState(0);
@@ -37,7 +37,7 @@ export function CommandPalette({ editor, open, onClose }: CommandPaletteProps) {
         id: 'calc',
         labelKey: 'cmd.calc',
         shortcut: 'Shift+Enter',
-        run: () => activeBlockId && void evalBlock(editor, activeBlockId),
+        run: () => activeBlockId && void evalBlock(editor, ydoc, activeBlockId),
       },
       {
         id: 'convert',
@@ -49,13 +49,13 @@ export function CommandPalette({ editor, open, onClose }: CommandPaletteProps) {
         id: 'undo',
         labelKey: 'cmd.undo',
         shortcut: 'Ctrl+Z',
-        run: () => editor.commands.undo(),
+        run: () => editor.storage.YjsSync?.undoManager?.undo(),
       },
       {
         id: 'redo',
         labelKey: 'cmd.redo',
         shortcut: 'Ctrl+Y',
-        run: () => editor.commands.redo(),
+        run: () => editor.storage.YjsSync?.undoManager?.redo(),
       },
       { id: 'theme', labelKey: 'cmd.toggle_theme', run: () => cycleTheme() },
       { id: 'lang', labelKey: 'cmd.toggle_lang', run: () => toggleLang() },
@@ -72,7 +72,7 @@ export function CommandPalette({ editor, open, onClose }: CommandPaletteProps) {
           editor.chain().focus().insertNibBlock({ lineIndex: 0, xOffset: 24, blockType: 'text' }).run(),
       },
     ];
-  }, [editor, activeBlockId, cycleTheme, toggleLang]);
+  }, [editor, ydoc, activeBlockId, cycleTheme, toggleLang]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();

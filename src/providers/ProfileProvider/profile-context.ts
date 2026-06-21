@@ -1,9 +1,12 @@
 import { createContext, useContext } from 'react';
+import type { Session } from '@supabase/supabase-js';
 
 /**
- * Local, UI-only user profile (no auth, no backend — see settings-redesign plan).
- * Persisted to localStorage['nib-profile']. `avatarImage` is a reserved slot for
- * post-MVP photo upload (needs Tauri fs/dialog) — left undefined for now.
+ * Locally-overridable user profile fields. Persisted to localStorage
+ * ['nib-profile']. Since the Accounts + Cloud Sync workstream (Phase A),
+ * the *identity* (email/id) comes from the Supabase session; these stored
+ * fields are user overrides layered on top (displayName, avatarColor, and the
+ * reserved avatarImage slot for post-MVP photo upload).
  */
 export interface StoredProfile {
   displayName: string;
@@ -14,17 +17,50 @@ export interface StoredProfile {
   avatarImage?: string;
 }
 
-/** Profile as consumed by the UI: stored fields + derived initials. */
+/** Profile as consumed by the UI: stored fields + Supabase identity + derived initials. */
 export interface ProfileData extends StoredProfile {
+  /** Supabase user id (present when signed in). */
+  id?: string;
   /** Derived at render time from displayName — never persisted. */
   avatarInitials: string;
 }
 
 export interface ProfileContextValue {
-  profile: ProfileData;
+  /** The active profile, or null when signed out (guest). */
+  profile: ProfileData | null;
+  /** The raw Supabase session (null when signed out) — for consumers needing tokens/user. */
+  session: Session | null;
   setDisplayName: (name: string) => void;
   setEmail: (email: string) => void;
   // setAvatarImage reserved for post-MVP photo upload.
+}
+
+/**
+ * Derive the UI profile from the Supabase session + locally-stored overrides.
+ * Pure (no React) so it is unit-testable on its own.
+ *   - No session  → null (signed-out / guest).
+ *   - Session     → identity (id/email) from the Supabase user, with the stored
+ *                   displayName / avatarColor / avatarImage layered on top.
+ *     displayName falls back to the email local-part when not set locally.
+ */
+export function deriveProfile(
+  session: Session | null,
+  stored: StoredProfile,
+): ProfileData | null {
+  if (!session) return null;
+  const userEmail = session.user.email ?? undefined;
+  const displayName =
+    stored.displayName.trim() !== ''
+      ? stored.displayName
+      : (userEmail?.split('@')[0] ?? '');
+  return {
+    id: session.user.id,
+    displayName,
+    email: stored.email ?? userEmail,
+    avatarColor: stored.avatarColor || deriveAvatarColor(displayName),
+    avatarImage: stored.avatarImage,
+    avatarInitials: deriveInitials(displayName),
+  };
 }
 
 export const PROFILE_STORAGE_KEY = 'nib-profile';

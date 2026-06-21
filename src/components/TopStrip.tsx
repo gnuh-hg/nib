@@ -34,7 +34,7 @@ export function TopStrip({ editor, docs, activeDocId }: TopStripProps) {
         <button
           type="button"
           className="nib-strip__iconbtn"
-          onClick={() => editor?.commands.undo()}
+          onClick={() => editor?.storage.YjsSync?.undoManager?.undo()}
           title={t('strip.undo')}
           aria-label={t('strip.undo')}
         >
@@ -43,7 +43,7 @@ export function TopStrip({ editor, docs, activeDocId }: TopStripProps) {
         <button
           type="button"
           className="nib-strip__iconbtn"
-          onClick={() => editor?.commands.redo()}
+          onClick={() => editor?.storage.YjsSync?.undoManager?.redo()}
           title={t('strip.redo')}
           aria-label={t('strip.redo')}
         >

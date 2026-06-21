@@ -168,6 +168,7 @@ nộp structural-fidelity evidence (grep pass) + checklist cho user mở `file:/
 | **LibraryOverlay** | `src/components/LibraryOverlay/LibraryOverlay.tsx` `LibraryToolbar.tsx` `DocCard.tsx` `library-overlay.css` | `snippets/overlay-panel.html` + `components.md §2` |
 | **Canvas / TopStrip** | `src/components/Canvas.tsx` `TopStrip.tsx` `canvas.css` `app-shell.css` `blocks.css` | `snippets/ruled-paper-canvas.html` + `components.md §5` |
 | **SettingsOverlay** | `src/components/SettingsOverlay/SettingsOverlay.tsx` `settings-overlay.css` | `components.md §3` *(no snippet)* |
+| **LoginModal + AccountChip** | `src/components/LoginModal/LoginModal.tsx` `login-modal.css`; `src/components/UnifiedDock/AccountChip.tsx` `account-chip.css` `NavLevel.tsx` | `components.md §8` + `snippets/dock-nav-level.html` (account chip) *(mockup nguồn: `docs/design-artifacts/login-modal.html`)* |
 | **CommandPalette** | `src/components/CommandPalette.tsx` `palette.css` | `components.md §6` *(no snippet)* |
 | **NibBlock (NodeView)** | `src/components/canvas.css` `blocks.css` | `components.md §7` *(tái dùng §5 Canvas)* |
 | **icons.tsx** | `src/components/icons.tsx` | Mọi snippet dùng inline SVG → cập nhật `viewBox/d` khi icon thay đổi |

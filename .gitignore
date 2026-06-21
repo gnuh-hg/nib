@@ -8,6 +8,10 @@ dist-ssr/
 # Tauri (added in packaging phase)
 src-tauri/target/
 
+# Env (secrets — never commit; keep .env.example tracked)
+.env.local
+.env.*.local
+
 # Logs
 *.log
 npm-debug.log*

@@ -117,3 +117,42 @@
 - **Phase C (HIGH-IMPACT, [USER DUYỆT toàn bộ diff]):** master §1 + playbook §11 — cứng-hoá: soạn plan = planner, dựng mockup = design, lead KHÔNG tự làm (ISSUE-10/12). playbook §8/§2 tmux: `main-pane-width 60%` trước select-layout + re-apply sau shutdown + N-dynamic guard (ISSUE-11, lặp ≥3). playbook §10 ISSUE-7 workaround (đừng spawn mode:plan cho session ghi; brief-level STOP thay thế) + `findings-issue7.md`. note-ch→Nib + 8→9vai trong master/playbook. Renumber Teammate anti-patterns 11-18. ISSUE-7/10/11/12 → fixed. Issue queue giờ Open=0.
 - **Lead fix bootstrap:** thêm `Bash` vào team-ops.md tools (trước thiếu — body dặn chạy python3 json.load mà không có Bash; latent bug). team-ops giờ làm được file-ops/grep/json-validate.
 - **Bài học process:** message race teammate↔lead lặp lại (team-ops/planner báo "task done" stale, không thấy task mới) → lead phải resend nudge "TaskGet(N) trực tiếp". Không chặn nhưng tốn 1 round-trip mỗi handoff.
+
+## 2026-06-21 — accounts-cloud-sync: workstream MỚI khởi động (user chốt hướng C) + plan PASS
+- User hỏi "app có tài khoản, đổi máy phải thấy lại dữ liệu" → chốt **hướng C = account thật + cloud sync CẢ tài liệu toán**. **ĐẢO [LOCKED] cũ** "Account = UI-ONLY local, KHÔNG auth/backend" (context.md 2026-06-19) — thay đổi spec có chủ đích.
+- **Quyết định LOCKED session này (user chốt):**
+  1. Sync engine = **Yjs (CRDT)**, KHÔNG LWW (offline-first + merge an toàn, mất block toán nghiêm trọng; tái dùng y-prosemirror).
+  2. Kết quả CAS (exact/approx LaTeX) = **phần của block/doc**, persist+sync CÙNG block (user sửa false-dichotomy của lead: kết quả không tách rời doc).
+  3. Backend = **Supabase (auth+Postgres) + Hocuspocus (MIT self-host Yjs WS) trên Render** — fit research; loại Liveblocks ($99/mo+lock-in) + y-supabase (not production-ready).
+  4. **Render + Supabase = FREE TIER** (user chốt 2026-06-21). Hệ quả: Render ngủ 15ph→cold-start sync (offline-first che); Supabase 500MB+pause-1-tuần → CC-3 nén snapshot quan trọng. = CC-2 resolved.
+- **Rủi ro then chốt CC-1:** y-prosemirror **không sync node attributes đúng** (bug đã biết) — xOffset/lineIndex/kết quả của block là node attrs → architect Phase B phải chốt HOW (node attr vs Y.Map riêng) trước khi implement, không thì block dồn x=0 vỡ layout.
+- **Plan PASS (planner, gate lead):** `plan/accounts-cloud-sync/ROADMAP.md` (4 phase A-Auth/B-Sync/C-Deploy/D-UI) + `phase-a-auth/{PLAN.md,CHECKPOINT.md}` (3 session). CC-4 (keyring plugin Tauri) chặn A.2; A.1 chạy ngay.
+- **Sự cố ISSUE-16 (open, mới 1 lần):** lead spawn researcher KHÔNG đọc hard-gate §13 (master+playbook+context) + sai recipe (Agent nền brief-in-prompt thay TaskCreate). User nhắc. Lead khắc phục: đọc đủ 3 file, ghi issue, tiếp chain đúng recipe từ planner. Research output vẫn PASS nên không re-run.
+- **Đang làm:** build Phase A.1 (editor-frontend) — supabase client singleton + auth module + .env.example. CHƯA tới bước Claude Chrome setup web (Phase C human gate).
+
+## 2026-06-21 — Phase A (Auth) HOÀN TẤT frontend — accounts-cloud-sync
+- Toàn bộ Phase A done, lead verify độc lập + visual gate app thật mỗi session:
+  - **A.1** (editor): `src/lib/supabase.ts` (client singleton) + `src/lib/auth.ts` (signIn/signOut/getSession/onAuthStateChange + sau thêm signUpWithEmail) + `.env.example` + mock supabase trong test. vitest 62.
+  - **A.2-Rust** (glue): `src-tauri/` keyring crate "4" + 3 command `save_token/load_token/clear_token` (invoke_handler), OS keychain (secret-service/Keychain/Credential Manager), reject khi daemon down. cargo build 0. CC-4 chốt = OS keychain + fallback.
+  - **A.2-JS** (editor): `src/lib/tokenStore.ts` (saveToken/loadToken/clearToken + initTokenSync) bọc 3 invoke + fallback localStorage khi keychain reject. vitest 72.
+  - **A.3-logic** (editor): `src/providers/ProfileProvider/` migrate → Supabase user (deriveProfile, profile nullable=signed-out, session trong context). vitest 76.
+  - **A.3-design** (design): `docs/design-artifacts/login-modal.html` mockup login+signup (8/8 DC), user duyệt. Bản fancy split-layout/illustration để Phase D (memory [[future-fancy-auth-ui]]).
+  - **A.3-build** (editor): `src/components/LoginModal/` (login/signup toggle, GSAP motion+reduced-motion) + `AccountChip` (signed-out→mở modal, signed-in→avatar+menu Đăng xuất) + IconAlertCircle/IconLogOut + 29 i18n key (login/signup/account) en/vi parity 192=192. vitest 82.
+- **Visual gate (lead foreground chrome, :1420) bắt 1 bug**: LoginModal mở thì UnifiedDock (z:30, portal body) đè lên → editor fix z scrim/panel 90/100 (.nib-app không phải stacking context). Re-verify: modal render sạch trên dock, i18n VN đúng. (Ảnh mid-fade gây hiểu nhầm 1 nhịp — đã xác nhận elementFromPoint=modal + panel opaque.)
+- **CÒN TREO — USER smoke**: login thật cần `.env.local` Supabase config (chưa có project — Phase C human gate); theme/lang runtime; escape/scrim đóng; reduced-motion; vòng lõi editor không vỡ.
+- **Tiếp**: Phase B (Sync Engine Yjs) — BẮT ĐẦU bằng architect giải CC-1 (y-prosemirror node-attrs: xOffset/lineIndex/kết quả block) TRƯỚC khi implement. Index gitnexus đã re-index tươi.
+- Editor/glue/design đã shutdown sau Phase A.
+
+## 2026-06-22 — Phase B (Sync Engine, Yjs) HOÀN TẤT frontend — accounts-cloud-sync
+- Chain: architect (CC-1 + HOW) → planner (5-session long-plan) → editor (B.1-B.5). Lead verify độc lập mỗi session + visual smoke cuối.
+- **CC-1 GIẢI = (a) Y.Map side-channel**: block layout/CAS fields (xOffset/lineIndex/blockState/latex/exact/approx/...) lưu trong `Y.Map "blockMeta"` keyed block-id, KHÔNG để là PM node-attrs (né bug y-prosemirror). PM node `nibBlock` chỉ giữ 3 attr structural {id,blockType,starter}. HOW đầy đủ: `plan/accounts-cloud-sync/phase-b-sync-engine/ARCHITECTURE.md`.
+- **B.1** yjs core: src/lib/{yjs,yProvider,yPersistence}.ts + src/providers/YjsProvider/. Deps: yjs 13.6, @hocuspocus/provider+server ^4.3, y-prosemirror ^1.3, y-indexeddb ^9 (deviation: plan pin ^2 sai — y-indexeddb không có major 2). vitest 82.
+- **B.2** block-meta: yBlockMeta.ts (Map-of-Y.Map, LWW per-key, transact) + useBlockMeta (observeDeep, DEFAULT_META R3) + useYjsStatus + BlockMetaRecord. vitest 87.
+- **B.3** (HEAVY) strip NibBlock 17→3 attr + migrate NibBlockView→useBlockMeta/patchBlockMeta + blockActions(ydoc) + bỏ field NibBlockAttrs. R1 grep 0. Kéo slot `ydoc:Y.Doc|null` vào editor-context sớm. vitest 87.
+- **B.4** YjsSync.ts (ySyncPlugin+yUndoPlugin+UndoManager qua storage+keyboard) + DELETE NibHistory.ts + TopStrip/CommandPalette undo qua editor.storage.YjsSync?.undoManager (optional-chaining). vitest 87.
+- **B.5** (HEAVY) Workspace tách Workspace(outer, wrap YjsProvider key=docId, userId/token từ ProfileProvider) + WorkspaceEditor(inner, xmlFragment từ useYjs().ydoc → YjsSync.configure + ctx.ydoc thật). GOTCHA: ySyncPlugin bỏ qua content: → seedStarter() vào ydoc với CRDT flag docMeta.seeded (idempotent 2-tab). tsc 0, build 0, vitest 87.
+- **Lead visual verify**: app load sạch, starter block render ĐÚNG qua đường Yjs (đúng vị trí + kết quả, không DEFAULT_META) → editor lõi KHÔNG vỡ.
+- **GATE VÀNG 2-tab sync CÒN TREO**: cần token≠null (auth thật) để nối Hocuspocus → cần **Phase C** (Supabase project + Render deploy). Signed-out hiện = offline-only IndexedDB (persist reload, KHÔNG sync 2-tab). Chạy hocuspocus local: `node -e "const {Server}=require('@hocuspocus/server'); Server.configure({port:1234}).listen();"` + `VITE_HOCUSPOCUS_URL=ws://localhost:1234 npm run dev`.
+- **Defer**: convert latex↔text bridging qua meta (TODO trong NibBlock.ts) — follow-up nếu cần.
+- **Tiếp Phase C**: HUMAN GATE — user setup Supabase project (schema yjs_updates + RLS) + Render Hocuspocus service (free tier) + onAuthenticate JWT validate room `${userId}:${docId}` (R5). Đây là lúc dùng Claude Chrome vào Supabase/Render. CC-2 (free tier) + CC-3 (snapshot compaction) chốt ở Phase C.
+- Editor shutdown sau B.5.

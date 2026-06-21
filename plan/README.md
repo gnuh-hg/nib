@@ -62,5 +62,8 @@ Cấm gate cảm tính ("render đẹp", "ổn rồi").
 | `settings-redesign` | long-plan (active) | Thiết kế lại + mở rộng SettingsOverlay: sidebar-nav layout + section registry + 3 section MVP. 2 phase / 4 session. | 🔄 |
 | `maintenance` | roadmap | Bảo trì hệ thống `.claude/`: 3 phase (A cleanup / B wiring upgrade / C workflow hardening HIGH-IMPACT). Nền: audit 2026-06-20. | 🔄 |
 | `maintenance/phase-a-cleanup` | long-plan (Phase A) | Archive plan done + docs stale, annotate design.md, xóa flat ROADMAP, trim memory. 1 phase / 6 session. | 🔄 |
+| `accounts-cloud-sync` | roadmap | Workstream Accounts + Cloud Sync: auth + sync engine (Yjs/CRDT) + backend deploy (Supabase+Hocuspocus) + UI polish. 4 phase. | 🔄 |
+| `accounts-cloud-sync/phase-a-auth` | long-plan (Phase A) | Auth: Supabase auth trong Tauri + secure token storage (GNOME Keyring / fallback) + ProfileProvider migration. 3 session. | 🔄 |
+| `accounts-cloud-sync/phase-b-sync-engine` | long-plan (Phase B) | Sync Engine: Yjs CRDT + Y.Map side-channel (CC-1) + y-indexeddb offline-first + Hocuspocus WS client + undo migrate + gate vàng 2-tab. 5 session. | 🔄 |
 
 > Cập nhật bảng này mỗi khi tạo/đóng một plan. Trạng thái: ⬜ chưa bắt đầu · 🔄 đang chạy · ✅ done.

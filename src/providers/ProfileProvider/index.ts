@@ -3,6 +3,7 @@ export {
   useProfile,
   deriveInitials,
   deriveAvatarColor,
+  deriveProfile,
   AVATAR_SWATCHES,
   PROFILE_STORAGE_KEY,
 } from './profile-context';

@@ -1,10 +1,12 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { Session } from '@supabase/supabase-js';
+import { getSession, onAuthStateChange } from '@/lib/auth';
+import { initTokenSync } from '@/lib/tokenStore';
 import {
   ProfileContext,
   PROFILE_STORAGE_KEY,
   deriveAvatarColor,
-  deriveInitials,
-  type ProfileData,
+  deriveProfile,
   type StoredProfile,
 } from './profile-context';
 
@@ -52,6 +54,26 @@ function persist(profile: StoredProfile): void {
 
 export function ProfileProvider({ children }: { children: React.ReactNode }) {
   const [stored, setStored] = useState<StoredProfile>(() => readStoredProfile());
+  const [session, setSession] = useState<Session | null>(null);
+
+  // Reflect the real Supabase session: hydrate on mount, then stay reactive via
+  // onAuthStateChange. initTokenSync() persists/clears the secure token on
+  // SIGNED_IN / SIGNED_OUT (Session A.2). All subscriptions cleaned up on unmount.
+  useEffect(() => {
+    let active = true;
+    void getSession().then((s) => {
+      if (active) setSession(s);
+    });
+    const authSub = onAuthStateChange((_event, s) => {
+      setSession(s);
+    });
+    const tokenSub = initTokenSync();
+    return () => {
+      active = false;
+      authSub.unsubscribe();
+      tokenSub.unsubscribe();
+    };
+  }, []);
 
   const setDisplayName = useCallback((name: string) => {
     setStored((prev) => {
@@ -74,15 +96,13 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  // Profile = Supabase identity + stored overrides (null when signed out).
   // avatarInitials is computed at render — never persisted.
-  const profile: ProfileData = useMemo(
-    () => ({ ...stored, avatarInitials: deriveInitials(stored.displayName) }),
-    [stored],
-  );
+  const profile = useMemo(() => deriveProfile(session, stored), [session, stored]);
 
   const value = useMemo(
-    () => ({ profile, setDisplayName, setEmail }),
-    [profile, setDisplayName, setEmail],
+    () => ({ profile, session, setDisplayName, setEmail }),
+    [profile, session, setDisplayName, setEmail],
   );
 
   return <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>;

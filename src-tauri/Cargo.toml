@@ -19,3 +19,8 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = [] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+# OS keychain — token storage (Phase A.2, CC-4 chốt)
+# Linux: zbus-secret-service-keyring-store (default) → GNOME Keyring/KWallet via D-Bus
+# Windows: windows-native-keyring-store (default) → Credential Manager
+# macOS: cần apple-native-keyring-store (thêm khi build macOS)
+keyring = "4"

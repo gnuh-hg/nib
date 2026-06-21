@@ -4,6 +4,7 @@ import { useI18n } from '@/hooks/useI18n';
 import { Workspace } from './Workspace';
 import { LibraryOverlay } from './LibraryOverlay';
 import { SettingsOverlay } from './SettingsOverlay';
+import { LoginModal } from './LoginModal';
 import { MOCK_DOCS } from '@/data/mockDocs';
 import { sortDocs, type DocEntry, type SortKey, type ViewMode } from '@/types/doc';
 
@@ -25,6 +26,7 @@ export function AppShell() {
 
   const [libOpen, setLibOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [sortKey, setSortKey] = useState<SortKey>('modified');
   const [sortOpen, setSortOpen] = useState(false);
@@ -106,6 +108,7 @@ export function AppShell() {
           activeDocId={activeDocId}
           onOpenLibrary={() => setLibOpen(true)}
           onOpenSettings={() => setSettingsOpen(true)}
+          onOpenLogin={() => setLoginOpen(true)}
         />
       </div>
 
@@ -144,6 +147,8 @@ export function AppShell() {
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
       />
+
+      <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
     </div>
   );
 }

@@ -1,0 +1,284 @@
+/* LoginModal — auth overlay (accounts-cloud-sync Phase A, Session A.3).
+   Source of truth: docs/design-artifacts/login-modal.html (user-approved).
+   Pattern mirrors SettingsOverlay/LibraryOverlay (scrim + centered panel).
+   Opacity / transform are driven by GSAP (LoginModal.tsx) — NOT CSS transitions —
+   so they aren't declared here; data-open only gates pointer-events.
+   Field inputs reuse .nib-settings-field from settings-overlay.css. */
+
+/* z-index: the dock (.nib-dock-anchor) is position:fixed portaled to <body>
+   with z-index:30, OUTSIDE .nib-app. Because .nib-app is not a stacking context,
+   the overlay must sit above the dock at the root level — use z above the dock
+   (30) and above the signed-in account menu (80) so nothing in the dock paints
+   over the auth modal. */
+.nib-login-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 90;
+  opacity: 0;
+  pointer-events: none;
+}
+.nib-login-overlay[data-open='true'] {
+  pointer-events: auto;
+}
+
+.nib-login__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 90;
+  background: var(--scrim);
+}
+
+.nib-login__panel {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: min(480px, calc(100% - 80px));
+  height: min(560px, calc(100% - 80px));
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background-color: var(--bg-elevated);
+  box-shadow: var(--shadow-2);
+  opacity: 0;
+}
+
+/* ── Header — mirror nib-settings__header ── */
+.nib-login__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: none;
+  height: 57px;
+  padding: 0 var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+.nib-login__back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+.nib-login__back:hover {
+  background-color: var(--bg-subtle);
+  color: var(--text-primary);
+}
+.nib-login__back:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.nib-login__heading-wrap {
+  flex: 1;
+  font-size: var(--font-size-ui-md);
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+/* ── Body — scrollable flex column ── */
+.nib-login__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-5) var(--space-6);
+  gap: var(--space-4);
+}
+
+.nib-login__welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding-bottom: var(--space-1);
+}
+.nib-login__logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  color: var(--accent);
+}
+.nib-login__welcome-title {
+  font-size: var(--font-size-doc-heading);
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+.nib-login__welcome-sub {
+  font-size: var(--font-size-ui-sm);
+  color: var(--text-muted);
+  text-align: center;
+  max-width: 320px;
+}
+
+.nib-login__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.nib-login__forgot {
+  align-self: flex-end;
+  font-size: var(--font-size-ui-sm);
+  color: var(--accent);
+  text-decoration: none;
+  margin-top: calc(-1 * var(--space-2));
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 0;
+}
+.nib-login__forgot:hover {
+  text-decoration: underline;
+}
+.nib-login__forgot:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Error alert — opacity/height driven by GSAP; hidden via [data-visible] */
+.nib-login__error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background-color: color-mix(in srgb, var(--error) 10%, var(--bg-surface));
+  border: 1px solid color-mix(in srgb, var(--error) 25%, transparent);
+  color: var(--error);
+  font-size: var(--font-size-ui-sm);
+  line-height: 1.4;
+}
+.nib-login__error-icon {
+  flex: none;
+  margin-top: 1px;
+}
+
+.nib-login__submit {
+  width: 100%;
+  min-height: 44px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background-color: var(--accent);
+  color: var(--text-on-accent);
+  font-size: var(--font-size-ui-sm);
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  letter-spacing: 0.01em;
+  transition: background-color 0.15s;
+}
+.nib-login__submit:hover {
+  background-color: var(--accent-hover);
+}
+.nib-login__submit:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.nib-login__submit:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.nib-login__mode-toggle {
+  text-align: center;
+  font-size: var(--font-size-ui-sm);
+  color: var(--text-muted);
+  margin-top: calc(-1 * var(--space-1));
+}
+.nib-login__mode-toggle button {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+  margin-left: var(--space-1);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  padding: 0;
+}
+.nib-login__mode-toggle button:hover {
+  text-decoration: underline;
+}
+.nib-login__mode-toggle button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.nib-login__divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--text-muted);
+  font-size: var(--font-size-ui-sm);
+}
+.nib-login__divider-line {
+  flex: 1;
+  height: 1px;
+  background-color: var(--border);
+}
+.nib-login__divider-text {
+  flex: none;
+}
+
+.nib-login__oauth-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  font-size: var(--font-size-ui-sm);
+  font-weight: 600;
+  cursor: not-allowed;
+  font-family: inherit;
+}
+.nib-login__oauth-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--border-strong);
+  font-size: var(--font-size-ui-sm);
+  font-weight: 700;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+}
+.nib-login__oauth-badge {
+  padding: 1px var(--space-2);
+  border-radius: 4px;
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  font-size: var(--font-size-ui-xs);
+  font-weight: 600;
+}
+
+.nib-login__shared-footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  flex: none;
+}

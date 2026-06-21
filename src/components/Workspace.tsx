@@ -7,11 +7,13 @@ import {
   useState,
   type PointerEvent,
 } from 'react';
-import { useEditor, type JSONContent } from '@tiptap/react';
+import { useEditor } from '@tiptap/react';
+import type { Editor } from '@tiptap/react';
+import type * as Y from 'yjs';
 import { NibDocument } from '@/editor/extensions/NibDocument';
 import { NibText } from '@/editor/extensions/NibText';
-import { NibHistory } from '@/editor/extensions/NibHistory';
 import { NibBlock } from '@/editor/extensions/NibBlock';
+import { YjsSync } from '@/editor/extensions/YjsSync';
 import {
   NibBold,
   NibItalic,
@@ -21,6 +23,10 @@ import {
 import { EditorContext } from '@/editor/editor-context';
 import { lineIndexFromY, xOffsetFromX } from '@/editor/geometry';
 import { findBlock, deleteBlock, patchBlock } from '@/editor/blockActions';
+import { initBlockMeta } from '@/editor/yBlockMeta';
+import { PROSEMIRROR_FRAGMENT } from '@/lib/yjs';
+import { YjsProvider, useYjs } from '@/providers/YjsProvider';
+import { useProfile } from '@/providers/ProfileProvider';
 import { useI18n } from '@/hooks/useI18n';
 import { useContextualTips } from '@/hooks/useContextualTips';
 import { TopStrip } from './TopStrip';
@@ -32,53 +38,69 @@ import { Canvas } from './Canvas';
 import type { BlockType } from '@/types/block';
 import type { DocEntry } from '@/types/doc';
 
-// Starter content (design.md §4.5): a demo math block already showing a result,
-// so the user learns the block+result model. Fades out on first user block.
-const STARTER_CONTENT: JSONContent = {
-  type: 'doc',
-  content: [
-    {
-      type: 'nibBlock',
-      attrs: {
-        id: 'starter-demo',
-        lineIndex: 1,
-        // Authoring intent = render position: xOffset 56 == MARGIN_L (left gutter).
-        xOffset: 56,
-        blockType: 'math',
-        blockState: 'result-exact',
-        latexContent: '\\int x^2\\,dx',
-        exactLatex: '\\frac{x^3}{3}+C',
-        isApprox: false,
-        starter: true,
-      },
-    },
-  ],
-};
-
 interface WorkspaceProps {
   onOpenLibrary: () => void;
   onOpenSettings: () => void;
+  onOpenLogin: () => void;
   docs: DocEntry[];
   activeDocId: string;
 }
 
 /**
+ * Onboarding demo block (design.md §4.5): a math block already showing a result,
+ * so the user learns the block+result model. Seeded into the Yjs doc once (when
+ * the document is empty) — see `seedStarter` — because with y-prosemirror the
+ * document content is driven by the shared Y.XmlFragment, not TipTap `content`.
+ * Fades out on the user's first block.
+ */
+const STARTER_ID = 'starter-demo';
+
+function seedStarter(editor: Editor, ydoc: Y.Doc): void {
+  // Idempotent across devices: a CRDT flag guards re-seeding. If the doc already
+  // has content (from IndexedDB or a remote peer), just mark it seeded.
+  const docMeta = ydoc.getMap<boolean>('docMeta');
+  if (docMeta.get('seeded')) return;
+  const fragment = ydoc.getXmlFragment(PROSEMIRROR_FRAGMENT);
+  if (fragment.length > 0) {
+    docMeta.set('seeded', true);
+    return;
+  }
+  docMeta.set('seeded', true);
+  const node = editor.schema.nodes.nibBlock.create({
+    id: STARTER_ID,
+    blockType: 'math',
+    starter: true,
+  });
+  editor.view.dispatch(editor.state.tr.insert(0, node));
+  initBlockMeta(ydoc, STARTER_ID, {
+    lineIndex: 1,
+    // Authoring intent = render position: xOffset 56 == MARGIN_L (left gutter).
+    xOffset: 56,
+    blockState: 'result-exact',
+    latexContent: '\\int x^2\\,dx',
+    exactLatex: '\\frac{x^3}{3}+C',
+    isApprox: false,
+  });
+}
+
+/**
  * Editor workspace: owns the TipTap editor, the EditorContext provider and all
- * canvas interaction state. Layout (nav-dock-design §2/§3) = thin full-width
- * TopStrip on top, then the canvas stage below — the SidebarRail is gone; doc
- * quick-switch now lives in the strip's doc-title dropdown.
+ * canvas interaction state. Wrapped by <YjsProvider> (see `Workspace`) so the
+ * document syncs through Yjs (CRDT) with offline-first IndexedDB + Hocuspocus WS.
  *
  * CRITICAL: UnifiedDock + CommandPalette consume useEditorContext, so they MUST
  * stay inside <EditorContext.Provider> (architect risk) — they live after the
  * .nib-workspace div but still within the provider.
  */
-export function Workspace({
+function WorkspaceEditor({
   onOpenLibrary,
   onOpenSettings,
+  onOpenLogin,
   docs,
   activeDocId,
 }: WorkspaceProps) {
   const { t } = useI18n();
+  const { ydoc } = useYjs();
   const paperRef = useRef<HTMLDivElement>(null);
   const clampedRef = useRef(false);
   const starterDismissed = useRef(false);
@@ -100,30 +122,45 @@ export function Workspace({
     window.setTimeout(() => setShowClampToast(false), 4000);
   }, []);
 
-  const editor = useEditor({
-    extensions: [
-      NibDocument,
-      NibText,
-      NibHistory,
-      NibBold,
-      NibItalic,
-      NibUnderline,
-      NibStrike,
-      NibBlock,
-    ],
-    content: STARTER_CONTENT,
-    editorProps: {
-      attributes: { class: 'nib-pm', spellcheck: 'false' },
-      handlePaste: (view, event) => {
-        const text = event.clipboardData?.getData('text/plain');
-        if (text) {
-          view.dispatch(view.state.tr.insertText(text));
-          return true;
-        }
-        return false;
+  // y-prosemirror binds the document to this shared fragment (collaborative sync
+  // + CRDT undo via YjsSync). Content is driven by Yjs, NOT a TipTap `content`.
+  const xmlFragment = useMemo(
+    () => ydoc.getXmlFragment(PROSEMIRROR_FRAGMENT),
+    [ydoc],
+  );
+
+  const editor = useEditor(
+    {
+      extensions: [
+        NibDocument,
+        NibText,
+        YjsSync.configure({ xmlFragment }),
+        NibBold,
+        NibItalic,
+        NibUnderline,
+        NibStrike,
+        NibBlock,
+      ],
+      editorProps: {
+        attributes: { class: 'nib-pm', spellcheck: 'false' },
+        handlePaste: (view, event) => {
+          const text = event.clipboardData?.getData('text/plain');
+          if (text) {
+            view.dispatch(view.state.tr.insertText(text));
+            return true;
+          }
+          return false;
+        },
       },
     },
-  });
+    [xmlFragment],
+  );
+
+  // Seed the onboarding starter once the editor is bound + local state hydrated.
+  useEffect(() => {
+    if (!editor) return;
+    seedStarter(editor, ydoc);
+  }, [editor, ydoc]);
 
   // Recompute ghost visibility on doc changes.
   useEffect(() => {
@@ -138,11 +175,11 @@ export function Workspace({
   const dismissStarter = useCallback(() => {
     if (starterDismissed.current || !editor) return;
     starterDismissed.current = true;
-    if (!findBlock(editor, 'starter-demo')) return;
-    const el = document.querySelector('[data-block-id="starter-demo"]');
+    if (!findBlock(editor, STARTER_ID)) return;
+    const el = document.querySelector(`[data-block-id="${STARTER_ID}"]`);
     el?.classList.add('nib-block--fading');
-    window.setTimeout(() => deleteBlock(editor, 'starter-demo'), 260);
-  }, [editor]);
+    window.setTimeout(() => deleteBlock(editor, ydoc, STARTER_ID), 260);
+  }, [editor, ydoc]);
 
   const coordsFromPointer = (clientX: number, clientY: number) => {
     // Coords are paper-relative (R6): xOffset/lineIndex measured from the sheet's
@@ -164,10 +201,13 @@ export function Workspace({
     dismissStarter();
     const { lineIndex, xOffset } = coordsFromPointer(clientX, clientY);
     editor.chain().focus().insertNibBlock({ lineIndex, xOffset, blockType }).run();
-    if (latex) {
-      const last = editor.state.doc.lastChild;
-      const id = last?.attrs.id as string | undefined;
-      if (id) patchBlock(editor, id, { latexContent: latex });
+    // Layout (+ optional latex) lives in blockMeta now — initialise it for the
+    // freshly inserted block so it renders at the pointer position.
+    const last = editor.state.doc.lastChild;
+    const id = last?.attrs.id as string | undefined;
+    if (id) {
+      initBlockMeta(ydoc, id, { lineIndex, xOffset });
+      if (latex) patchBlock(ydoc, id, { latexContent: latex });
     }
   };
 
@@ -222,8 +262,8 @@ export function Workspace({
   const total = editor ? editor.state.doc.childCount : 0;
 
   const ctx = useMemo(
-    () => ({ activeBlockId, setActiveBlockId, notifyClamped, onTipTrigger: trigger }),
-    [activeBlockId, notifyClamped, trigger],
+    () => ({ ydoc, activeBlockId, setActiveBlockId, notifyClamped, onTipTrigger: trigger }),
+    [ydoc, activeBlockId, notifyClamped, trigger],
   );
 
   return (
@@ -248,6 +288,7 @@ export function Workspace({
         editor={editor}
         onOpenLibrary={onOpenLibrary}
         onOpenSettings={onOpenSettings}
+        onOpenLogin={onOpenLogin}
       />
 
       <CommandPalette
@@ -271,5 +312,28 @@ export function Workspace({
         </div>
       )}
     </EditorContext.Provider>
+  );
+}
+
+/**
+ * Public workspace: wires the Yjs sync provider around the editor. docId = the
+ * open document; userId/token come from the Supabase session (Phase A) — signed
+ * out → token null → YjsProvider runs offline-only (IndexedDB, no WS). Keyed by
+ * docId so switching documents rebinds to a fresh Y.Doc + editor.
+ */
+export function Workspace(props: WorkspaceProps) {
+  const { session } = useProfile();
+  const userId = session?.user.id ?? 'local';
+  const token = session?.access_token ?? null;
+
+  return (
+    <YjsProvider
+      key={props.activeDocId}
+      docId={props.activeDocId}
+      userId={userId}
+      token={token}
+    >
+      <WorkspaceEditor {...props} />
+    </YjsProvider>
   );
 }

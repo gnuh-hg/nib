@@ -54,3 +54,19 @@
 - Fix (pattern CHUẨN, áp cho MỌI floating element từ nay): sau render đo `el.getBoundingClientRect()` trong `useLayoutEffect` → clamp `left = clamp(EDGE_GAP, x, innerWidth - width - EDGE_GAP)`, `top = clamp(EDGE_GAP, y, innerHeight - height - EDGE_GAP)`. Tham chiếu: UnifiedDock đã có `flyoutTop()`/`expandDirection()` cùng ý tưởng (overflow flip) — TÁI DÙNG tư duy đó, đừng đặt toạ độ thô.
 - Bài học: **KHÔNG bao giờ đặt floating element bằng toạ độ thô không clamp.** Checklist khi tạo popover/menu/flyout: (1) đo size sau mount; (2) clamp cả 2 trục vào viewport với EDGE_GAP; (3) cân nhắc flip hướng khi gần mép. (SortDropdown + các flyout khác nên rà cùng pattern.)
 - Confirm: `tsc` 0 · `build` 0 · `vitest` pass.
+
+## 2026-06-21 17:30 — overlay-z-index-vs-dock-portal
+
+Triệu chứng (lead screenshot app thật): LoginModal mở nhưng UnifiedDock (icon grid/gear/...) render ĐÈ LÊN scrim+panel modal.
+Bối cảnh stacking: dock = `position:fixed` + `createPortal(document.body)` z-index:30, NẰM NGOÀI `.nib-app`. Overlay (Settings/Library/Login) = `position:absolute` trong `.nib-app` (KHÔNG phải stacking context: position:relative + overflow:hidden, không z/transform) → z của overlay được "promote" lên root, so trực tiếp với dock z:30.
+Fix: nâng z LoginModal vượt hẳn — container/scrim z:90, panel z:100 (> dock 30, > account-menu 80). Settings/Library dùng 50/60 (đã trên dock 30); LoginModal nâng cao hơn cho chắc.
+Bài học: overlay mới phải có z > dock anchor (30). Khi thêm overlay portal/fixed mới, kiểm z so với MỌI fixed/portal element ở body level, KHÔNG chỉ so trong nội bộ component. `.nib-app` cố ý KHÔNG là stacking context nên z overlay là z root-level.
+Confirm: tsc 0 · build 0 · vitest 82/82 · (visual = lead screenshot re-verify).
+
+## 2026-06-21 23:50 — y-indexeddb-unhandled-rejection-jsdom
+
+Build: Phase B.1 YjsProvider — `npx vitest run` FAIL "ReferenceError: indexedDB is not defined" (Unhandled Rejection) khi mount `<YjsProvider token={null}>` trong jsdom.
+Root cause: jsdom KHÔNG có `indexedDB`. `new IndexeddbPersistence()` (y-indexeddb 9) tạo `this._db = idb.openDB(...)` → reject; nội bộ lib còn `this._db.then(db=>{...})` KHÔNG có .catch → unhandled rejection KHÔNG chặn được từ ngoài. Thêm: `whenSynced` chỉ resolve khi event 'synced', KHÔNG bao giờ reject → `await waitForSync` treo vĩnh viễn khi IDB hỏng.
+Fix (2 lớp): (1) `YjsProvider` guard `if (typeof indexedDB !== 'undefined')` TRƯỚC khi construct persistence — né hẳn jsdom/SSR (đúng pattern guard browser-only API như mathlive/MathfieldElement). (2) `waitForSync` race `whenSynced` vs `_db` rejection → resolve gracefully cho Firefox private-mode (IDB defined nhưng open() reject).
+Confirm: temp smoke test render `local:doc` exit 0, 0 unhandled error; `vitest run` 82/82 · tsc 0 · build 0.
+

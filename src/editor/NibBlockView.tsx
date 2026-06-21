@@ -18,13 +18,9 @@ import { EvalSpinner } from '@/components/EvalSpinner';
 import { mathMarkup } from '@/services/mathMarkup';
 import { evalBlock } from './blockActions';
 import { isResult } from './blockState';
-import type {
-  BlockState,
-  BlockType,
-  ErrorKind,
-  MathSize,
-  TextScale,
-} from '@/types/block';
+import { useBlockMeta } from '@/hooks/useBlockMeta';
+import { patchBlockMeta } from './yBlockMeta';
+import type { BlockType } from '@/types/block';
 
 /**
  * React NodeView for a nibBlock. Renders the body by (blockType, blockState):
@@ -33,23 +29,29 @@ import type {
  * (architect risk #2); placement is render-time clamp (design.md §3.1).
  */
 export function NibBlockView(props: NodeViewProps) {
-  const { node, editor, deleteNode, updateAttributes } = props;
-  const { activeBlockId, setActiveBlockId, notifyClamped, onTipTrigger } =
+  const { node, editor, deleteNode } = props;
+  const { ydoc, activeBlockId, setActiveBlockId, notifyClamped, onTipTrigger } =
     useEditorContext();
 
+  // Structural attrs from the PM node; layout/CAS from the Yjs blockMeta
+  // side-channel (CC-1). useBlockMeta tolerates a null ydoc (B.3→B.5 intermediate
+  // renders DEFAULT_META).
   const id = node.attrs.id as string;
-  const lineIndex = node.attrs.lineIndex as number;
-  const xOffset = node.attrs.xOffset as number;
   const blockType = node.attrs.blockType as BlockType;
-  const blockState = node.attrs.blockState as BlockState;
-  const latex = node.attrs.latexContent as string;
-  const exactLatex = node.attrs.exactLatex as string;
-  const approxLatex = node.attrs.approxLatex as string;
-  const isApprox = node.attrs.isApprox as boolean;
-  const errorKind = node.attrs.errorKind as ErrorKind;
-  const textScale = node.attrs.textScale as TextScale;
-  const mathSize = node.attrs.mathSize as MathSize;
-  const color = node.attrs.color as string;
+  const meta = useBlockMeta(ydoc, id);
+  const {
+    lineIndex,
+    xOffset,
+    blockState,
+    latexContent: latex,
+    exactLatex,
+    approxLatex,
+    isApprox,
+    errorKind,
+    textScale,
+    mathSize,
+    color,
+  } = meta;
 
   const wrapperRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<number>(0);
@@ -81,32 +83,32 @@ export function NibBlockView(props: NodeViewProps) {
     return () => ro.disconnect();
   }, [xOffset, lineIndex, blockState, latex, notifyClamped]);
 
-  // ---- Math editing ----
+  // ---- Math editing ---- (writes go to blockMeta, not PM node attrs)
   const handleMathChange = useCallback(
     (value: string) => {
       if (value.includes('sqrt')) onTipTrigger('sqrt-first');
       window.clearTimeout(debounceRef.current);
       debounceRef.current = window.setTimeout(
-        () => updateAttributes({ latexContent: value }),
+        () => patchBlockMeta(ydoc, id, { latexContent: value }),
         50,
       );
     },
-    [updateAttributes, onTipTrigger],
+    [ydoc, id, onTipTrigger],
   );
 
   // ---- Tính: evalBlock flow — single shared path (NodeView + toolbar) ----
   const handleEval = useCallback(
     (value: string) => {
       // Persist latest latex first, then run the shared eval path.
-      updateAttributes({ latexContent: value });
-      void evalBlock(editor, id);
+      patchBlockMeta(ydoc, id, { latexContent: value });
+      void evalBlock(editor, ydoc, id);
     },
-    [editor, id, updateAttributes],
+    [editor, ydoc, id],
   );
 
   const handleEdit = useCallback(() => {
-    updateAttributes({ blockState: 'editing-math' });
-  }, [updateAttributes]);
+    patchBlockMeta(ydoc, id, { blockState: 'editing-math' });
+  }, [ydoc, id]);
 
   // ---- Empty-block auto-delete on blur ----
   const handleBlur = (e: FocusEvent<HTMLDivElement>) => {

@@ -29,16 +29,15 @@ function genId(): string {
   return `b-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-function initialState(blockType: BlockType): string {
-  if (blockType === 'ink') return 'ink-capture';
-  if (blockType === 'text') return 'editing-text';
-  return 'editing-math';
-}
-
 /**
  * The free-placement block node. draggable:false (architect), selectable:false
- * (active state is React-driven, not PM selection). Content is inline text in
- * Phase 0; MathLive replaces math-block content in Session 1.3.
+ * (active state is React-driven, not PM selection). Content is inline text;
+ * math content lives in MathLive.
+ *
+ * Since Phase B (CC-1) the node carries ONLY structural attrs ({id, blockType,
+ * starter}). Layout/CAS fields (xOffset, lineIndex, blockState, latexContent,
+ * results, …) live in the Yjs `blockMeta` side-channel keyed by id — see
+ * `yBlockMeta.ts` — because y-prosemirror does not sync node attrs reliably.
  */
 export const NibBlock = Node.create({
   name: 'nibBlock',
@@ -51,20 +50,8 @@ export const NibBlock = Node.create({
   addAttributes() {
     return {
       id: { default: null },
-      lineIndex: { default: 0 },
-      xOffset: { default: 0 },
       blockType: { default: 'math' },
-      blockState: { default: 'editing-math' },
-      latexContent: { default: '' },
-      exactLatex: { default: '' },
-      approxLatex: { default: '' },
-      isApprox: { default: false },
-      errorKind: { default: '' },
-      textScale: { default: 'body' },
-      mathSize: { default: 'normal' },
-      color: { default: '' },
       starter: { default: false },
-      inkStrokes: { default: [] },
     };
   },
 
@@ -90,13 +77,9 @@ export const NibBlock = Node.create({
         (opts) =>
         ({ state, dispatch }) => {
           const blockType = opts.blockType ?? 'math';
-          const node = this.type.createAndFill({
-            id: genId(),
-            lineIndex: opts.lineIndex,
-            xOffset: opts.xOffset,
-            blockType,
-            blockState: initialState(blockType),
-          });
+          // Structural node only; layout (opts.lineIndex/xOffset) + initial state
+          // go to blockMeta via initBlockMeta in the caller (Workspace, B.5).
+          const node = this.type.createAndFill({ id: genId(), blockType });
           if (!node) return false;
 
           // Free placement: visual position comes from attrs, so doc order is
@@ -128,29 +111,16 @@ export const NibBlock = Node.create({
           const toText = node.attrs.blockType === 'math';
 
           if (dispatch) {
-            let newNode;
-            if (toText) {
-              // Math → text: math content (LaTeX) becomes plain text.
-              const text = (node.attrs.latexContent as string) || node.textContent;
-              newNode = this.type.create(
-                {
-                  ...node.attrs,
-                  blockType: 'text',
-                  blockState: 'editing-text',
-                  latexContent: '',
-                },
-                text ? state.schema.text(text) : null,
-              );
-            } else {
-              // Text → math: plain text becomes the LaTeX seed.
-              const text = node.textContent;
-              newNode = this.type.create({
-                ...node.attrs,
-                blockType: 'math',
-                blockState: 'editing-math',
-                latexContent: text,
-              });
-            }
+            // Structural toggle only (blockType). blockState + latexContent↔text
+            // bridging lives in blockMeta and is handled by the meta-aware path
+            // once Workspace wires ydoc (B.5); math content is in MathLive, so a
+            // math node has no PM text to carry over.
+            const newNode = toText
+              ? this.type.create(
+                  { ...node.attrs, blockType: 'text' },
+                  node.textContent ? state.schema.text(node.textContent) : null,
+                )
+              : this.type.create({ ...node.attrs, blockType: 'math' });
             dispatch(state.tr.replaceWith(pos, pos + node.nodeSize, newNode));
           }
           return true;

@@ -93,3 +93,75 @@ Done: tsc 0 · build 0 · vitest 62/62 (+6 profile: deriveInitials ''→'?'/'Hun
 Stack: team-ops maintenance (git mv + git rm + Edit + Write + Bash).
 Pattern: archive plan/docs = git mv giữ history; grep ref-inventory TRƯỚC khi mv để không bỏ sót live ref; memory trim = extract top-N entries vào archive.md rồi cp slim file (không dùng Write vì mất context, dùng sed+cp); log/history entries "Để nguyên" — không cần update path trong prose entries.
 Done: ls plan/_archived/ 7 dirs · ls plan/ROADMAP.md = Not found · docs/_archived/ 6 files · SUPERSEDED 5 hits · context.md 10 entries.
+
+## 2026-06-21 11:58 — supabase-client-auth-module-A1
+
+Stack: React/TS/Vite + @supabase/supabase-js@^2.108. `src/lib/supabase.ts` = singleton `createClient(import.meta.env.VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY)` với placeholder fallback (createClient throw nếu url/key rỗng) + persistSession/autoRefresh, detectSessionInUrl:false (Tauri webview không có OAuth URL callback ở A.1). `src/lib/auth.ts` = 4 wrapper (signInWithEmail/signOut/getSession/onAuthStateChange) trả type Supabase gốc — UI inspect `error` để dịch.
+Test no-network: mock tại tầng `vi.mock('@supabase/supabase-js')` trong `src/test/setup.ts` (bắt MỌI import path, không phụ thuộc relative './supabase' vs alias '@/lib/supabase'). Env typed ở `vite-env.d.ts` (ImportMetaEnv optional). `.env.local` gitignored, `.env.example` tracked.
+Done-criteria: tsc 0 · build 0 · vitest 62/62 (existing không vỡ, 0 test network thật).
+
+## 2026-06-21 14:30 — tauri-keyring-v4-linux-pattern
+
+Stack: keyring v4 + Tauri 2 (Ubuntu/GNOME). Default features bao gồm `zbus-secret-service-keyring-store` (Linux) + `windows-native-keyring-store` — không cần thêm feature flag trên Linux.
+Pattern: `tauri::async_runtime::spawn_blocking` bọc sync keyring API; JoinHandle<R>.await → tauri::Result<R> → `.map_err(|e| format!("..."))?` lấy inner Result<R,String>.
+Done-criteria: `cargo build` exit 0 (4m37s fresh, cached <<1s). 3 command: save_token/load_token/clear_token registered trong invoke_handler.
+Bài học: apple-native-keyring-store được pull automatically dù build Linux — OK vì conditional compile. Không cần `libsecret-dev` riêng cho zbus (pure Rust).
+
+## 2026-06-21 12:20 — token-store-keychain-fallback-A2
+
+Stack: React/TS/Vite + Tauri 2 keychain IPC. `src/lib/tokenStore.ts` bọc 3 invoke command (save_token/load_token/clear_token) trong try/catch — keychain reject (daemon down / ngoài Tauri / vitest) → fallback localStorage key `nib-auth-token`. clearToken LUÔN clear cả fallback (token lưu fallback không sót). `initTokenSync()` đăng ký onAuthStateChange (auth.ts) → SIGNED_IN save access_token / SIGNED_OUT clear — tách side-effect khỏi wrapper auth.ts.
+Test: `vi.mock('@tauri-apps/api/core', ()=>({invoke: vi.fn()}))` + `vi.mock('./auth')` capture callback ref để test hook. localStorage.clear() mỗi beforeEach. Cover cả keychain-path (resolve) lẫn fallback-path (reject).
+Done-criteria: tsc 0 · build 0 · vitest 72/72 (+10 mới). KHÔNG đụng src-tauri (glue đã xong A.2-Rust).
+
+## 2026-06-21 12:27 — profileprovider-supabase-migration-A3logic
+
+Migrate ProfileProvider local-only → Supabase-reactive (KHÔNG dùng @testing-library — repo test thuần pure-fn).
+Pattern: tách `deriveProfile(session, stored): ProfileData|null` PURE trong profile-context.ts (session null→null guest; session→identity id/email từ Supabase user + stored override displayName/avatarColor/avatarImage layer trên; displayName fallback email local-part). Provider chỉ wire side-effect: useEffect mount → getSession()→setSession + onAuthStateChange→setSession + initTokenSync(); cleanup unsubscribe cả 2 + active-flag chống setState sau unmount. profile=useMemo(deriveProfile). Context value thêm `session`. ProfileData thêm `id?`.
+Consumer guard: AccountSection `if(!profile) return null` (login UI = task kế); markup signed-in KHÔNG đổi → design-library không cần sync.
+Done-criteria: tsc 0 · build 0 · vitest 76/76 (+4 deriveProfile: null/reflect/override/no-email). gitnexus index stale (contexts→providers rename) → impact thủ công qua grep: consumer = App.tsx (mount) + AccountSection (useProfile). Risk LOW.
+
+## 2026-06-21 17:05 — loginmodal-gsap-rtl-A3build
+
+LoginModal (auth overlay) + AccountChip + wire (accounts-cloud-sync A.3 build cuối). Stack: React/TS + GSAP (gsap@3.15 + @gsap/react@2.1) + RTL (@testing-library/react@16 + user-event@14).
+- GSAP trong React: `useGSAP({scope, dependencies})` + `gsap.matchMedia()` 2 nhánh reduce/no-preference (reduced-motion BẮT BUỘC). CSS KHÔNG set transition opacity/transform khi GSAP sở hữu (tránh double-animate); data-open chỉ gate pointer-events.
+- 1 panel 2 mode: render có ĐIỀU KIỆN theo state (KHÔNG [data-mode] CSS như mockup tĩnh); body `key={mode}` remount cho crossfade.
+- LoginModal vào AppShell (loginOpen state, cạnh settingsOpen) → Workspace → UnifiedDock(onOpenLogin) → NavLevel(onAccount) → AccountChip. AccountChip signed-out=nib-dock__navbtn IconUser; signed-in=avatar disc + portal menu CLAMP viewport (mistakes.md floating).
+- errorKey phải typed union (I18nKey subset), KHÔNG `string` — `t()` nhận I18nKey.
+RTL trong vitest jsdom: (1) stub `window.matchMedia` VÔ ĐIỀU KIỆN trong setup (GSAP gọi `_win.matchMedia` trực tiếp — guard `'matchMedia' in window` chặn nhầm); (2) `afterEach(cleanup)` global tránh DOM leak giữa test.
+BÀI HỌC bug: focus-on-open bằng `setTimeout(focus,60)` ĐUA với userEvent.type → đuôi password lọt vào email field ("ada@nib.appcretpw"). Fix: focus trực tiếp trong useEffect, BỎ setTimeout.
+Done: tsc 0 · build 0 · vitest 82/82 (+6: 5 LoginModal +1 AccountChip) · 0 hex · i18n parity 192=192. design-library synced (snippet dock-nav-level + components.md §8 + INDEX MAPPING row).
+
+## 2026-06-21 23:50 — yjs-provider-offline-first-lifecycle
+
+Stack: Yjs 13.6 + @hocuspocus/provider 4.3 + y-indexeddb 9 + y-prosemirror 1.3 (Phase B.1). Versions trong ARCHITECTURE (^2) STALE — y-indexeddb không có major 2, hocuspocus ^2 là bản 2023; chọn major hiện hành coherent peer yjs ^13.6.
+Pattern YjsProvider: `ydoc = useMemo(createYDoc(docId))` (singleton Map cache) → effect: guard indexedDB → persistence + `waitForSync` → `setReady(true)` (render children NGAY, không block WS) → nếu token: hocuspocus + sub 'synced'/'status'/'authenticationFailed' map syncStatus 'local'|'syncing'|'synced'|'error'. Cleanup: `provider.destroy()` (tự destroy websocket riêng qua event 'destroy') + `persistence.destroy()`. token=null → offline-only 'local'.
+Hocuspocus v4 backoff (1000/×2/max30000) chỉ set được qua `HocuspocusProviderWebsocket` config (url-variant không nhận delay/factor) → tạo websocket riêng + tear down qua `provider.on('destroy')` để giữ contract "caller .destroy()".
+Done-criteria: tsc 0 · build 0 · vitest 82/82 · YjsProvider render children token=null → syncStatus='local' 0 console error.
+
+## 2026-06-22 00:34 — yjs-blockmeta-side-channel-b2
+
+Stack: Yjs 13.6 Map-of-Y.Map side-channel (CC-1). `getBlockMetaMap(ydoc)` (top Y.Map) → mỗi block id = 1 Y.Map entry → field LWW per-key. yBlockMeta.ts: getBlockMeta (fallback DEFAULT_META khi entry chưa có = R3 race tolerance) / patchBlockMeta (tạo entry nếu thiếu, set từng field trong ydoc.transact, bỏ undefined) / initBlockMeta (idempotent: `if root.has(id) return` — gọi 2 lần không reset) / deleteBlockMeta.
+useBlockMeta hook: `observeDeep` trên root map (bắt cả entry creation + field change) → setState(getBlockMeta) → re-render; resync trên mount/ydoc/id change. useYjsStatus = wrapper useYjs().syncStatus.
+GUARD quan trọng: B.2 chỉ ADD BlockMetaRecord vào types/block.ts (thuần additive) — HOÃN bỏ 14 field khỏi NibBlockAttrs sang B.3 (NibBlock/View/blockActions còn ref → bỏ giờ vỡ tsc). Giữ gate xanh.
+Test real Y.Doc (no mock): patch→get; concurrent merge 2 docs qua encodeStateAsUpdate/applyUpdate (key khác nhau không mất); init idempotent. Done: tsc 0 · build 0 · vitest 87/87 (+5).
+
+## 2026-06-22 00:50 — yjs-cc1-migration-b3 (node-attr → blockMeta)
+
+Stack: TipTap node strip + Y.Map side-channel migration (CC-1). NibBlock.addAttributes 17→3 ({id,blockType,starter}); 14 layout/CAS field → blockMeta. NibBlockView đọc qua `useBlockMeta(ydoc,id)` (destructure meta), ghi qua `patchBlockMeta(ydoc,id,...)`, BỎ HẲN updateAttributes (R1: grep updateAttributes NibBlockView=0). blockActions đổi signature: patchBlock(ydoc,id,attrs)/setBlockState(ydoc,id,state)/deleteBlock(editor,ydoc,id)/evalBlock(editor,ydoc,id) — evalBlock đọc latex từ getBlockMeta, ghi result qua patchBlockMeta.
+SEQUENCING (B.3→B.5): gitnexus impact bắt patchBlock=CRITICAL/evalBlock=HIGH → callers Workspace/CommandPalette/UnifiedDock vỡ nếu đổi signature. Giải: (1) kéo slot `ydoc:Y.Doc|null` vào editor-context SỚM (phần nhỏ B.4); (2) mọi yBlockMeta fn + useBlockMeta TOLERATE ydoc null → DEFAULT_META/no-op; (3) Workspace `const ydoc=null` (1 điểm B.5 swap) + update 3 call sites; UnifiedDock/CommandPalette destructure ydoc từ context. App render DEFAULT_META giữa B.3→B.5 (chấp nhận, gate=tsc/vitest).
+convertNibBlock: đơn giản về structural blockType-toggle (math→text carry PM textContent; latex↔text seeding qua meta = B.5, command không có ydoc). Tests cập nhật assert blockType-only.
+Done: tsc 0 · build 0 · vitest 87/87 · R1 grep pass · detect_changes blast-radius đúng dự kiến (eval/patch/delete callers).
+
+## 2026-06-22 00:56 — yjs-undo-extension-b4 (NibHistory→YjsSync)
+
+Stack: thay PM history bằng y-prosemirror CRDT undo. `YjsSync` TipTap Extension<Options,Storage>: options `{xmlFragment: Y.XmlFragment|null}` (configure ở B.5), storage `{undoManager: Y.UndoManager|null}`. addProseMirrorPlugins: if !xmlFragment return [] (B.4→B.5 no-op); else `new Y.UndoManager(xmlFragment)` → store vào this.storage.undoManager → `[ySyncPlugin(xmlFragment), yUndoPlugin({undoManager})]`. addKeyboardShortcuts Mod-z/y/Shift-z → this.storage.undoManager?.undo()/redo() (khôi phục Ctrl+Z khi active).
+Xóa NibHistory.ts làm mất editor.commands.undo/redo (augmentation) → CommandPalette + TopStrip + Workspace import/extensions ĐỀU vỡ → xử cùng session: TopStrip+CommandPalette gọi `editor.storage.YjsSync?.undoManager?.undo()/redo()` (optional-chaining, no-op tới B.5); Workspace gỡ import+extensions array (KHÔNG add YjsSync — B.5).
+y-prosemirror v1.3: yUndoPlugin({undoManager}) cho phép truyền UndoManager riêng → expose qua storage. ySyncPlugin(fragment) returns any.
+Done: tsc 0 · build 0 · vitest 87/87 · grep NibHistory=0 · grep undoManager TopStrip=2.
+
+## 2026-06-22 01:03 — yjs-workspace-wiring-b5 (Phase B integration done)
+
+Stack: wire YjsProvider + y-prosemirror vào Workspace (Phase B cuối). Tách Workspace (outer: useProfile→session, wrap `<YjsProvider key={docId} docId={activeDocId} userId={session?.user.id??'local'} token={session?.access_token??null}>`) + WorkspaceEditor (inner: `useYjs().ydoc` → `xmlFragment=ydoc.getXmlFragment('prosemirror')` → useEditor +`YjsSync.configure({xmlFragment})`, deps `[xmlFragment]`; ctx.ydoc=real).
+GOTCHA y-prosemirror: ySyncPlugin điều khiển content từ Y.XmlFragment → `content:` của useEditor BỊ BỎ QUA. Phải seed starter VÀO ydoc khi rỗng: seedStarter guard CRDT flag `ydoc.getMap('docMeta').get('seeded')` (idempotent đa thiết bị) + chèn node id cố định qua `editor.schema.nodes.nibBlock.create` + `tr.insert(0,node)` + initBlockMeta. createBlock cũng initBlockMeta(lineIndex,xOffset) cho block mới (layout ở meta).
+`key={docId}` trên YjsProvider để switch doc rebind sạch. signed-out token=null → offline-only y-indexeddb.
+Done: tsc 0 · build 0 · vitest 87/87 · dev server ready 0 error · impact Workspace=LOW. Gate vàng 2-tab = USER smoke (hocuspocus local).

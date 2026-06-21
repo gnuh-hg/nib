@@ -6,6 +6,7 @@ import {
   IconPenNib,
   IconHelp,
 } from '../icons';
+import { AccountChip } from './AccountChip';
 
 export interface NavLevelProps {
   t: I18nContextValue['t'];
@@ -14,6 +15,8 @@ export interface NavLevelProps {
   onType: () => void;
   onWrite: () => void;
   onHelp: () => void;
+  /** Open the LoginModal from the account chip (when signed out). */
+  onAccount: () => void;
 }
 
 /**
@@ -29,6 +32,7 @@ export function NavLevel({
   onType,
   onWrite,
   onHelp,
+  onAccount,
 }: NavLevelProps) {
   return (
     <div className="nib-dock__nav" role="group" aria-label={t('dock.label')}>
@@ -80,6 +84,10 @@ export function NavLevel({
       >
         <IconHelp width={18} height={18} />
       </button>
+
+      <span className="nib-dock__divider" aria-hidden="true" />
+
+      <AccountChip onOpenLogin={onAccount} />
     </div>
   );
 }

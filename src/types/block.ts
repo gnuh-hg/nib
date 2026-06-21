@@ -25,53 +25,53 @@ export type BlockState =
   | 'result-approx'
   | 'error';
 
-/** Attributes persisted on every nibBlock node (free-placement model, feature.md §2). */
+/**
+ * Structural attributes persisted on the nibBlock ProseMirror node.
+ * Since Phase B (CC-1), layout/CAS fields live in the Yjs `blockMeta`
+ * side-channel (see `BlockMetaRecord`) — NOT here — because y-prosemirror does
+ * not sync node attrs reliably. Only these three stay on the PM node.
+ */
 export interface NibBlockAttrs {
   id: string;
-  /** Ruled-line index — top = lineIndex × 64px. */
-  lineIndex: number;
+  blockType: BlockType;
+  /** Whether this block was created by onboarding (starter content). */
+  starter: boolean;
+}
+
+/**
+ * Block layout + CAS fields stored in the Yjs `blockMeta` side-channel
+ * (CC-1, ARCHITECTURE §B) — keyed by block id, kept OUT of ProseMirror node
+ * attrs because y-prosemirror does not sync attrs reliably. Structural attrs
+ * (`id`/`blockType`/`starter`) stay on the PM node; everything below is CRDT
+ * per-field (LWW). Wired into NibBlockView in Session B.3.
+ */
+export interface BlockMetaRecord {
   /** Authoring intent X in px from canvas left (NOT clamped render position). */
   xOffset: number;
-  blockType: BlockType;
+  /** Ruled-line index — top = lineIndex × 64px. */
+  lineIndex: number;
   blockState: BlockState;
   latexContent: string;
   exactLatex: string;
   approxLatex: string;
   isApprox: boolean;
-  /** Error subtype when blockState === 'error'. */
   errorKind: ErrorKind;
-  /** Text size tier when blockType === 'text'. */
   textScale: TextScale;
-  /** Math display size when blockType === 'math'. */
   mathSize: MathSize;
-  /** Accent/annotation color — a swatch token name (e.g. 'teal') or '' = default. */
+  /** Accent/annotation color — a swatch token name or '' = default. */
   color: string;
-  /** Whether this block was created by onboarding (starter content). */
-  starter: boolean;
-  /** Raw ink strokes (handwriting path) — stub in Phase 0 mock-UI. */
-  inkStrokes: unknown[];
+  /** Ink strokes as a JSON string (LWW per R4; Y.Array is a future upgrade). */
+  inkStrokes: string;
 }
 
-/** Default attrs for a freshly placed block. */
+/** Default structural attrs for a freshly placed block. */
 export function defaultBlockAttrs(
   overrides: Partial<NibBlockAttrs> = {},
 ): NibBlockAttrs {
   return {
     id: '',
-    lineIndex: 0,
-    xOffset: 0,
     blockType: 'math',
-    blockState: 'editing-math',
-    latexContent: '',
-    exactLatex: '',
-    approxLatex: '',
-    isApprox: false,
-    errorKind: '',
-    textScale: 'body',
-    mathSize: 'normal',
-    color: '',
     starter: false,
-    inkStrokes: [],
     ...overrides,
   };
 }

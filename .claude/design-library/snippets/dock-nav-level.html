@@ -18,7 +18,8 @@
   4. Verify:
        grep -rnE "#[0-9a-fA-F]{3,8}" <file>   = rỗng
        grep -n "nib-dock__nav-btn" <file>      = rỗng   (class cũ, đã xoá)
-       grep -n "nib-dock__account" <file>      = rỗng   (account chip đã bỏ 2026-06-18)
+       grep -n "nib-dock__account" <file>      = rỗng   (old class; account chip nay = AccountChip.tsx,
+                                                          signed-out dùng nib-dock__navbtn, signed-in nib-account-chip)
        grep -n "src/components" <file>         ≥ 1
 -->
 <html lang="en" data-theme="dark" style="min-width:1024px;height:100%">
@@ -211,6 +212,27 @@
                 <circle cx="12" cy="12" r="9"/>
                 <path d="M9.3 9.3a2.7 2.7 0 0 1 5.2 1c0 1.8-2.7 2.3-2.7 4"/>
                 <circle cx="12" cy="17.2" r="0.6" fill="currentColor" stroke="none"/>
+              </svg>
+            </button>
+
+            <!-- Divider before account chip (NavLevel.tsx) -->
+            <span class="nib-dock__divider" aria-hidden="true"></span>
+
+            <!-- AccountChip (AccountChip.tsx) — SIGNED-OUT form: a plain dock
+                 button opening the LoginModal. Signed-in form renders
+                 <button class="nib-account-chip"><span class="nib-account-chip__disc">
+                 INITIALS</span></button> instead (avatar + portal menu, account-chip.css). -->
+            <button type="button"
+                    class="nib-dock__btn nib-dock__navbtn"
+                    data-i18n-title="account.open_login"
+                    title="Đăng nhập" aria-label="Đăng nhập">
+              <!-- IconUser — icons.tsx: circle cx12 cy8 r4 + shoulders path, strokeWidth 1.5 -->
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="1.5"
+                   stroke-linecap="round" stroke-linejoin="round"
+                   aria-hidden="true" focusable="false">
+                <circle cx="12" cy="8" r="4"/>
+                <path d="M5.5 20a6.5 6.5 0 0 1 13 0"/>
               </svg>
             </button>
 

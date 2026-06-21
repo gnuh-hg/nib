@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<!--
+  ARTIFACT: login-modal.html  (v2 — thêm mode Đăng ký)
+  Phase A A.3 (design) — workstream accounts-cloud-sync
+  Pattern: Overlay lớn (nhất quán với SettingsOverlay / LibraryOverlay)
+  CSS thật link: tokens.css + settings-overlay.css (tái dùng .nib-settings-field + .nib-settings-field__*)
+  New CSS in <style>: .nib-login-overlay / .nib-login__panel / mode-toggle system / v.v.
+    (LoginModal là component MỚI, chưa có trong src/ — overlay skeleton theo overlay.md blueprint)
+  Icons thật từ icons.tsx:
+    - IconArrowLeft  L191-196: strokeWidth=1.8, line x19→x5, polyline
+    - IconLogo       L26-32:   path diamond + line + circle (brand)
+  Alert icon: approximate (circle + exclamation) — IconAlertCircle chưa có trong icons.tsx;
+    handoff note: thêm IconAlertCircle vào icons.tsx hoặc dùng IconHelp làm base.
+  Google OAuth icon: "G" text placeholder (disabled button, không cần brand icon chính xác).
+
+  ── MODE SYSTEM ──────────────────────────────────────────────────────────────
+  Panel có data-mode="login" (default) hoặc data-mode="signup".
+  CSS selector `.nib-login__panel[data-mode="X"] [data-mode-content="X"]` show/hide content.
+  JS: switchMode('signup') / switchMode('login') thay data-mode trên panel.
+  ─────────────────────────────────────────────────────────────────────────────
+
+  ── i18n keys (login.* — task #5, GIỮ NGUYÊN) ───────────────────────────────
+    login.title · login.welcome · login.welcome_sub
+    login.email_label · login.email_placeholder
+    login.password_label · login.password_placeholder
+    login.forgot_password · login.submit
+    login.error.invalid_credentials · login.error.network
+    login.divider · login.google
+    login.toggle_to_signup · login.toggle_to_signup_action   ← MỚI task #7
+  ── i18n keys (signup.* — MỚI task #7) ──────────────────────────────────────
+    signup.title · signup.welcome · signup.welcome_sub
+    signup.confirm_password_label · signup.confirm_password_placeholder
+    signup.submit
+    signup.error.email_taken · signup.error.password_mismatch
+    signup.toggle_to_login · signup.toggle_to_login_action
+  ── i18n keys tái dùng ───────────────────────────────────────────────────────
+    library.cancel · settings.nav.coming_soon
+    (signup form tái dùng: login.email_label · login.email_placeholder
+     · login.password_label · login.password_placeholder)
+  ─────────────────────────────────────────────────────────────────────────────
+
+  Tất cả màu qua var(--token). 0 hex rời.
+
+  ─── MOTION-INTENT ───────────────────────────────────────────────────────────
+  (1) Overlay container:
+      opacity 0→1 khi mở, ease power2.out, duration 0.20s
+      GSAP: gsap.to('.nib-login-overlay', {opacity:1, pointerEvents:'auto', ease:'power2.out', duration:0.20})
+      reduced-motion: instant toggle (no opacity transition)
+
+  (2) Panel slide-up:
+      translateY(8px→0) + opacity 0→1 khi mở, ease power2.out, duration 0.22s
+      GSAP: gsap.fromTo('.nib-login__panel', {y:8, opacity:0}, {y:0, opacity:1, ease:'power2.out', duration:0.22})
+      reduced-motion: no translateY, opacity only
+
+  (3) Error area expand:
+      height 0→auto + opacity 0→1, ease power2.out, duration 0.18s
+      GSAP: gsap.from('.nib-login__error', {height:0, opacity:0, overflow:'hidden', ease:'power2.out', duration:0.18})
+      reduced-motion: instant show/hide
+
+  (4) Mode switch (login ↔ signup):
+      Nội dung body swap — KHÔNG animation phức tạp (bản fancy là Phase D)
+      Gợi ý: instant swap (opacity snap) hoặc crossfade nhẹ opacity 0→1, power2.out, 0.12s
+      GSAP: gsap.from('[data-mode-content="X"]', {opacity:0, ease:'power2.out', duration:0.12})
+      reduced-motion: instant swap
+  ─────────────────────────────────────────────────────────────────────────────
+-->
+<html lang="en" data-theme="dark" style="min-width:1024px;height:100%">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1024">
+  <title>Login / Signup Modal — Nib Design Artifact</title>
+
+  <!-- CSS component thật — KHÔNG viết lại inline.
+       settings-overlay.css: tái dùng .nib-settings-field + .nib-settings-field__label + .nib-settings-field__input
+       Đường dẫn tính từ docs/design-artifacts/ → ../../src/... -->
+  <link rel="stylesheet" href="../../src/styles/tokens.css">
+  <link rel="stylesheet" href="../../src/components/SettingsOverlay/settings-overlay.css">
+
+  <style>
+    /* ── Demo setup only — KHÔNG copy vào src/ ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      min-height: 100vh;
+      font-family: var(--font-ui);
+      color: var(--text-primary);
+      background-color: var(--desk);
+    }
+
+    /* Mock workspace nền — giống Workspace.tsx */
+    .demo-workspace {
+      position: relative;
+      width: 100%;
+      min-height: 100vh;
+      background-color: var(--desk);
+      overflow: hidden;
+    }
+
+    /* Paper 664px phía sau scrim — gợi ý canvas đang mounted */
+    .demo-paper-bg {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 664px;
+      background-color: var(--bg-app);
+      box-shadow: var(--sheet-shadow);
+      border-radius: 5px 5px 0 0;
+      pointer-events: none;
+    }
+
+    /* Demo controls: theme + mode toggle */
+    .demo-controls {
+      position: fixed;
+      top: var(--space-3);
+      right: var(--space-3);
+      z-index: 200;
+      display: flex;
+      gap: var(--space-2);
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .demo-controls button {
+      padding: var(--space-1) var(--space-3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      font-size: var(--font-size-ui-xs);
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .demo-controls button:hover { background: var(--bg-subtle); }
+    .demo-controls .demo-sep {
+      width: 1px;
+      height: 18px;
+      background: var(--border);
+    }
+
+    /* Error state toggle helper (bottom-right) */
+    .demo-error-toggle {
+      position: fixed;
+      bottom: var(--space-3);
+      right: var(--space-3);
+      z-index: 200;
+    }
+    .demo-error-toggle button {
+      padding: var(--space-2) var(--space-3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg-elevated);
+      color: var(--text-secondary);
+      font-size: var(--font-size-ui-xs);
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .demo-error-toggle button:hover { background: var(--bg-subtle); }
+
+    /* ═════════════════════════════════════════════════════════════════════
+       LOGIN / SIGNUP OVERLAY — new component (chưa có trong src/)
+       Theo overlay.md blueprint: scrim + panel centered (inset:0 margin:auto)
+       Nhất quán kích thước/animation với SettingsOverlay/LibraryOverlay.
+       Khác biệt: panel hẹp hơn (480px vs 900px), 2 mode login/signup.
+       ═════════════════════════════════════════════════════════════════════ */
+
+    /* Container toàn màn hình */
+    .nib-login-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 50;
+      opacity: 0;
+      pointer-events: none;
+      /* MOTION-INTENT: opacity 0→1, power2.out, 0.20s */
+      transition: opacity 0.2s;
+    }
+    .nib-login-overlay[data-open='true'] {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* Scrim */
+    .nib-login__scrim {
+      position: absolute;
+      inset: 0;
+      z-index: 50;
+      background: var(--scrim);
+    }
+
+    /* Panel — 480px compact, height 560px (đủ signup + confirm password)
+       MOTION-INTENT: translateY(8px→0) + opacity 0→1, power2.out, 0.22s
+       reduced-motion: opacity only, no translateY */
+    .nib-login__panel {
+      position: absolute;
+      inset: 0;
+      margin: auto;
+      width: min(480px, calc(100% - 80px));
+      height: min(560px, calc(100% - 80px));
+      z-index: 60;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background-color: var(--bg-elevated);
+      box-shadow: var(--shadow-2);
+      opacity: 0;
+      transform: translateY(8px);
+      transition:
+        opacity 0.2s,
+        transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .nib-login-overlay[data-open='true'] .nib-login__panel {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .nib-login-overlay,
+      .nib-login__panel {
+        transition-property: opacity;
+      }
+    }
+
+    /* ── MODE TOGGLE SYSTEM ──────────────────────────────────────────────
+       [data-mode-heading="X"] — hiển thị trong header theo mode
+       [data-mode-content="X"] — hiển thị body section theo mode
+       Mặc định ẩn tất cả, show theo .nib-login__panel[data-mode="X"]
+       ─────────────────────────────────────────────────────────────────── */
+
+    /* Heading trong header — default hidden, show inline by mode */
+    [data-mode-heading] { display: none; }
+    .nib-login__panel[data-mode="login"]  [data-mode-heading="login"]  { display: block; }
+    .nib-login__panel[data-mode="signup"] [data-mode-heading="signup"] { display: block; }
+
+    /* Body content sections — default hidden, show flex by mode */
+    .nib-login__panel [data-mode-content] { display: none; }
+    .nib-login__panel[data-mode="login"]  [data-mode-content="login"]  { display: flex; }
+    .nib-login__panel[data-mode="signup"] [data-mode-content="signup"] { display: flex; }
+
+    /* ── Header — mirror nib-settings__header (height 57px) ── */
+    .nib-login__header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      flex: none;
+      height: 57px;
+      padding: 0 var(--space-3);
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* Back button — 44×44, ghost, hit target ≥44px (mirror nib-settings__back) */
+    .nib-login__back {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      flex: none;
+      border: none;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: background-color 0.15s, color 0.15s;
+    }
+    .nib-login__back:hover {
+      background-color: var(--bg-subtle);
+      color: var(--text-primary);
+    }
+    .nib-login__back:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+    }
+
+    /* Heading wrapper (mirror nib-settings__heading) */
+    .nib-login__heading-wrap {
+      flex: 1;
+      font-size: var(--font-size-ui-md);
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.01em;
+    }
+
+    /* ── Body — scrollable, flex column ── */
+    .nib-login__body {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      padding: var(--space-5) var(--space-6);
+      gap: var(--space-4);
+    }
+
+    /* Welcome branding area */
+    .nib-login__welcome {
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-2);
+      padding-bottom: var(--space-1);
+      /* display set by [data-mode-content] rule */
+    }
+    .nib-login__logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      color: var(--accent);
+    }
+    .nib-login__welcome-title {
+      font-size: var(--font-size-doc-heading);
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+    }
+    .nib-login__welcome-sub {
+      font-size: var(--font-size-ui-sm);
+      color: var(--text-muted);
+      text-align: center;
+      max-width: 320px;
+    }
+
+    /* Form — flex column gap (display set by mode system) */
+    .nib-login__form {
+      flex-direction: column;
+      gap: var(--space-3);
+      /* display: flex set by [data-mode-content] rule */
+    }
+
+    /* Forgot password link */
+    .nib-login__forgot {
+      align-self: flex-end;
+      font-size: var(--font-size-ui-sm);
+      color: var(--accent);
+      text-decoration: none;
+      margin-top: calc(-1 * var(--space-2));
+    }
+    .nib-login__forgot:hover { text-decoration: underline; }
+    .nib-login__forgot:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+      border-radius: 2px;
+    }
+
+    /* Error alert area
+       MOTION-INTENT: height 0→auto + opacity 0→1 (expand), power2.out, 0.18s
+       reduced-motion: instant show/hide */
+    .nib-login__error {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-sm);
+      background-color: color-mix(in srgb, var(--error) 10%, var(--bg-surface));
+      border: 1px solid color-mix(in srgb, var(--error) 25%, transparent);
+      color: var(--error);
+      font-size: var(--font-size-ui-sm);
+      line-height: 1.4;
+    }
+    .nib-login__error[data-visible='false'] {
+      display: none;
+    }
+    .nib-login__error-icon {
+      flex: none;
+      margin-top: 1px;
+    }
+
+    /* Submit button — full width, accent fill, 44px hit target */
+    .nib-login__submit {
+      width: 100%;
+      min-height: 44px;
+      border: none;
+      border-radius: var(--radius-sm);
+      background-color: var(--accent);
+      color: var(--text-on-accent);
+      font-size: var(--font-size-ui-sm);
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      letter-spacing: 0.01em;
+      transition: background-color 0.15s;
+    }
+    .nib-login__submit:hover { background-color: var(--accent-hover); }
+    .nib-login__submit:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    /* Mode toggle link — "Chưa có tài khoản? Đăng ký" / "Đã có tài khoản? Đăng nhập" */
+    .nib-login__mode-toggle {
+      text-align: center;
+      font-size: var(--font-size-ui-sm);
+      color: var(--text-muted);
+      margin-top: calc(-1 * var(--space-1));
+    }
+    .nib-login__mode-toggle a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 600;
+      margin-left: var(--space-1);
+    }
+    .nib-login__mode-toggle a:hover { text-decoration: underline; }
+    .nib-login__mode-toggle a:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+      border-radius: 2px;
+    }
+
+    /* OR divider */
+    .nib-login__divider {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      color: var(--text-muted);
+      font-size: var(--font-size-ui-sm);
+    }
+    .nib-login__divider-line {
+      flex: 1;
+      height: 1px;
+      background-color: var(--border);
+    }
+    .nib-login__divider-text { flex: none; }
+
+    /* Google OAuth button — disabled placeholder (A.3 chưa wire) */
+    .nib-login__oauth-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+      width: 100%;
+      min-height: 44px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg-subtle);
+      color: var(--text-muted);
+      font-size: var(--font-size-ui-sm);
+      font-weight: 600;
+      cursor: not-allowed;
+      font-family: inherit;
+    }
+
+    /* "G" circle placeholder */
+    .nib-login__oauth-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 1px solid var(--border-strong);
+      font-size: var(--font-size-ui-sm);
+      font-weight: 700;
+      color: var(--text-muted);
+      background: var(--bg-elevated);
+    }
+
+    /* Coming soon badge on OAuth button */
+    .nib-login__oauth-badge {
+      padding: 1px var(--space-2);
+      border-radius: 4px;
+      background: var(--bg-elevated);
+      color: var(--text-muted);
+      font-size: var(--font-size-ui-xs);
+      font-weight: 600;
+    }
+
+    /* Shared footer (OR + OAuth) — outside mode-content, always visible in body */
+    .nib-login__shared-footer {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+      flex: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Demo controls (aria-hidden — không phải app UI) -->
+  <div class="demo-controls" aria-hidden="true">
+    <button onclick="document.documentElement.setAttribute('data-theme','light')">Light</button>
+    <button onclick="document.documentElement.setAttribute('data-theme','dark')">Dark</button>
+    <span class="demo-sep"></span>
+    <button onclick="switchMode('login')">Mode: Login</button>
+    <button onclick="switchMode('signup')">Mode: Signup</button>
+  </div>
+  <div class="demo-error-toggle" aria-hidden="true">
+    <button onclick="toggleError()">Toggle error state</button>
+  </div>
+
+  <!-- Mock workspace (nền sau overlay) -->
+  <div class="demo-workspace">
+    <div class="demo-paper-bg" aria-hidden="true"></div>
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         LOGIN / SIGNUP OVERLAY
+         DOM theo overlay.md blueprint (scrim + panel)
+         panel[data-mode="login"]  → hiện login form
+         panel[data-mode="signup"] → hiện signup form
+         MOTION-INTENT TỔNG:
+           container: opacity 0→1, power2.out, 0.20s
+           panel:     translateY(8px→0) + opacity, power2.out, 0.22s
+           error:     height 0→auto + opacity, power2.out, 0.18s
+           mode swap: crossfade opacity 0→1, power2.out, 0.12s (GIỮ ĐƠN GIẢN)
+           reduced-motion: all instant
+         ══════════════════════════════════════════════════════════════════════ -->
+    <div class="nib-login-overlay" data-open="true" id="login-overlay">
+
+      <!-- Scrim: click-to-close -->
+      <div class="nib-login__scrim" aria-hidden="true"
+           onclick="document.getElementById('login-overlay').setAttribute('data-open','false')">
+      </div>
+
+      <!-- Panel: role="dialog" aria-modal="true"
+           data-mode="login" (default) hoặc "signup"
+           MOTION-INTENT: translateY(8px→0) + opacity 0→1, power2.out, 0.22s -->
+      <div class="nib-login__panel"
+           id="modal-panel"
+           role="dialog"
+           aria-modal="true"
+           data-mode="login"
+           aria-labelledby="modal-heading-login modal-heading-signup">
+
+        <!-- ── HEADER — 1 header, 2 heading spans toggle theo mode ── -->
+        <div class="nib-login__header">
+
+          <!-- Back / Cancel — 44×44, ghost, hit target ≥44px -->
+          <button type="button"
+                  class="nib-login__back"
+                  data-i18n-title="library.cancel"
+                  title="Cancel"
+                  aria-label="Cancel"
+                  onclick="document.getElementById('login-overlay').setAttribute('data-open','false')">
+            <!-- IconArrowLeft — icons.tsx L191-196
+                 strokeWidth=1.8, viewBox 0 0 24 24
+                 line x19→x5 + polyline 12,19 5,12 12,5 -->
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.8"
+                 stroke-linecap="round" stroke-linejoin="round"
+                 aria-hidden="true" focusable="false">
+              <line x1="19" y1="12" x2="5" y2="12"/>
+              <polyline points="12 19 5 12 12 5"/>
+            </svg>
+          </button>
+
+          <!-- Heading wrapper — 2 spans, show/hide by mode CSS -->
+          <span class="nib-login__heading-wrap">
+            <span id="modal-heading-login"
+                  data-mode-heading="login"
+                  data-i18n="login.title">Sign in</span>
+            <span id="modal-heading-signup"
+                  data-mode-heading="signup"
+                  data-i18n="signup.title">Create account</span>
+          </span>
+        </div><!-- /.nib-login__header -->
+
+        <!-- ══════════════════════════════════════════════════════════════
+             BODY — LOGIN MODE (data-mode-content="login")
+             MOTION-INTENT mode swap: crossfade opacity 0→1, power2.out, 0.12s
+             ══════════════════════════════════════════════════════════════ -->
+        <div class="nib-login__body" data-mode-content="login">
+
+          <!-- Welcome login -->
+          <div class="nib-login__welcome" data-mode-content="login">
+            <!-- IconLogo — icons.tsx L26-32: diamond + center line + dot -->
+            <span class="nib-login__logo" aria-hidden="true">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="1.5"
+                   stroke-linecap="round" stroke-linejoin="round"
+                   aria-hidden="true" focusable="false">
+                <path d="M12 3 L18 13 L12 21 L6 13 Z"/>
+                <line x1="12" y1="9.5" x2="12" y2="18"/>
+                <circle cx="12" cy="8" r="1"/>
+              </svg>
+            </span>
+            <span class="nib-login__welcome-title"
+                  data-i18n="login.welcome">Welcome back</span>
+            <span class="nib-login__welcome-sub"
+                  data-i18n="login.welcome_sub">Sign in to sync your math notes across devices</span>
+          </div>
+
+          <!-- Form login -->
+          <form class="nib-login__form" data-mode-content="login"
+                id="form-login" onsubmit="return false" novalidate>
+
+            <!-- Email — tái dùng .nib-settings-field từ settings-overlay.css -->
+            <label class="nib-settings-field">
+              <span class="nib-settings-field__label"
+                    data-i18n="login.email_label">Email</span>
+              <input type="email"
+                     class="nib-settings-field__input"
+                     data-i18n-placeholder="login.email_placeholder"
+                     placeholder="Enter your email"
+                     value="nguyen@example.com"
+                     autocomplete="email"
+                     aria-required="true"
+                     aria-describedby="login-error"/>
+            </label>
+
+            <!-- Password — tái dùng .nib-settings-field từ settings-overlay.css -->
+            <label class="nib-settings-field">
+              <span class="nib-settings-field__label"
+                    data-i18n="login.password_label">Password</span>
+              <input type="password"
+                     class="nib-settings-field__input"
+                     data-i18n-placeholder="login.password_placeholder"
+                     placeholder="Enter your password"
+                     value="••••••••••"
+                     autocomplete="current-password"
+                     aria-required="true"
+                     aria-describedby="login-error"/>
+            </label>
+
+            <!-- Forgot password link -->
+            <a href="#"
+               class="nib-login__forgot"
+               data-i18n="login.forgot_password">Forgot password?</a>
+
+            <!-- Error area (hiện khi auth fail)
+                 MOTION-INTENT: height 0→auto + opacity 0→1, power2.out, 0.18s
+                 data-visible="true" cho demo; toggle bằng nút "Toggle error state" -->
+            <div class="nib-login__error"
+                 id="login-error"
+                 data-visible="true"
+                 role="alert"
+                 aria-live="polite"
+                 aria-atomic="true">
+              <!-- Alert icon approximate — Handoff: thêm IconAlertCircle vào icons.tsx -->
+              <span class="nib-login__error-icon" aria-hidden="true">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="1.8"
+                     stroke-linecap="round" stroke-linejoin="round"
+                     aria-hidden="true" focusable="false">
+                  <circle cx="12" cy="12" r="9"/>
+                  <line x1="12" y1="8" x2="12" y2="13"/>
+                  <circle cx="12" cy="16.5" r="0.7" fill="currentColor" stroke="none"/>
+                </svg>
+              </span>
+              <span data-i18n="login.error.invalid_credentials">Incorrect email or password</span>
+              <!-- Alternate: data-i18n="login.error.network" → "Network error. Please try again." -->
+            </div>
+
+            <!-- Submit -->
+            <button type="submit"
+                    class="nib-login__submit"
+                    data-i18n="login.submit">Sign in</button>
+
+            <!-- Mode toggle: → Signup -->
+            <div class="nib-login__mode-toggle">
+              <span data-i18n="login.toggle_to_signup">Don't have an account?</span>
+              <a href="#"
+                 onclick="switchMode('signup'); return false;"
+                 data-i18n="login.toggle_to_signup_action">Sign up</a>
+            </div>
+
+          </form><!-- /#form-login -->
+
+          <!-- Shared footer: OR + Google OAuth (login mode) -->
+          <div class="nib-login__shared-footer">
+            <div class="nib-login__divider" aria-hidden="true">
+              <span class="nib-login__divider-line"></span>
+              <span class="nib-login__divider-text"
+                    data-i18n="login.divider">or</span>
+              <span class="nib-login__divider-line"></span>
+            </div>
+            <button type="button"
+                    class="nib-login__oauth-btn"
+                    disabled
+                    aria-disabled="true"
+                    data-i18n-title="settings.nav.coming_soon"
+                    title="Coming soon"
+                    aria-label="Continue with Google — Coming soon">
+              <span class="nib-login__oauth-icon" aria-hidden="true">G</span>
+              <span data-i18n="login.google">Continue with Google</span>
+              <span class="nib-login__oauth-badge"
+                    data-i18n="settings.nav.coming_soon">Coming soon</span>
+            </button>
+          </div>
+
+        </div><!-- /.nib-login__body[data-mode-content="login"] -->
+
+        <!-- ══════════════════════════════════════════════════════════════
+             BODY — SIGNUP MODE (data-mode-content="signup")
+             MOTION-INTENT mode swap: crossfade opacity 0→1, power2.out, 0.12s
+             ══════════════════════════════════════════════════════════════ -->
+        <div class="nib-login__body" data-mode-content="signup">
+
+          <!-- Welcome signup -->
+          <div class="nib-login__welcome" data-mode-content="signup">
+            <!-- IconLogo — icons.tsx L26-32 (same brand icon) -->
+            <span class="nib-login__logo" aria-hidden="true">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="1.5"
+                   stroke-linecap="round" stroke-linejoin="round"
+                   aria-hidden="true" focusable="false">
+                <path d="M12 3 L18 13 L12 21 L6 13 Z"/>
+                <line x1="12" y1="9.5" x2="12" y2="18"/>
+                <circle cx="12" cy="8" r="1"/>
+              </svg>
+            </span>
+            <span class="nib-login__welcome-title"
+                  data-i18n="signup.welcome">Get started</span>
+            <span class="nib-login__welcome-sub"
+                  data-i18n="signup.welcome_sub">Create your account to sync math notes across devices</span>
+          </div>
+
+          <!-- Form signup -->
+          <form class="nib-login__form" data-mode-content="signup"
+                id="form-signup" onsubmit="return false" novalidate>
+
+            <!-- Email — tái dùng key login.email_label (cùng nội dung) -->
+            <label class="nib-settings-field">
+              <span class="nib-settings-field__label"
+                    data-i18n="login.email_label">Email</span>
+              <input type="email"
+                     class="nib-settings-field__input"
+                     data-i18n-placeholder="login.email_placeholder"
+                     placeholder="Enter your email"
+                     autocomplete="email"
+                     aria-required="true"
+                     aria-describedby="signup-error"/>
+            </label>
+
+            <!-- Password — tái dùng key login.password_label -->
+            <label class="nib-settings-field">
+              <span class="nib-settings-field__label"
+                    data-i18n="login.password_label">Password</span>
+              <input type="password"
+                     class="nib-settings-field__input"
+                     data-i18n-placeholder="login.password_placeholder"
+                     placeholder="Enter your password"
+                     autocomplete="new-password"
+                     aria-required="true"
+                     aria-describedby="signup-error"/>
+            </label>
+
+            <!-- Confirm password — signup-specific field -->
+            <label class="nib-settings-field">
+              <span class="nib-settings-field__label"
+                    data-i18n="signup.confirm_password_label">Confirm password</span>
+              <input type="password"
+                     class="nib-settings-field__input"
+                     data-i18n-placeholder="signup.confirm_password_placeholder"
+                     placeholder="Re-enter your password"
+                     autocomplete="new-password"
+                     aria-required="true"
+                     aria-describedby="signup-error"/>
+            </label>
+
+            <!-- Signup error area (email taken / password mismatch)
+                 MOTION-INTENT: height 0→auto + opacity 0→1, power2.out, 0.18s -->
+            <div class="nib-login__error"
+                 id="signup-error"
+                 data-visible="false"
+                 role="alert"
+                 aria-live="polite"
+                 aria-atomic="true">
+              <span class="nib-login__error-icon" aria-hidden="true">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="1.8"
+                     stroke-linecap="round" stroke-linejoin="round"
+                     aria-hidden="true" focusable="false">
+                  <circle cx="12" cy="12" r="9"/>
+                  <line x1="12" y1="8" x2="12" y2="13"/>
+                  <circle cx="12" cy="16.5" r="0.7" fill="currentColor" stroke="none"/>
+                </svg>
+              </span>
+              <!-- Alternate errors:
+                   data-i18n="signup.error.email_taken" → "Email already in use"
+                   data-i18n="signup.error.password_mismatch" → "Passwords do not match" -->
+              <span data-i18n="signup.error.email_taken">Email already in use</span>
+            </div>
+
+            <!-- Submit: Tạo tài khoản -->
+            <button type="submit"
+                    class="nib-login__submit"
+                    data-i18n="signup.submit">Create account</button>
+
+            <!-- Mode toggle: → Login -->
+            <div class="nib-login__mode-toggle">
+              <span data-i18n="signup.toggle_to_login">Already have an account?</span>
+              <a href="#"
+                 onclick="switchMode('login'); return false;"
+                 data-i18n="signup.toggle_to_login_action">Sign in</a>
+            </div>
+
+          </form><!-- /#form-signup -->
+
+          <!-- Shared footer: OR + Google OAuth (signup mode) -->
+          <div class="nib-login__shared-footer">
+            <div class="nib-login__divider" aria-hidden="true">
+              <span class="nib-login__divider-line"></span>
+              <span class="nib-login__divider-text"
+                    data-i18n="login.divider">or</span>
+              <span class="nib-login__divider-line"></span>
+            </div>
+            <button type="button"
+                    class="nib-login__oauth-btn"
+                    disabled
+                    aria-disabled="true"
+                    data-i18n-title="settings.nav.coming_soon"
+                    title="Coming soon"
+                    aria-label="Sign up with Google — Coming soon">
+              <span class="nib-login__oauth-icon" aria-hidden="true">G</span>
+              <span data-i18n="login.google">Continue with Google</span>
+              <span class="nib-login__oauth-badge"
+                    data-i18n="settings.nav.coming_soon">Coming soon</span>
+            </button>
+          </div>
+
+        </div><!-- /.nib-login__body[data-mode-content="signup"] -->
+
+      </div><!-- /.nib-login__panel -->
+    </div><!-- /.nib-login-overlay -->
+
+  </div><!-- /.demo-workspace -->
+
+  <!-- Demo scripts (static mockup only) -->
+  <script>
+    function switchMode(mode) {
+      document.getElementById('modal-panel').setAttribute('data-mode', mode);
+    }
+    function toggleError() {
+      // Toggle lỗi trên form đang active
+      var mode = document.getElementById('modal-panel').getAttribute('data-mode');
+      var errId = mode === 'login' ? 'login-error' : 'signup-error';
+      var el = document.getElementById(errId);
+      var vis = el.getAttribute('data-visible') === 'true';
+      el.setAttribute('data-visible', vis ? 'false' : 'true');
+    }
+  </script>
+</body>
+</html>
