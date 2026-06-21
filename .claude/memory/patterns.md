@@ -165,3 +165,14 @@ Stack: wire YjsProvider + y-prosemirror vào Workspace (Phase B cuối). Tách W
 GOTCHA y-prosemirror: ySyncPlugin điều khiển content từ Y.XmlFragment → `content:` của useEditor BỊ BỎ QUA. Phải seed starter VÀO ydoc khi rỗng: seedStarter guard CRDT flag `ydoc.getMap('docMeta').get('seeded')` (idempotent đa thiết bị) + chèn node id cố định qua `editor.schema.nodes.nibBlock.create` + `tr.insert(0,node)` + initBlockMeta. createBlock cũng initBlockMeta(lineIndex,xOffset) cho block mới (layout ở meta).
 `key={docId}` trên YjsProvider để switch doc rebind sạch. signed-out token=null → offline-only y-indexeddb.
 Done: tsc 0 · build 0 · vitest 87/87 · dev server ready 0 error · impact Workspace=LOW. Gate vàng 2-tab = USER smoke (hocuspocus local).
+
+## 2026-06-22 05:25 — hocuspocus-server-supabase-persistence
+
+Stack: server/ standalone Node+TS, @hocuspocus/server 4.3.0 (`new Server({...})`), @supabase/supabase-js 2.108, yjs 13.6. Phase C.1+C.2 accounts-cloud-sync.
+Pattern persistence (W2 = TEXT base64, KHÔNG bytea vì PostgREST không round-trip Uint8Array→bytea):
+- onLoadDocument trả Uint8Array → Hocuspocus tự `Y.applyUpdate` (xác nhận core dist dòng 1391: return Uint8Array → applyUpdate). Load = snapshot(.single) + updates(created_at>updated_at, asc) → Y.mergeUpdates([...]).
+- onStoreDocument: Y.encodeStateAsUpdate → INSERT base64; count exact head; >50 → compaction fire-and-forget (void), try/catch log KHÔNG throw.
+- E2 race: in-memory `Map<string,boolean>` lock per docId, skip nếu đang compact (single-instance Render free đủ; TODO pg_advisory_lock nếu scale).
+- supabase client singleton service_role (bypass RLS), server-side only.
+- /health W1: onRequest hook write end('OK') + return Promise.reject() để ngắt chain (Hocuspocus catch nội bộ, log sạch).
+Done-criteria: tsc --noEmit 0; curl /health 200; grep gates pass. KHÔNG cần Supabase thật để tsc/grep verify.

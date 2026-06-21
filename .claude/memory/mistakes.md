@@ -70,3 +70,11 @@ Root cause: jsdom KHÔNG có `indexedDB`. `new IndexeddbPersistence()` (y-indexe
 Fix (2 lớp): (1) `YjsProvider` guard `if (typeof indexedDB !== 'undefined')` TRƯỚC khi construct persistence — né hẳn jsdom/SSR (đúng pattern guard browser-only API như mathlive/MathfieldElement). (2) `waitForSync` race `whenSynced` vs `_db` rejection → resolve gracefully cho Firefox private-mode (IDB defined nhưng open() reject).
 Confirm: temp smoke test render `local:doc` exit 0, 0 unhandled error; `vitest run` 82/82 · tsc 0 · build 0.
 
+
+## 2026-06-22 05:20 — hocuspocus-v4-api-server-constructor-not-configure
+
+Build: server/src/index.ts (Phase C.1). PLAN/ARCHITECTURE viết `Server.configure({...})` (API v2/v3) → `tsc --noEmit` FAIL "Property 'configure' does not exist on type 'typeof Server'" + TS7031 implicit-any cho hook params.
+Root cause: @hocuspocus/server 4.3.0 đổi API — `Server` là class, dùng `new Server(config)` rồi `server.listen()`, KHÔNG còn static `Server.configure`. Hook payload types phải import + annotate (`onRequestPayload`, `onAuthenticatePayload` — đều export từ '@hocuspocus/server').
+Fix: `const server = new Server({port, onRequest, onAuthenticate}); server.listen();` + type destructured params bằng payload interface.
+Health W1: `onRequest` hook write `response.end('OK')` rồi `return Promise.reject()` để ngắt hook chain — Hocuspocus catch reject nội bộ, KHÔNG sinh unhandled-rejection log. Không cần E1 fallback httpServer.on('request').
+Confirm: `npx tsc --noEmit` exit 0; ts-node start → `curl localhost:3000/health` = 200 body "OK", log sạch (chỉ banner Hocuspocus v4.3.0).

@@ -65,5 +65,6 @@ Cấm gate cảm tính ("render đẹp", "ổn rồi").
 | `accounts-cloud-sync` | roadmap | Workstream Accounts + Cloud Sync: auth + sync engine (Yjs/CRDT) + backend deploy (Supabase+Hocuspocus) + UI polish. 4 phase. | 🔄 |
 | `accounts-cloud-sync/phase-a-auth` | long-plan (Phase A) | Auth: Supabase auth trong Tauri + secure token storage (GNOME Keyring / fallback) + ProfileProvider migration. 3 session. | 🔄 |
 | `accounts-cloud-sync/phase-b-sync-engine` | long-plan (Phase B) | Sync Engine: Yjs CRDT + Y.Map side-channel (CC-1) + y-indexeddb offline-first + Hocuspocus WS client + undo migrate + gate vàng 2-tab. 5 session. | 🔄 |
+| `accounts-cloud-sync/phase-c-backend-deploy` | long-plan (Phase C) | Backend Deploy: Hocuspocus Node.js server (onAuthenticate JWT) + Supabase Postgres (yjs_updates/snapshots + compaction CC-3) + Render free deploy + 2 human-gate (Supabase setup + Render deploy) + gate vàng 2-browser thật. 3 CODE session + 2 HUMAN GATE. | 🔄 |
 
 > Cập nhật bảng này mỗi khi tạo/đóng một plan. Trạng thái: ⬜ chưa bắt đầu · 🔄 đang chạy · ✅ done.
