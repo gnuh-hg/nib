@@ -1,9 +1,9 @@
 ---
 name: team-fix
-description: "Phục vụ riêng team-ops (note-ch): format issue-queue .claude/teams/issues.md, bảng ≥8 code lỗi phối hợp team + playbook sửa từng loại, ngưỡng trigger khi nào vá-brief vs sửa-agent-body (cần user duyệt). KHÔNG đụng code sản phẩm src/backend/src-tauri."
+description: "Phục vụ riêng team-ops (Nib): format issue-queue .claude/teams/issues.md, bảng ≥8 code lỗi phối hợp team + playbook sửa từng loại, ngưỡng trigger khi nào vá-brief vs sửa-agent-body (cần user duyệt). KHÔNG đụng code sản phẩm src/backend/src-tauri."
 ---
 
-# team-fix — sửa bộ máy phối hợp team note-ch
+# team-fix — sửa bộ máy phối hợp team Nib
 
 > Skill phục vụ **riêng `team-ops`**. Mục đích: biến "team trục trặc" thành **issue có code + target sửa đo được**, rồi sửa **bộ máy team** (agent body / playbook / master / skill / settings.json) — KHÔNG sửa code sản phẩm.
 > Nguồn lỗi: lead ghi vào `.claude/teams/issues.md` khi phát hiện lỗi phối hợp (playbook §6). `team-ops` đọc queue → phân loại → fix → báo lead diff.

@@ -1,6 +1,6 @@
 ---
 name: design
-description: "Workflow dựng mockup HTML/CSS pixel-accurate cho agent `design` (note-ch): 5 bước (tokens→pattern→snippet→component→verify), ≥6 done-criteria đo được, anti-pattern, gate idiom. Tham chiếu .claude/design-library/ — KHÔNG Figma, KHÔNG hex rời."
+description: "Workflow dựng mockup HTML/CSS pixel-accurate cho agent `design` (Nib): 5 bước (tokens→pattern→snippet→component→verify), ≥6 done-criteria đo được, anti-pattern, gate idiom. Tham chiếu .claude/design-library/ — KHÔNG Figma, KHÔNG hex rời."
 ---
 
 # design SKILL — Workflow dựng mockup HTML/CSS

@@ -188,6 +188,8 @@ python3 -m http.server 8081
 
 ## Không làm
 
+> **Lưu ý audit:** 8 skill gsap-* (`.claude/skills/gsap-*`): **GIỮ chủ đích** — sẽ dùng khi nâng cấp animation sau (user chốt 2026-06-20); KHÔNG flag là dead trong audit.
+
 | Không làm | Vì sao |
 |---|---|
 | Hardcode hex màu (`#xxxxxx`) | Vi phạm token contract — thay bằng `var(--accent)` |

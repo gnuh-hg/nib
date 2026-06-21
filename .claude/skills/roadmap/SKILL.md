@@ -3,7 +3,7 @@ name: roadmap
 description: "Use when laying out the multi-phase route for a whole product/workstream BEFORE breaking each phase into its own long-plan. Produces or maintains plan/<roadmap>/ROADMAP.md — a map of phases (what + what-to-clarify), not an executable plan. Each phase later becomes one plan-long nested under the same roadmap folder."
 ---
 
-# Roadmap — note-ch (notepad toán học sống)
+# Roadmap — Nib (notepad toán học sống)
 
 > Form chuẩn cho **lộ trình tổng**: 1 file `plan/<roadmap>/ROADMAP.md` chia toàn bộ sản phẩm thành các phase độc lập. **Mỗi phase = 1 long-plan** soạn riêng (qua `plan-long`) khi user trỏ vào, **nested dưới chính thư mục roadmap đó** (`plan/<roadmap>/<phase-slug>/`). ROADMAP **KHÔNG phải** long-plan — nó chỉ mô tả *cần làm gì* + *cần làm rõ gì* để mỗi lần dựa vào đây mà dựng PLAN/CHECKPOINT. Cách quản lý file: xem `plan/README.md`.
 >
@@ -34,7 +34,7 @@ ROADMAP là **mutable**: cập nhật bảng tiến độ cuối file khi một 
 ## Form `plan/ROADMAP.md`
 
 ```markdown
-# note-ch — Roadmap chia phase
+# Nib — Roadmap chia phase
 
 > Bản đồ chia sản phẩm thành các phase độc lập; **mỗi phase = 1 long-plan** soạn riêng khi user yêu cầu. File này KHÔNG phải long-plan — chỉ mô tả *cần làm gì* + *cần làm rõ gì* để mỗi lần dựa vào đây dựng PLAN/CHECKPOINT (theo `plan-long`).
 
@@ -103,7 +103,7 @@ Mỗi lần build 1 phase: user trỏ vào phase → dùng `plan-long` dựng `p
 ## Rules
 
 1. **ROADMAP mô tả WHAT + cần-làm-rõ, KHÔNG chia session.** Session breakdown là việc của long-plan từng phase.
-2. **Mỗi phase phải có "Done khi" đo được** (gate idiom note-ch: `npm run build` 0 error, `pytest` pass, vòng gõ→symbolic inline chạy…). Không có gate = chưa phải phase, là ý tưởng.
+2. **Mỗi phase phải có "Done khi" đo được** (gate idiom Nib: `npm run build` 0 error, `pytest` pass, vòng gõ→symbolic inline chạy…). Không có gate = chưa phải phase, là ý tưởng.
 3. **Cross-cutting chốt 1 lần.** Mọi câu hỏi mở §11 của CLAUDE.md theo dõi trạng thái ở section Cross-cutting — đừng để câu hỏi chặn (vd license MyScript) rơi vào quên lãng.
 4. **Tôn trọng [LOCKED]** — không đề xuất ngược các quyết định đã chốt ở CLAUDE.md §3–§6. Muốn đảo → ghi rõ ở đầu ROADMAP "ĐẢO CHIỀU quyết định cũ" + lý do + người chốt, không sửa lén.
 5. **Phase slug kebab-case**, khớp với thư mục `plan/<roadmap>/<phase-slug>/` (nested dưới roadmap) mà long-plan sẽ sinh.
@@ -115,7 +115,7 @@ Mỗi lần build 1 phase: user trỏ vào phase → dùng `plan-long` dựng `p
 | Sai | Sửa |
 | --- | --- |
 | Nhồi chi tiết session/checkbox vào ROADMAP | Để long-plan từng phase lo; ROADMAP chỉ WHAT + gate |
-| Phase không có "Done khi" đo được | Thêm gate idiom note-ch cụ thể |
+| Phase không có "Done khi" đo được | Thêm gate idiom Nib cụ thể |
 | Bỏ qua cross-cutting (license, thiết bị, tên) | Theo dõi ở section Cross-cutting tới khi ✅ |
 | Sửa lén quyết định [LOCKED] trong ROADMAP | Ghi block "ĐẢO CHIỀU" + lý do + ai chốt |
 | ROADMAP rồi nhảy thẳng code | Mỗi phase phải qua `plan-long` trước khi build |

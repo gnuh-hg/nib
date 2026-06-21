@@ -1,6 +1,6 @@
 ---
 name: tauri-packaging
-description: "Đóng gói Tauri 2 + IPC frontend↔sidecar cho glue-packaging (note-ch): cargo build --release, Tauri command + invoke, spawn Python SymPy sidecar (tauri.conf.json), build desktop artifact, offline fallback khi sidecar không start."
+description: "Đóng gói Tauri 2 + IPC frontend↔sidecar cho glue-packaging (Nib): cargo build --release, Tauri command + invoke, spawn Python SymPy sidecar (tauri.conf.json), build desktop artifact, offline fallback khi sidecar không start."
 ---
 
 # tauri-packaging — vỏ Tauri 2 + IPC sidecar

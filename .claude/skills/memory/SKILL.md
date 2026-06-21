@@ -1,9 +1,9 @@
 ---
 name: memory
-description: "Đọc `.claude/memory/` đầu task + append bài học cuối task (date-stamped, luôn append, cap 10 entry mới nhất). Store dùng chung cho mọi agent trong team note-ch."
+description: "Đọc `.claude/memory/` đầu task + append bài học cuối task (date-stamped, luôn append, cap 10 entry mới nhất). Store dùng chung cho mọi agent trong team Nib."
 ---
 
-# Memory — đọc/ghi store chung của team note-ch
+# Memory — đọc/ghi store chung của team Nib
 
 > Skill dùng chung cho **mọi vai** (lead + teammate): đọc bối cảnh đầu task, append bài học/quyết định/trạng thái cuối task.
 > Store **duy nhất**: `.claude/memory/` (project-scope). Không có store thứ hai — không nhầm với bất kỳ engine/branch store nào.

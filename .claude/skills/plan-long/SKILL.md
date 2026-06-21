@@ -3,7 +3,7 @@ name: plan-long
 description: "Use when scoping multi-session work that can't finish with quality in one chat (whole workstream, bulk generation ≥100 unit, multi-phase pipeline with human gates, external manual steps like MyScript license setup). Produces PLAN.md + CHECKPOINT.md inside plan/<roadmap>/<slug>/ (nested under its roadmap folder)."
 ---
 
-# Plan-Long — note-ch (notepad toán học sống)
+# Plan-Long — Nib (notepad toán học sống)
 
 > Form chuẩn cho kế hoạch dài hạn: sinh 2 file (`PLAN.md` + `CHECKPOINT.md`) trong `plan/<roadmap>/<slug>/`, ràng buộc "1 chat = 1 session". Cách quản lý file: xem `plan/README.md`.
 >
@@ -175,7 +175,7 @@ Session là **nặng** khi cần làm ≥1 trong:
 
 ---
 
-## Gate idiom (note-ch) — STOP gate phải đo được bằng stack thật
+## Gate idiom (Nib) — STOP gate phải đo được bằng stack thật
 
 - **Frontend:** `npm run build` exit 0; `tsc --noEmit` 0 error; vitest pass; block mount + render đúng (console 0 error).
 - **Tauri:** `cargo build` trong `src-tauri/` pass; app launch render được block.

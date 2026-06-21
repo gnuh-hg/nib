@@ -6,7 +6,7 @@
 
 | Tầng | Skill | Artifact | Tính chất |
 |---|---|---|---|
-| Lộ trình tổng (nhiều phase) | `roadmap` | `plan/ROADMAP.md` | mutable — cập nhật khi phase đổi trạng thái |
+| Lộ trình tổng (nhiều phase) | `roadmap` | `plan/<roadmap>/ROADMAP.md` | mutable — cập nhật khi phase đổi trạng thái |
 | Kế hoạch dài (1 phase/workstream) | `plan-long` | `plan/<slug>/PLAN.md` + `plan/<slug>/CHECKPOINT.md` | PLAN immutable sau approve; CHECKPOINT mutable |
 | Kế hoạch ngắn (1 chat) | `plan-short` | (không file — inline trong chat) | ephemeral |
 
@@ -17,8 +17,10 @@ Quan hệ: **ROADMAP** chia sản phẩm thành phase → mỗi phase bửa thà
 ```
 plan/
 ├── README.md              ← file này (quy ước + index)
-├── ROADMAP.md             ← lộ trình tổng (1 file cho cả sản phẩm)
-├── <phase-slug>/          ← 1 thư mục / 1 long-plan
+├── <roadmap>/             ← 1 thư mục / 1 roadmap (vd maintenance/, settings-redesign/)
+│   ├── ROADMAP.md         ← lộ trình tổng của roadmap đó
+│   └── <phase-slug>/      ← 1 thư mục / 1 long-plan nested dưới roadmap
+├── <phase-slug>/          ← long-plan độc lập (không thuộc roadmap nào)
 │   ├── PLAN.md            ← thiết kế, immutable sau approve
 │   ├── CHECKPOINT.md      ← sổ tiến độ, mutable, Constraint reminder ở ĐẦU
 │   └── <tên>.md           ← artifact phụ của plan này (design note, benchmark, findings…)
@@ -29,14 +31,14 @@ plan/
 
 1. **Slug kebab-case**, không dấu, không space. Phase ROADMAP: `phase-<x>-<tên>` (vd `phase-a-editor`, `phase-b-cas`). Plan lẻ: tên mô tả (vd `cas-latex-sympy-pipeline`).
 2. **Mọi file của một plan nằm gọn trong `plan/<slug>/`** — không rải design note / benchmark ra ngoài.
-3. **1 ROADMAP duy nhất** (`plan/ROADMAP.md`) cho note-ch. Chỉ tạo `plan/<batch>/ROADMAP.md` lồng nếu sau này có đợt tái thiết kế lớn cần tách bạch.
+3. **ROADMAP nằm trong thư mục roadmap của nó** (`plan/<roadmap>/ROADMAP.md`, vd `plan/maintenance/ROADMAP.md`). Mỗi workstream/đợt lớn tạo thư mục riêng. Không đặt ROADMAP.md phẳng ở gốc `plan/`.
 4. **Trước khi tạo** — verify thư mục/file chưa tồn tại (Glob/ls). Trùng → hỏi user (overwrite vs đổi slug), không ghi đè im lặng.
 
 ## Vòng đời & đồng bộ
 
-- **Tạo long-plan** → thêm 1 hàng vào **bảng index** dưới đây + (nếu là phase) update bảng tiến độ cuối `plan/ROADMAP.md`.
+- **Tạo long-plan** → thêm 1 hàng vào **bảng index** dưới đây + (nếu là phase) update bảng tiến độ cuối `plan/<roadmap>/ROADMAP.md`.
 - **Mỗi session** (plan-long) → update `CHECKPOINT.md` **TRƯỚC khi đóng chat** (bảng tiến độ + "Đang ở đâu" + per-session log). Ràng buộc: **1 chat = 1 session**, STOP tại STOP gate.
-- **Phase xong** → đổi trạng thái trong `plan/ROADMAP.md` (✅ + 1 dòng evidence) và ở bảng index dưới.
+- **Phase xong** → đổi trạng thái trong `plan/<roadmap>/ROADMAP.md` (✅ + 1 dòng evidence) và ở bảng index dưới.
 - **PLAN cần đổi sau approve** → append "Revision log" cuối PLAN, không sửa session breakdown trừ khi user yêu cầu.
 
 ## Gate idiom (note-ch)
@@ -50,16 +52,15 @@ Cấm gate cảm tính ("render đẹp", "ổn rồi").
 
 | Slug | Loại | Mô tả | Trạng thái |
 |---|---|---|---|
-| `ROADMAP.md` | roadmap | Lộ trình tổng 6 phase: Phase 0 Mock-UI · Phase 1 Real CAS · Phase 2 Tauri IPC · Phase 3 Handwriting · Phase 4 AI layer · Phase 5 Polish | 🔄 |
-| `agent-team-setup` | long-plan | Dựng bộ máy multi-agent cho note-ch (settings, master, playbook, 8 agents, 5 skills, memory, smoke-test) | 🔄 |
-| `nib-mock-ui` | long-plan (Phase 0) | Mock-UI shell: Vite+React/TS + tokens.css + canvas block model + MathLive + mock CAS stub + UX 4 lớp. Chạy được trong browser Vite dev. | ✅ |
-| `dock-v2` | long-plan (Phase 0 add-on) | v2 Tool Dock: UnifiedDock thay FloatingToolbar+PenPalette. 2 phase / 3 session. Spec từ Nib-Dock-v2-ref.html. | 🔄 |
-| `nib-editor-rebuild` | long-plan (Phase 0 re-align) | Rebuild 5 vùng UI (tokens/header/canvas-paper/rail/library) khớp `Nib Editor.dc.html`. 1 phase / 5 session. Landscape-only. UnifiedDock không đụng. | 🔄 |
-| `nav-dock-redesign` | long-plan (Phase 0 nav overhaul) | Dock drill-down 2 level (NAV/TOOLS) + TopStrip mỏng + bỏ SidebarRail/TopChrome/ModeToggle + Settings overlay + AccountChip. Spec: `docs/nav-dock-design.md`. 1 phase / 3 session. | 🔄 |
-| `settings-redesign` | long-plan (Phase 0 add-on) | Thiết kế lại + mở rộng SettingsOverlay: sidebar-nav layout + section registry + 3 section MVP (Account mock · Language · Theme). 2 phase / 4 session. | 🔄 |
-| `design-agent-library` | roadmap | Thay agent design-figma bằng agent design code-native + thư viện .claude/design-library/. 4 phase. Executor: team-ops. Phase 3 = HUMAN-GATE. Mỗi phase = 1 long-plan riêng nested. | 🔄 |
-| `design-agent-library/phase-1-catalog` | long-plan (Phase 1) | Sinh 5 artifact .claude/design-library/ (INDEX + tokens + components + patterns + snippets). 3 session. | 🔄 |
-| `design-agent-library/phase-2-agent-skill` | long-plan (Phase 2) | Sinh .claude/agents/design.md + .claude/skills/design/SKILL.md. 2 session. | ⬜ |
-| `design-agent-library/phase-4-proof-run` | long-plan (Phase 4) | Agent `design` dựng `docs/design-artifacts/settings-overlay.html` (proof run bộ đôi agent+library). 1 phase / 1 session. Gate = 6 DC Bash verify PASS. | ⬜ |
+| `agent-team-setup` | long-plan | Dựng bộ máy multi-agent cho note-ch (settings, master, playbook, 8 agents, 5 skills, memory, smoke-test) | ✅ (archived → `plan/_archived/agent-team-setup/`) |
+| `nib-mock-ui` | long-plan (Phase 0) | Mock-UI shell: Vite+React/TS + tokens.css + canvas block model + MathLive + mock CAS stub + UX 4 lớp. Chạy được trong browser Vite dev. | ✅ (archived → `plan/_archived/nib-mock-ui/`) |
+| `dock-v2` | long-plan (Phase 0 add-on) | v2 Tool Dock: UnifiedDock thay FloatingToolbar+PenPalette. 2 phase / 3 session. | ✅ (archived → `plan/_archived/dock-v2/`) |
+| `nib-editor-rebuild` | long-plan (Phase 0 re-align) | Rebuild 5 vùng UI (tokens/header/canvas-paper/rail/library) khớp design HTML. 1 phase / 5 session. | ✅ (archived → `plan/_archived/nib-editor-rebuild/`) |
+| `nav-dock-redesign` | long-plan (Phase 0 nav overhaul) | Dock drill-down NAV/TOOLS + TopStrip + bỏ SidebarRail. 1 phase / 3 session. | ✅ (archived → `plan/_archived/nav-dock-redesign/`) |
+| `tauri-shell` | long-plan | Vỏ Tauri 2 desktop native. 2 session. | ✅ (archived → `plan/_archived/tauri-shell/`) |
+| `design-agent-library` | roadmap | Thay agent design-figma bằng agent design code-native + thư viện .claude/design-library/. 4 phase. DONE. | ✅ (archived → `plan/_archived/design-agent-library/`) |
+| `settings-redesign` | long-plan (active) | Thiết kế lại + mở rộng SettingsOverlay: sidebar-nav layout + section registry + 3 section MVP. 2 phase / 4 session. | 🔄 |
+| `maintenance` | roadmap | Bảo trì hệ thống `.claude/`: 3 phase (A cleanup / B wiring upgrade / C workflow hardening HIGH-IMPACT). Nền: audit 2026-06-20. | 🔄 |
+| `maintenance/phase-a-cleanup` | long-plan (Phase A) | Archive plan done + docs stale, annotate design.md, xóa flat ROADMAP, trim memory. 1 phase / 6 session. | 🔄 |
 
 > Cập nhật bảng này mỗi khi tạo/đóng một plan. Trạng thái: ⬜ chưa bắt đầu · 🔄 đang chạy · ✅ done.

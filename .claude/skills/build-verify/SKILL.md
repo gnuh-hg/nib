@@ -1,9 +1,9 @@
 ---
 name: build-verify
-description: "Gate idiom đo được cho mọi implementer team note-ch (frontend / Tauri / backend / pipeline LaTeX→SymPy / vòng-lõi gõ→inline). Chạy lệnh thật, đọc exit code, nộp evidence — cấm gate cảm tính 'trông ổn'."
+description: "Gate idiom đo được cho mọi implementer team Nib (frontend / Tauri / backend / pipeline LaTeX→SymPy / vòng-lõi gõ→inline). Chạy lệnh thật, đọc exit code, nộp evidence — cấm gate cảm tính 'trông ổn'."
 ---
 
-# build-verify — gate idiom đo được cho implementer note-ch
+# build-verify — gate idiom đo được cho implementer Nib
 
 > Skill dùng chung cho **mọi implementer** (`editor-frontend` / `backend-cas` / `handwriting` / `glue-packaging`).
 > Mục đích: biến "done" thành **lệnh chạy được + exit code + output cụ thể**, không phải cảm tính. Lead gate bằng evidence bạn nộp — evidence yếu = task bị trả lại.

@@ -1,9 +1,9 @@
-# master — orchestration doc (note-ch)
+# master — orchestration doc (Nib)
 
-> Điểm vào "bộ não" của **lead** khi vận hành note-ch như một **native Claude Code team** (Agent Teams).
+> Điểm vào "bộ não" của **lead** khi vận hành Nib như một **native Claude Code team** (Agent Teams).
 > Đọc file này + `.claude/teams/playbook.md` (chi tiết thao tác) **TRƯỚC** khi spawn bất kỳ team nào.
 >
-> **note-ch build APP "notepad toán học sống"** (Tauri 2 + React/TS/Vite + TipTap/Lexical + MathLive +
+> **Nib build APP "notepad toán học sống"** (Tauri 2 + React/TS/Vite + TipTap/Lexical + MathLive +
 > MyScript + FastAPI/SymPy). Đường găng = **editor** (gõ/bút → 1 block → kết quả symbolic inline, live).
 > Xem `CLAUDE.md` §3–§6 **[LOCKED]** (không bàn ngược), §8 rủi ro (định ưu tiên), §11 câu hỏi mở
 > (đừng tự chốt), §12 workstream.
@@ -15,6 +15,9 @@
 1. **Lead điều phối, KHÔNG tự code/build task phức tạp.** Lead chỉ tự xử **trivial**: ≤3 file, scope
    rõ ràng, ≤15 dòng thay đổi, hoặc thuần đọc/hỏi/tra file. Mọi thứ vượt ngưỡng → giao teammate.
    Vi phạm điển hình = "lead-DIY" (lead tự ngồi viết editor/CAS thay vì spawn) → cấm.
+   **Mở rộng lead-DIY — 2 loại hay tái diễn (ISSUE-10/12):**
+   - **Soạn/soát plan artifact** (ROADMAP / PLAN.md / CHECKPOINT.md) = việc `planner`. Lead CHỈ phân loại scope + gate kết quả. Lead tự viết plan → bỏ chuyên môn planner, bỏ qua gate → lỗi cấu trúc, lặp ISSUE-3/5/12.
+   - **Dựng layout / visual / mockup** = việc `design` (agent code-native). Lead CHỈ hỏi user quyết WHAT (container kiểu gì, scope tính năng) — KHÔNG hỏi "bố cục nào đẹp hơn" bằng ASCII mockup tự vẽ ép user chọn phương án trừu tượng. Giao `design` dựng bản thật present (ISSUE-10, [[lead-no-diy-design]]).
 2. **Teammate giao tiếp bằng văn xuôi markdown** — KHÔNG JSON ceremony, KHÔNG trao đổi plan-as-data
    giữa các vai. Artifact code (file `src/`, `backend/`, `src-tauri/`) là output; thông điệp giữa
    lead↔teammate là prose. Implementer nộp **evidence đo được** (output lệnh build/test), không phải
@@ -191,11 +194,11 @@ box giới hạn Agent Teams + plan-approval mode → **`.claude/teams/playbook.
 Không có vai tester riêng. Vòng:
 
 ```
-implementer làm xong → tự chạy skill build-verify (gate idiom note-ch) → nộp EVIDENCE trong SendMessage
+implementer làm xong → tự chạy skill build-verify (gate idiom Nib) → nộp EVIDENCE trong SendMessage
    → LEAD gate bằng evidence đo được (KHÔNG accept "trông ổn")
 ```
 
-**Gate idiom note-ch** (done-criteria phải đo được — chi tiết & cách đọc lỗi ở `build-verify/SKILL.md`):
+**Gate idiom Nib** (done-criteria phải đo được — chi tiết & cách đọc lỗi ở `build-verify/SKILL.md`):
 
 - **Frontend:** `npm run build` exit 0; `tsc --noEmit` 0 error; vitest pass; block mount render đúng (console 0 error).
 - **Tauri:** `cargo build` trong `src-tauri/` pass; app launch render được block.
@@ -217,8 +220,8 @@ Done-criteria cảm tính ("render đẹp", "hoạt động tốt") → **KHÔNG
 | Skill build + verify (implementer gate) | `.claude/skills/build-verify/SKILL.md` |
 | Skill memory (đọc/ghi store) | `.claude/skills/memory/SKILL.md` |
 | Skill design code-native — dùng cho vai `design` (workflow 5 bước + done-criteria gate + motion-intent spec) | `.claude/skills/design/SKILL.md` |
-| Memory store note-ch team | `.claude/memory/` (context / mistakes / patterns / global) |
+| Memory store Nib team | `.claude/memory/` (context / mistakes / patterns / global) |
 | Project brief (LOCKED + rủi ro + câu hỏi mở + workstream) | `CLAUDE.md` (§3–§6, §8, §11, §12, §13) |
 | **Spec sản phẩm — yêu cầu nền [LOCKED]** (song ngữ en/vi · thiết bị desktop-class + 3 input · theme light/dark/system + **root màu/design tokens**). Mọi task chạm UI BẮT BUỘC bám. | `docs/requirements.md` |
 | Spec sản phẩm — 2 đường nhập cốt lõi (gõ / viết tay) | `docs/feature.md` |
-| Plan hạ tầng team (lịch sử thiết kế) | `plan/agent-team-setup/PLAN.md` + `CHECKPOINT.md` |
+| Plan hạ tầng team (lịch sử thiết kế) | `plan/_archived/agent-team-setup/PLAN.md` + `CHECKPOINT.md` (archived 2026-06-20) |

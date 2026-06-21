@@ -1,6 +1,6 @@
 ---
 name: handwriting-myscript
-description: "Tích hợp MyScript iink (đường bút→LaTeX) cho agent handwriting (note-ch): ink→recognition→LaTeX, palm rejection, gesture xóa/sửa, auto-convert mực→toán. PHỤ THUỘC human gate §11.2 (license) + §11.1 (thiết bị) — chưa chốt thì PAUSE."
+description: "Tích hợp MyScript iink (đường bút→LaTeX) cho agent handwriting (Nib): ink→recognition→LaTeX, palm rejection, gesture xóa/sửa, auto-convert mực→toán. PHỤ THUỘC human gate §11.2 (license) + §11.1 (thiết bị) — chưa chốt thì PAUSE."
 ---
 
 # handwriting-myscript — đường bút → LaTeX

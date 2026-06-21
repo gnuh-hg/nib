@@ -1,3 +1,5 @@
+> ⚠️ **PARTIALLY SUPERSEDED** — §2.3, §4.1, §4.3, §4.4 đã bị lật bởi toolbar-redesign + nav-dock-redesign (2026-06-13/17). Xem code thật `src/` làm nguồn sự thật. Chi tiết: chú thích inline bên dưới từng section. Phần còn lại (§1/§2.1/§2.2/§3/§5/§6/§7/§8/§9/§10/§11) vẫn valid.
+
 # Nib — Kế hoạch Design (UI/UX)
 
 > **File này là tầng thiết kế UI/UX** — mô tả WHAT về giao diện và trải nghiệm người dùng.
@@ -80,6 +82,8 @@ Mọi màu, khoảng cách, bán kính, shadow đọc từ CSS custom property. 
 > ⚠️ **Spec change** — min-width hỗ trợ nới từ 1024px → **820px**, thêm breakpoint sub-compact. Xem mục 10.
 
 ### 2.3 Chrome & canvas per breakpoint
+
+> <!-- SUPERSEDED §2.3 — nav-dock-redesign (2026-06-17) lật layout này; xem src/components/ làm nguồn sự thật. -->
 
 **sub-compact (820–1023px — iPad Pro 11" portrait)**
 - Top chrome: 44px, **icon-only** (không label).
@@ -178,6 +182,8 @@ Không cần logic render đặc biệt — partial gap là "side-effect" tự n
 
 ### 4.1 Mô hình "always-explicit active block"
 
+> <!-- SUPERSEDED §4.1 — toolbar-redesign (2026-06-13) thay đổi UX lớp 2; xem src/. -->
+
 **Vấn đề cần giải**: document có nhiều block vô hình trên cùng dòng kẻ → không rõ nút Tính sẽ tính block nào.
 
 **Giải pháp**: Luôn có **đúng 1 block "active"** được highlight — PREVIEW rõ ràng "Tính sẽ tính block này".
@@ -200,6 +206,8 @@ Ngữ cảnh biến luôn = **cả trang** (`x = 5` ở block khác vẫn có hi
 
 ### 4.3 Affordance per modality
 
+> <!-- SUPERSEDED §4.3 — nav-dock-redesign (2026-06-17) thay đổi dock structure; xem src/. -->
+
 | Trạng thái | pointer:fine (chuột) | pointer:pen (bút) | pointer:coarse (cảm ứng) |
 |---|---|---|---|
 | **Idle** | Không gì (vô hình tuyệt đối) | Không gì | Không gì |
@@ -220,6 +228,8 @@ Ngữ cảnh biến luôn = **cả trang** (`x = 5` ở block khác vẫn có hi
 > - Nhất quán "teal = focus/active" với caret (`--caret`).
 
 ### 4.4 Discoverability: Tính / Convert / `\`
+
+> <!-- SUPERSEDED §4.4 — nav-dock-redesign (2026-06-17) thay đổi nav flow; xem src/. -->
 
 Ba thứ dễ bị lẫn — cần phân biệt rõ trong thiết kế:
 

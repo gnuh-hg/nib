@@ -91,16 +91,13 @@
 - **note**: Lead đã **tự áp layout ngay trong phiên** sau khi user nhắc: `tmux select-layout main-vertical && tmux join-pane -h -s :.3 -t :.2 && tmux join-pane -h -s :.5 -t :.4` (N=4, main + 2×2 grid) → xác nhận 5 pane sắp đúng + `select-pane -t :.1` trả focus lead. Defect process = recipe §2 không nhắc lead detect `$TMUX` runtime. HIGH-IMPACT (playbook/master) → cần **user duyệt** trước khi team-ops sửa guard. Đây là defect THẬT (khác ISSUE-2 tưởng no-op) → ưu tiên fix guard.
 - **FIX (team-ops, 2026-06-17)**: **ĐÃ SỬA** `playbook.md` 2 chỗ: (1) recipe §2 bước 2 — đổi guard từ "đọc `teammateMode` setting" → **kiểm `$TMUX` runtime** (`[ -n "$TMUX" ] && tmux list-panes`): `$TMUX` set → PHẢI áp layout §8; rỗng → no-op. (2) §8 note đầu — đính chính kết luận sai ISSUE-2 ("settings không set teammateMode ⇒ luôn no-op" là SAI vì Claude Code auto-detect tmux). Defect tmux-thật-active giờ buộc lead áp layout. HIGH-IMPACT (playbook): áp theo lệnh trực tiếp user. **Đính chính ISSUE-2 note** (đã đánh dấu false-positive trong FIX này; KHÔNG sửa text ISSUE-2 cũ — giữ lịch sử, đính chính tại ISSUE-6).
 
-## ISSUE-7 — OTHER (teammate liên tục xin quyền ghi file) — open
+## ISSUE-7 — OTHER (teammate liên tục xin quyền ghi file) — fixed
 
 - **time**: 2026-06-18
 - **teammate**: `editor-frontend` (team `nib-dock-redesign`, Session 1.1)
 - **symptom**: User báo: "không biết tại sao agent editor-frontend lại liên tục yêu cầu cấp quyền ghi file". editor-frontend khi implement (Write/Edit `src/components/...`) liên tục bật permission prompt xin quyền ghi, thay vì auto-accept như kỳ vọng (playbook §9: "Permissions teammate = kế thừa mode lead lúc spawn — mode lấy từ `.claude/settings.json` `defaultMode: acceptEdits`").
-- **target**: `.claude/` — `team-ops` điều tra. **Giả thuyết root cause (lead):** lead spawn teammate này với **`mode: "plan"`** (plan-approval mode cho session rủi ro cao — xoá ModeToggle). Plan mode = read-only. Nghi vấn: sau khi teammate `ExitPlanMode`, permission mode KHÔNG tự về `acceptEdits` (không kế thừa `defaultMode`) → mỗi Write/Edit bật prompt. Tức **plan-approval spawn + ExitPlanMode có thể không khôi phục acceptEdits** cho teammate. Cần verify:
-  1. `.claude/settings.json` `defaultMode` hiện là gì (kỳ vọng `acceptEdits`)?
-  2. Khi spawn `Agent(mode:"plan")` rồi teammate ExitPlanMode → permission mode thực tế của teammate là gì (plan/default/acceptEdits)?
-  3. Playbook §10 (plan-approval mode) + §9 (permission inherit) có mâu thuẫn không: §10 khuyến nghị dùng plan-approval cho editor-frontend/backend-cas trên đường găng, NHƯNG nếu plan-mode spawn làm mất acceptEdits sau exit → mọi session plan-approval đều bị prompt-storm. Nếu đúng → cần ghi chú cách xử (vd: lead re-grant mode sau approve, hoặc teammate tự set, hoặc tránh spawn mode:"plan" mà dùng cơ chế approval khác).
-- **note**: KHÔNG chặn cứng — user vẫn cấp quyền được để editor-frontend tiếp tục, chỉ phiền (nhiều prompt). Lead KHÔNG tự sửa `settings.json` (permission/high-impact — chờ user duyệt qua team-ops). Đây là defect process/cấu hình (tương tác plan-approval × permission-inherit), không phải lỗi hành vi teammate. Ngưỡng: mới 1 lần nhưng user chủ động yêu cầu ghi → log theo dõi; nếu tái diễn mỗi session plan-approval → nâng ưu tiên fix gốc. HIGH-IMPACT nếu fix đụng `settings.json`/`playbook §9–§10` → cần **user duyệt**.
+- **target**: **FIX (team-ops, 2026-06-20, user duyệt)** — (1) `plan/maintenance/phase-c-workflow/findings-issue7.md`: phân tích cơ chế ExitPlanMode, kết luận workaround "không spawn mode:plan cho session ghi nhiều, dùng brief-level instruction thay thế". (2) `.claude/teams/playbook.md §10`: thêm cảnh báo + workaround instruction "spawn default mode + brief-level STOP instruction thay mode:plan". settings.json KHÔNG thay đổi (chưa verify runtime root cause).
+- **note**: Workaround hiệu quả (lead đã dùng S1.2/S1.3). User duyệt 2026-06-20.
 
 ## ISSUE-9 — OTHER (agent body thiếu mcp__gitnexus__* tool sau khi repo được index) — fixed
 
@@ -132,36 +129,31 @@
   - **Phần HIGH-IMPACT (lead áp sau khi user duyệt, 2026-06-18):** (c) `settings.json` — thêm 6 entry `mcp__claude-in-chrome__*` vào `permissions.allow` (JSON validated PASS). (d) `playbook.md §9` — thêm bullet "Browser/click-through smoke = gate do USER, KHÔNG phải teammate" (giới hạn extension + trỏ build-verify §5).
   - **Kết luận gốc:** architectural blocker — background teammate KHÔNG connect được Chrome extension (foreground-only bind); config-fix (tool + allow) cần thiết nhưng không đủ giải quyết connect. Giải pháp đúng: browser smoke chuyển thành **user-gate**; implementer nộp build-verify evidence + click-through checklist, lead paste cho user smoke.
 
-## ISSUE-10 — OTHER (lead tự làm thiết kế layout thay vì giao design-figma) — open
+## ISSUE-10 — OTHER (lead tự làm thiết kế layout thay vì giao design) — fixed
 
 - **time**: 2026-06-19
 - **teammate**: `team-lead` (team `settings-redesign` — thiết kế lại phần Cài đặt)
-- **symptom**: Khi gặp câu hỏi bố cục Settings, lead **tự dựng các phương án layout (ASCII mockup trong AskUserQuestion preview)** rồi bắt user chọn phương án trừu tượng (2 cột sidebar vs 1 cột scroll vs full-page...). User bác cả 2 vòng options và chỉ ra: *"việc làm layout cần để design hoặc kỹ sư làm. nếu cần ý kiến từ tôi maybe sẽ gửi vài bản cho tôi tại sao bạn lại làm"*. Tức lead lấn vai `design-figma` — visual/layout là việc design dựng bản THẬT rồi present, không phải lead vẽ phác ép user quyết.
-- **target**: `.claude/` — đề xuất `team-ops` cân nhắc cứng hoá: (1) `master.md §1` (Lead-DIY anti-pattern) hoặc `§4` rubric — thêm dòng: *visual/layout/spacing/mockup = việc design-figma (hoặc implementer), KHÔNG phải lead; lead chỉ hỏi user quyết định scope/WHAT (container kiểu gì, account scope...), KHÔNG hỏi "bố cục nào đẹp hơn" bằng mockup tự vẽ.* (2) `playbook.md §11` Anti-patterns Lead — thêm mục "Lead tự dựng layout/mockup ép user chọn → thay vì giao design-figma dựng bản thật present". Cross-link với `lead-no-diy-design` memory (global store).
-- **note**: Lead đã tự khắc phục trong-phiên (ghi nhận lỗi, lưu memory feedback `lead-no-diy-design.md`, chuyển sang giao planner WHAT + design-figma dựng 2-3 mockup cho user chọn). Ngưỡng: mới 1 lần, nhưng user chủ động yêu cầu ghi issue → log theo dõi tái diễn. HIGH-IMPACT nếu fix đụng master/playbook → **chờ user duyệt**.
+- **symptom**: Khi gặp câu hỏi bố cục Settings, lead **tự dựng các phương án layout (ASCII mockup trong AskUserQuestion preview)** rồi bắt user chọn phương án trừu tượng (2 cột sidebar vs 1 cột scroll vs full-page...). User bác cả 2 vòng options và chỉ ra: *"việc làm layout cần để design hoặc kỹ sư làm. nếu cần ý kiến từ tôi maybe sẽ gửi vài bản cho tôi tại sao bạn lại làm"*. Tức lead lấn vai `design` — visual/layout là việc design dựng bản THẬT rồi present, không phải lead vẽ phác ép user quyết.
+- **target**: **FIX (team-ops, 2026-06-20, user duyệt)** — `.claude/master.md §1`: thêm rule lead-no-DIY-design (gom với ISSUE-12). `.claude/teams/playbook.md §11`: thêm anti-pattern #10 "Lead tự dựng layout/mockup ép user chọn thay vì giao `design`". Cross-link [[lead-no-diy-design]]. (Đã đổi "design-figma" → "design" vì agent đã retire 2026-06-20.)
+- **note**: User duyệt 2026-06-20.
 
-## ISSUE-11 — OTHER (tmux pane layout loạn — TÁI DIỄN RẤT THƯỜNG XUYÊN, nối tiếp ISSUE-2/6) — open
+## ISSUE-11 — OTHER (tmux pane layout loạn — TÁI DIỄN RẤT THƯỜNG XUYÊN, nối tiếp ISSUE-2/6) — fixed
 
 - **time**: 2026-06-19
 - **teammate**: `team-lead` (team `settings-redesign`)
 - **symptom**: User báo "sai layout của team rồi" (kèm screenshot) — **lặp NHIỀU LẦN** (user nhấn "vấn đề này gặp rất thường xuyên"; đã có tiền lệ ISSUE-2, ISSUE-6). Hai defect cụ thể quan sát phiên này:
   1. **`select-layout main-vertical` mặc định để pane LEAD hẹp hơn pane teammate** (lead 80 cột vs teammate 157 cột) → lead pane (nơi user đọc/tương tác chính) bị bóp nhỏ, teammate chiếm phần rộng → nhìn lệch/khó dùng. Nguyên nhân: `main-pane-width` không được set trước khi `select-layout` → tmux dùng default (nửa màn) làm main hẹp.
   2. **Layout KHÔNG được re-apply sau khi teammate SHUTDOWN** (không chỉ sau spawn). Recipe playbook §2/§8 chỉ áp layout sau bước SPAWN; khi lead shutdown teammate giữa phase (vd researcher+design-figma xong Phase 1), số pane sống đổi → layout cũ thành stale/lệch cho tới khi lead tình cờ re-layout. Pane chết tmux tự dọn (đã verify: list-panes chỉ còn pane sống), nhưng layout không tự cân lại.
-- **target**: `.claude/teams/playbook.md` §8 (+ recipe §2) — đề xuất `team-ops`:
-  1. Thêm bước **set `main-pane-width` (vd 60% hoặc ~110 cột) TRƯỚC `select-layout main-vertical`** vào mọi block layout §8, để lead luôn là pane chính lớn. Lệnh đã verify chạy đúng phiên này: `tmux set-window-option main-pane-width 60% && tmux select-layout main-vertical && tmux select-pane -t :.1`.
-  2. Thêm quy tắc: **re-apply layout §8 sau MỖI lần đổi số teammate sống — cả spawn LẪN shutdown/TeamDelete** (không chỉ sau spawn). Đề xuất 1 helper "re-layout theo N pane sống hiện tại" lead gọi sau mỗi shutdown.
-  3. Cân nhắc guard đếm pane sống động: `N=$(tmux list-panes | wc -l)` → chọn block layout theo N (main-vertical N≤4, tiled N≥5) thay vì giả định N cố định lúc spawn.
-- **note**: Lead đã tự khắc phục trong-phiên: `set main-pane-width 60% + select-layout main-vertical` → lead 142×58 (chính), 3 teammate 95 cột xếp dọc phải. Đây là defect PROCESS lặp ≥3 lần (ISSUE-2/6/11) → ngưỡng cứng-hoá ĐẠT, nên fix gốc playbook §8 thay vì vá tay mỗi phiên. HIGH-IMPACT (playbook) → **chờ user duyệt** trước khi team-ops áp.
+- **target**: **FIX (team-ops, 2026-06-20, user duyệt)** — `.claude/teams/playbook.md §8`: (1) thêm `tmux set-window-option main-pane-width 60%` TRƯỚC `select-layout` trong mọi block lệnh N=2..5; (2) thêm "Re-apply helper" với N-dynamic guard (`N=$(tmux list-panes | wc -l)`) + rule re-apply sau shutdown. `.claude/teams/playbook.md §2` recipe bước 2: thêm dòng re-apply sau shutdown/TeamDelete.
+- **note**: Defect PROCESS lặp ≥3 lần (ISSUE-2/6/11) → đã cứng-hoá gốc. User duyệt 2026-06-20.
 
-## ISSUE-12 — OTHER (lead tự soạn plan + bỏ planner-gate, lại sai cấu trúc per-phase long-plan — TÁI DIỄN ISSUE-3/5) — open
+## ISSUE-12 — OTHER (lead tự soạn plan + bỏ planner-gate, lại sai cấu trúc per-phase long-plan — TÁI DIỄN ISSUE-3/5) — fixed
 
 - **time**: 2026-06-19
 - **teammate**: `team-lead` (team `design-agent-library` — thay design-figma bằng agent `design` code-native + thư viện `.claude/design-library/`)
 - **symptom**: User giao task phức tạp ("làm agent design + build hệ thống thư viện, cần lên plan roadmap"). Lead **tự tay viết `plan/design-agent-library/ROADMAP.md`** (lead-DIY phần plan) RỒI **spawn thẳng `team-ops` + giao Task #1 (Phase 1 build catalog)** — tức bắt đầu EXECUTION khi CHƯA có plan artifact do `planner` soạn & gate. User phải nhắc 2 lần: (1) "? sao không spam agent" (lead trình roadmap chờ duyệt thay vì spawn), rồi (2) "spam cả plan - chuyên môn hơn để soạn plan hoặc soát lại không làm kiểu vậy" = đừng để lead tự soạn plan; phải dùng `planner` chuyên môn. **Defect kép:** (a) lead lấn vai planner (tự viết plan) — TÁI DIỄN tinh thần ISSUE-3/5 (lead bỏ planner-gate) dù PLAN-GATE đã cứng-hoá vào master §3/§4 + playbook §1; (b) lead còn giao planner SAI cấu trúc — brief Task #2 bảo gộp **1 PLAN.md cho cả 4 phase**, trong khi convention (skill `roadmap` + `plan-long`, user nhắc) = **mỗi phase roadmap → 1 long-plan riêng nested** `plan/<roadmap>/<phase-slug>/{PLAN.md,CHECKPOINT.md}`.
-- **target**: `.claude/` — đề xuất `team-ops` cân nhắc (CHƯA sửa, chờ ngưỡng/duyệt):
-  1. PLAN-GATE đã có ở master §3/§4 + playbook §1 nhưng chỉ chặn "nhảy thẳng tới architect/implementer", CHƯA chặn rõ trường hợp **lead TỰ VIẾT plan thay planner**. Đề xuất bổ sung 1 dòng ở master §1 (Lead-DIY anti-pattern) / playbook §11 Anti-patterns Lead: *soạn/soát plan artifact (ROADMAP/PLAN/CHECKPOINT) = việc `planner`, KHÔNG phải lead; lead chỉ phân loại scope + gate plan, không tự viết.* Cross-link tinh thần ISSUE-10 (lead-DIY design) — cùng họ "lead lấn vai chuyên môn".
-  2. Cân nhắc nhắc rõ ở playbook (recipe spawn / brief planner §3): **mỗi phase của roadmap = 1 long-plan nested**, lead brief planner phải nói "long-plan cho phase HIỆN TẠI", không gộp nhiều phase vào 1 PLAN.md.
-- **note**: Lead tự khắc phục trong-phiên: spawn `planner` (Task #2) để soạn/soát plan đúng chuẩn; sửa brief Task #2 sang mô hình per-phase long-plan; KHÔNG resume `team-ops` (user đã pause) tới khi plan của planner được gate. Ngưỡng: tinh thần ISSUE-3/5 đã lặp ≥2 lần trước + biến thể "lead tự soạn plan" lần này → user chủ động yêu cầu ghi. HIGH-IMPACT nếu fix đụng master/playbook → **chờ user duyệt** trước khi team-ops áp.
+- **target**: **FIX (team-ops, 2026-06-20, user duyệt)** — `.claude/master.md §1`: thêm rule lead-no-DIY-plan (soạn/soát plan = việc planner) + lead-no-DIY-design (gom với ISSUE-10). `.claude/teams/playbook.md §11`: thêm anti-pattern #9 "Lead tự soạn/soát plan thay planner".
+- **note**: Lead tự khắc phục trong-phiên: spawn `planner` để soạn plan đúng chuẩn. User duyệt 2026-06-20.
 
 ## ISSUE-13 — GATE (gate grep-only bỏ sót fidelity/visual — artifact design-library lệch app thật) — fixed
 
@@ -206,3 +198,8 @@
   1. `.claude/agents/design.md` §Liên quan — thêm 2 bullet: (a) **Motion-intent handoff** (khi mockup có chuyển động: ghi loại motion/ease gợi ý/duration ước lệ/reduced-motion fallback trong HTML comment + report; KHÔNG viết code GSAP); (b) **Skill GSAP tham chiếu** — list đủ 8 path: `gsap-react` (entry) + `gsap-core/timeline/scrolltrigger/plugins/utils/performance/frameworks` tại `.claude/skills/gsap-*/SKILL.md`. Gate: grep "gsap" design.md ≥1 ✓, grep "Motion-intent|reduced-motion" ≥1 ✓.
   2. `.claude/skills/design/SKILL.md` — thêm **§1 Bước 6 "Motion-intent spec"** (5 điểm: ghi comment HTML + liệt report + vocab GSAP ease names + reduced-motion fallback bắt buộc + cấm code GSAP trong mockup) + 1 row anti-pattern mới ("Màn có chuyển động nhưng không ghi motion-intent → ghi §1 Bước 6 kèm reduced-motion"). Gate: grep "motion|gsap" SKILL.md ≥5 match ✓.
 - **note**: Create-time gap (Phase 2 build design agent body, team-ops quên port đoạn motion-intent từ design-figma.md → design.md). KHÔNG high-impact (chỉ agent body + skill, không đụng master/playbook/settings.json) → áp ngay + báo lead diff. Rà soát convention rớt: phần còn lại của design-figma.md (planKey Figma, `skill://figma-use`, whoami...) = Figma-specific, KHÔNG áp cho code-native design → không cần port.
+
+## Status tổng quan (2026-06-20)
+Open issues: (không còn — tất cả đã fixed)
+Fixed issues: #0, #1, #2, #3, #4, #5, #6, #7, #8, #9, #10, #11, #12, #13, #14, #15
+(Cập nhật 2026-06-20 sau khi user duyệt Phase C diff)

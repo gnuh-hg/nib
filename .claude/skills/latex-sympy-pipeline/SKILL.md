@@ -1,6 +1,6 @@
 ---
 name: latex-sympy-pipeline
-description: "Pipeline LaTeX→SymPy cho backend-cas (note-ch): latex2sympy2 + dọn input, ≥5 fixture mẫu, timeout config + numeric fallback khi SymPy treo, giữ exact không làm tròn. Điểm dễ vỡ — parse LaTeX là lossy (§8.2)."
+description: "Pipeline LaTeX→SymPy cho backend-cas (Nib): latex2sympy2 + dọn input, ≥5 fixture mẫu, timeout config + numeric fallback khi SymPy treo, giữ exact không làm tròn. Điểm dễ vỡ — parse LaTeX là lossy (§8.2)."
 ---
 
 # latex-sympy-pipeline — parse LaTeX → SymPy chắc tay

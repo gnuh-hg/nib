@@ -3,7 +3,7 @@ name: plan-short
 description: "Use when scoping a task that can be completed with quality in a single chat session (≤10 file touches, no cross-session resume, no human gate mid-way). Produces an inline phased plan — no file artifact."
 ---
 
-# Plan-Short — note-ch (notepad toán học sống)
+# Plan-Short — Nib (notepad toán học sống)
 
 > Form chuẩn cho kế hoạch ngắn hạn: đủ chi tiết để thực thi ngay trong chat hiện tại, không cần checkpoint, không sinh file.
 
@@ -42,11 +42,11 @@ Output **inline trong response** — KHÔNG tạo file `.md`:
 - **Gate**: <điều kiện verify>
 
 ## Verification
-- Test end-to-end: <cách run thật trong note-ch — xem "Gate idiom" bên dưới>
+- Test end-to-end: <cách run thật trong Nib — xem "Gate idiom" bên dưới>
 - Files dự kiến tạo/sửa: liệt kê path cụ thể (vd `src/blocks/MathBlock.tsx`, `backend/app/cas.py`)
 ```
 
-## Gate idiom (note-ch) — gate phải đo được bằng stack thật
+## Gate idiom (Nib) — gate phải đo được bằng stack thật
 
 Gate tốt cho dự án này, theo tầng:
 
