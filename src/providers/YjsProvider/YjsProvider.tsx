@@ -3,7 +3,7 @@ import type { HocuspocusProvider } from '@hocuspocus/provider';
 import type { IndexeddbPersistence } from 'y-indexeddb';
 import { createYDoc } from '@/lib/yjs';
 import { createIndexeddbPersistence, waitForSync } from '@/lib/yPersistence';
-import { createHocuspocusProvider } from '@/lib/yProvider';
+import { createHocuspocusProvider, getHocuspocusUrl } from '@/lib/yProvider';
 import { YjsContext, type SyncStatus } from './yjs-context';
 
 export interface YjsProviderProps {
@@ -22,18 +22,22 @@ export interface YjsProviderProps {
  *
  * Lifecycle (ARCHITECTURE §A/C):
  *   createYDoc → IndexedDB persistence → waitForSync → render children →
- *   (if token) connect Hocuspocus.
+ *   (if cloud sync enabled) connect Hocuspocus.
  * Children render as soon as local state is hydrated — never blocked on the WS
- * connection. With no token we stay 'local' (offline-only). All resources are
- * destroyed on unmount / docId-userId-token change.
+ * connection. Cloud sync is opt-in: we only connect when a token is present AND
+ * VITE_HOCUSPOCUS_URL is configured; otherwise we stay 'local' (offline-only,
+ * IndexedDB). All resources are destroyed on unmount / docId-userId-token change.
  */
 export function YjsProvider({ docId, userId, token, children }: YjsProviderProps) {
   // Same shared Y.Doc instance for editor + persistence + provider.
   const ydoc = useMemo(() => createYDoc(docId), [docId]);
 
+  // Cloud sync requires both a signed-in token and a configured server URL.
+  const cloudEnabled = Boolean(token) && getHocuspocusUrl() !== null;
+
   // Gate children on local hydration so we don't flash an empty doc.
   const [ready, setReady] = useState(false);
-  const [syncStatus, setSyncStatus] = useState<SyncStatus>(token ? 'syncing' : 'local');
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>(cloudEnabled ? 'syncing' : 'local');
 
   useEffect(() => {
     let cancelled = false;
@@ -41,7 +45,7 @@ export function YjsProvider({ docId, userId, token, children }: YjsProviderProps
     let provider: HocuspocusProvider | null = null;
 
     setReady(false);
-    setSyncStatus(token ? 'syncing' : 'local');
+    setSyncStatus(cloudEnabled ? 'syncing' : 'local');
 
     const start = async () => {
       // 1. Local persistence first (offline-first). Skip entirely when IndexedDB
@@ -62,8 +66,8 @@ export function YjsProvider({ docId, userId, token, children }: YjsProviderProps
       // 2. Render children now — do not block on the WS connection.
       setReady(true);
 
-      // 3. If signed in, connect to Hocuspocus for cross-device sync.
-      if (token) {
+      // 3. If signed in AND a server is configured, connect for cross-device sync.
+      if (cloudEnabled && token) {
         provider = createHocuspocusProvider(ydoc, docId, userId, token);
         provider.on('synced', ({ state }: { state: boolean }) => {
           if (!cancelled && state) setSyncStatus('synced');
@@ -89,7 +93,7 @@ export function YjsProvider({ docId, userId, token, children }: YjsProviderProps
       provider?.destroy();
       void persistence?.destroy();
     };
-  }, [ydoc, docId, userId, token]);
+  }, [ydoc, docId, userId, token, cloudEnabled]);
 
   const value = useMemo(() => ({ ydoc, syncStatus }), [ydoc, syncStatus]);
 

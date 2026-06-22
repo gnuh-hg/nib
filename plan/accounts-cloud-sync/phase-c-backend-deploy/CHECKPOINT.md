@@ -27,11 +27,12 @@
 
 ## Đang ở đâu
 
-- **Phase**: C — Backend Deploy — code + deploy XONG. Chỉ còn gate vàng (user smoke).
-- **Backend LIVE**: Render `https://nib-2bdn.onrender.com` (/health=200, commit JWKS). Supabase project `nib` ref `jgceboqufrnatgkjuqiv`.
-- **Session kế tiếp**: GATE VÀNG (user) — điền `VITE_SUPABASE_ANON_KEY` vào `.env.local`, restart dev, signup/login, 2 tab sync test. URL đã set sẵn `.env.local`. Sau gate vàng PASS → Phase D (UI polish).
-- **Blocker**: cần user login Supabase (lead không nhập mật khẩu) + điền anon key.
-- **Reference**: `PLAN.md` Phase C → C.3 gate vàng; `ARCHITECTURE.md` (W1/W2; E4 nay = JWKS).
+- **Phase**: C — Backend Deploy — code XONG, **PARKED ở local-only theo quyết định user (tối ưu chi phí)**.
+- **Quyết định 2026-06-22**: Render free WS hỏng (server→client frame); Fly.io nay bắt buộc thẻ; Render Starter $7/mo user chưa muốn trả. → **Hoãn host trả phí, chạy local-only.** Sync code đã viết xong + chứng minh chạy (local), thêm host sau = ~10-15' ops, 0 code.
+- **CÔNG TẮC cloud sync**: `VITE_HOCUSPOCUS_URL` trong `.env.local`. **Trống = local-only** (IndexedDB, không WS). Điền `wss://<host>` = bật cloud. Gate ở `YjsProvider.tsx` (`cloudEnabled = token && getHocuspocusUrl()`). Code đã wire — KHÔNG cần sửa gì khi bật lại.
+- **Bật cloud lại sau (checklist)**: (1) deploy `server/` lên host hỗ trợ WS (Render Starter / Fly có thẻ / Railway), (2) set `VITE_HOCUSPOCUS_URL=wss://<host>` + restart dev, (3) login Supabase → tự connect. Supabase project `nib` ref `jgceboqufrnatgkjuqiv` còn nguyên (tables + env). Render service `nib` srv-d8s6kf0js32c73cosfe0 vẫn tồn tại (free, nâng Starter là chạy).
+- **Session kế tiếp**: Phase D (UI polish) — cloud sync để dành.
+- **Reference**: `PLAN.md` Phase C → C.3 gate vàng (deferred); `ARCHITECTURE.md` (W1/W2; E4 = JWKS).
 
 ---
 
@@ -57,6 +58,7 @@ Server scaffold   Persistence +      Supabase setup         Render deploy       
 - **Gate vàng debug — 2026-06-22 (lead+user qua Chrome):** Human-gate Supabase auth: project mới mặc định bật Confirm email → tắt trong Auth→Sign In/Providers→Email + manual confirm user `nmhung29042009@gmail.com` qua SQL `update auth.users set email_confirmed_at=now()`. Anon key = publishable key mới `sb_publishable_...` (supabase-js 2.108 hỗ trợ).
 - **BUG client + FIX — 2026-06-22 (Task #22 log + Task #23 fix, gate PASS):** Sync không chạy dù URL/token đúng. Thêm server logging (Task #22, commit 7f18300) → redeploy Render → thấy KHÔNG có `[conn]`. Root cause (Task #23, commit d9d9062): `src/lib/yProvider.ts` truyền `websocketProvider` thủ công → @hocuspocus/provider 4.3 để `manageSocket=false` → constructor KHÔNG gọi `attach()` → socket không mở. Fix: truyền `url` thẳng vào HocuspocusProvider (manageSocket=true → tự attach+connect; reconnect default lib trùng giá trị cũ). Sau fix + redeploy + warm server: Render logs xác nhận `[conn] connect room=<uid>:doc-calc-3` + `[auth] OK user=<uid>` + `[load]` → **WS connect + JWKS ES256 auth + room R5 PROVEN**.
 - **CÒN LẠI (user keyboard smoke):** `[store]` khi edit + sync 2 tab — chưa quan sát được vì MathLive không nhận input qua browser-automation (cần bàn phím thật). Pipeline đã thông nên kỳ vọng chạy. Lead đã điền VITE_SUPABASE_URL/ANON_KEY vào .env.local; dev server :1420 đang chạy bản fix.
+- **PARK local-only — 2026-06-22 (lead, user quyết tối ưu chi phí):** Render free WS xác nhận hỏng; Fly.io nay bắt thẻ trước deploy (`We need your payment information`); Render Starter $7/mo user chưa trả. User chọn **chạy local-only, thêm server sau**. Thay đổi: (1) `yProvider.ts` thêm `getHocuspocusUrl()` (trả null khi env trống); (2) `YjsProvider.tsx` gate `cloudEnabled = token && getHocuspocusUrl()` — không URL → local-only kể cả khi login; (3) `.env.local` `VITE_HOCUSPOCUS_URL=` (trống); (4) gỡ debug instrumentation `__nibDebug` (YjsProvider/Workspace) + xoá `src/types/nib-debug.d.ts` + `server/local-test.cjs`. tsc 0, vitest 87/87, dev :1420 chạy local-only. Sync code + server/ giữ nguyên — bật lại = set env + deploy.
 - **DIAGNOSIS sâu — 2026-06-22 (Task #24 __nibDebug + lead console probe):** Expose window.__nibDebug (dev-only, CHƯA commit) rồi soi runtime. Kết quả: fragment CÓ 2 node (editor bind đúng, sameFragment=true), token ES256 hợp lệ (còn hạn 42'), server log `[auth] OK`+`[load]` đều mỗi ~33s. NHƯNG client `provider.synced=false`, `messageReconnectTimeout` (30s) fire liên tục, 0 event `authenticated/synced/message`. **ROOT CAUSE: server→client WS frame KHÔNG tới client** (client→server OK qua server log) → sync handshake không xong → không đẩy doc → không `[store]` → không persist. Nghi Render free tier chặn/buffer frame server-initiated (KHÔNG phải bug logic). **Bước quyết định kế: isolation test — chạy hocuspocus LOCAL (ws://localhost:1234) trỏ client vào → nếu sync OK local mà fail Render = lỗi Render free WS; nếu fail cả local = lỗi protocol/code.** __nibDebug + Task #22 server logging cần gỡ sau khi xong.
 
 ---

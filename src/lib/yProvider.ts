@@ -2,11 +2,25 @@
 //
 // Connects a Y.Doc to a Hocuspocus server so edits sync across devices. The URL
 // comes from VITE_HOCUSPOCUS_URL (ws://localhost:1234 for a local dev server,
-// wss://<render-url> in production). The backend (Render + Supabase
+// wss://<host-url> in production). The backend (Hocuspocus + Supabase
 // yjs_updates + JWT onAuthenticate) validates the room server-side.
+//
+// Cloud sync is OPT-IN via VITE_HOCUSPOCUS_URL: when it is unset/empty, the app
+// runs local-only (IndexedDB persistence, no WS). To enable cross-device sync
+// later, deploy the server (see server/) and set VITE_HOCUSPOCUS_URL — no code
+// change needed.
 
 import type * as Y from 'yjs';
 import { HocuspocusProvider } from '@hocuspocus/provider';
+
+/**
+ * The configured Hocuspocus URL, or null when cloud sync is disabled.
+ * Local-only mode = VITE_HOCUSPOCUS_URL unset or blank.
+ */
+export function getHocuspocusUrl(): string | null {
+  const url = import.meta.env.VITE_HOCUSPOCUS_URL?.trim();
+  return url ? url : null;
+}
 
 /**
  * Create a Hocuspocus provider binding `ydoc` to the room `${userId}:${docId}`.
@@ -33,7 +47,8 @@ export function createHocuspocusProvider(
   userId: string,
   token: string,
 ): HocuspocusProvider {
-  const url = import.meta.env.VITE_HOCUSPOCUS_URL ?? 'ws://localhost:1234';
+  // Callers gate on getHocuspocusUrl(); this is non-null here.
+  const url = getHocuspocusUrl() ?? 'ws://localhost:1234';
 
   // Room name = `${userId}:${docId}`. The server validates this room in
   // onAuthenticate — comparing `userId` against the Supabase JWT `sub` claim so a
