@@ -12,7 +12,12 @@
  */
 
 import type { IncomingMessage, ServerResponse } from "http";
-import { Server, onRequestPayload, onAuthenticatePayload } from "@hocuspocus/server";
+import {
+  Server,
+  onRequestPayload,
+  onAuthenticatePayload,
+  onConnectPayload,
+} from "@hocuspocus/server";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import { requireEnv } from "./env";
 import { onLoadDocument, onStoreDocument } from "./persistence";
@@ -57,6 +62,12 @@ const server = new Server({
     }
   },
 
+  /** Diagnostic: a WS client established a connection to a room. */
+  async onConnect({ documentName }: onConnectPayload): Promise<void> {
+    // eslint-disable-next-line no-console
+    console.log(`[conn] connect room=${documentName}`);
+  },
+
   /**
    * Validate the Supabase JWT and enforce the room contract.
    * Throwing closes the WS connection with a 403.
@@ -67,29 +78,44 @@ const server = new Server({
     let payload;
     try {
       ({ payload } = await jwtVerify(token, JWKS));
-    } catch {
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error(
+        `[auth] FAIL room=${documentName}:`,
+        err instanceof Error ? err.message : err,
+      );
       throw new Error("unauthorized");
     }
 
     // 2. Guard: payload.sub must be a non-empty string (E4 — sub may be absent
     //    even when verify passes).
     if (typeof payload.sub !== "string" || payload.sub === "") {
+      // eslint-disable-next-line no-console
+      console.error(`[auth] FAIL room=${documentName}: missing-sub`);
       throw new Error("missing-sub");
     }
 
     // 3. Room format must be `${userId}:${docId}` — exactly 2 parts.
     const parts = documentName.split(":");
     if (parts.length !== 2) {
+      // eslint-disable-next-line no-console
+      console.error(`[auth] FAIL room=${documentName}: invalid-room-format`);
       throw new Error("invalid-room-format");
     }
 
     // 4. R5 — first part must match the authenticated user.
     const claimedUserId = parts[0];
     if (payload.sub !== claimedUserId) {
+      // eslint-disable-next-line no-console
+      console.error(
+        `[auth] FAIL room=${documentName}: room-user-mismatch (sub=${payload.sub})`,
+      );
       throw new Error("unauthorized");
     }
 
     // 5. Authorized.
+    // eslint-disable-next-line no-console
+    console.log(`[auth] OK user=${payload.sub} room=${documentName}`);
   },
 
   // Persistence (Session C.2) — Supabase Postgres + CC-3 compaction.

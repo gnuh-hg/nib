@@ -76,6 +76,11 @@ export async function onLoadDocument({
 
   const updateRows = updates ?? [];
 
+  // eslint-disable-next-line no-console
+  console.log(
+    `[load] doc=${docId} snapshot=${snapshot ? "yes" : "no"} updates=${updateRows.length}`,
+  );
+
   // 3. Nothing stored → fresh doc.
   if (!snapshot && updateRows.length === 0) {
     return new Uint8Array(0);
@@ -103,6 +108,8 @@ export async function onStoreDocument({
   const docId = documentName;
 
   const update = Y.encodeStateAsUpdate(document);
+  // eslint-disable-next-line no-console
+  console.log(`[store] doc=${docId} bytes=${update.length}`);
   await supabase
     .from("yjs_updates")
     .insert({ doc_id: docId, update_data: uint8ToBase64(update) });
@@ -113,6 +120,8 @@ export async function onStoreDocument({
     .eq("doc_id", docId);
 
   if ((count ?? 0) > COMPACTION_THRESHOLD) {
+    // eslint-disable-next-line no-console
+    console.log(`[compact] doc=${docId} count=${count}`);
     // Fire-and-forget: compaction must never block or fail the store path.
     void compactDocument(docId);
   }
@@ -151,7 +160,10 @@ async function compactDocument(docId: string): Promise<void> {
     await supabase.from("yjs_updates").delete().eq("doc_id", docId);
   } catch (err) {
     // eslint-disable-next-line no-console
-    console.error(`[nib-hocuspocus] compaction failed for ${docId}:`, err);
+    console.error(
+      `[compact] FAIL doc=${docId}:`,
+      err instanceof Error ? err.message : err,
+    );
   } finally {
     compacting.delete(docId);
   }
