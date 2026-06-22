@@ -78,3 +78,11 @@ Root cause: @hocuspocus/server 4.3.0 đổi API — `Server` là class, dùng `n
 Fix: `const server = new Server({port, onRequest, onAuthenticate}); server.listen();` + type destructured params bằng payload interface.
 Health W1: `onRequest` hook write `response.end('OK')` rồi `return Promise.reject()` để ngắt hook chain — Hocuspocus catch reject nội bộ, KHÔNG sinh unhandled-rejection log. Không cần E1 fallback httpServer.on('request').
 Confirm: `npx tsc --noEmit` exit 0; ts-node start → `curl localhost:3000/health` = 200 body "OK", log sạch (chỉ banner Hocuspocus v4.3.0).
+
+## 2026-06-22 15:12 — hocuspocus-provider-manageSocket-no-attach
+
+Triệu chứng (gate vàng Phase C): client login OK, token ES256, URL/endpoint Render sống, NHƯNG WS không bao giờ connect/sync → bảng yjs_updates trống.
+Root cause: src/lib/yProvider.ts tạo `new HocuspocusProvider({ websocketProvider: <custom HocuspocusProviderWebsocket>, ... })`. Trong @hocuspocus/provider 4.3, constructor chỉ gọi `this.attach()` khi `manageSocket===true` (dist dòng 715), và manageSocket CHỈ set true khi KHÔNG truyền websocketProvider (dòng 718-720 provider tự `new HocuspocusProviderWebsocket(configuration)`). Truyền socket thủ công → manageSocket=false → attach() không chạy → câm, không connect. (destroy() cũng chỉ destroy socket khi manageSocket — dòng 880.)
+Fix: BỎ custom websocketProvider + handler on('destroy'); truyền thẳng `url` vào HocuspocusProvider (URL-variant → manageSocket=true → attach+connect; destroy tự dọn socket).
+GOTCHA type: option URL-variant `HocuspocusProviderConfiguration` (dist dòng 297) chỉ type `url`+`preserveTrailingSlash`, KHÔNG có delay/factor/maxDelay → truyền vào = TS2353. Runtime có forward nhưng type chặn. Giải: BỎ 3 option vì lib default trùng khít ý ta (dist defaults delay:1000/factor:2/maxDelay:30000 = giá trị cũ) → typed sạch, cùng hành vi backoff.
+Confirm: tsc 0 · build 0 · vitest 87/87 · grep HocuspocusProviderWebsocket=0. Connect thật = USER gate vàng (2-tab).
