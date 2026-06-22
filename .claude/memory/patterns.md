@@ -176,3 +176,14 @@ Pattern persistence (W2 = TEXT base64, KHÔNG bytea vì PostgREST không round-t
 - supabase client singleton service_role (bypass RLS), server-side only.
 - /health W1: onRequest hook write end('OK') + return Promise.reject() để ngắt chain (Hocuspocus catch nội bộ, log sạch).
 Done-criteria: tsc --noEmit 0; curl /health 200; grep gates pass. KHÔNG cần Supabase thật để tsc/grep verify.
+
+## 2026-06-22 06:10 — hocuspocus-jwks-asymmetric-verify-c-fix
+
+Stack: @hocuspocus/server 4.3 + jose 5. Supabase project mới ký access token bằng asymmetric ECC ES256 (JWT Signing Keys), KHÔNG phải HS256 legacy secret → verify HS256 luôn fail.
+Pattern: bỏ jsonwebtoken; `const JWKS = createRemoteJWKSet(new URL(`${SUPABASE_URL}/auth/v1/.well-known/jwks.json`))` ở MODULE SCOPE (lazy — KHÔNG fetch lúc tạo, chỉ fetch+cache+rotate khi jwtVerify lần đầu → boot không fail dù URL giả). Trong onAuthenticate: `try { ({payload}=await jwtVerify(token, JWKS)) } catch { throw Error('unauthorized') }`. JWKS endpoint public (không cần apikey header). Giữ guards cũ: payload.sub non-empty string (E4) + room R5 documentName.split(':')[0]===sub.
+Done: tsc 0 · greps pass (createRemoteJWKSet/jwtVerify, jwks.json, 0 jsonwebtoken, 0 SUPABASE_JWT_SECRET) · boot env giả → curl /health 200 sạch. Gate vàng auth thật = C.3 USER smoke.
+
+## 2026-06-22 06:30 — c3-client-wire-render-hocuspocus
+
+Stack: client wire Yjs sync → Render Hocuspocus thật (accounts-cloud-sync C.3). VITE_HOCUSPOCUS_URL=wss://nib-2bdn.onrender.com (TLS wss:// cho server deploy, ws:// chỉ localhost). Token wire đã đúng sẵn từ Phase B — KHÔNG patch: yProvider.ts token→HocuspocusProvider options; YjsProvider.tsx prop token→createHocuspocusProvider chỉ khi truthy; Workspace.tsx token=session?.access_token??null. .env.local TẠO MỚI (gitignored, git check-ignore confirm) + placeholder VITE_SUPABASE_* cho user điền gate vàng. server/src/README.md: env vars (JWKS không cần secret), CC-2 cold-start (Render free spin-down 15ph → reconnect backoff tự xử), Manual Deploy (public repo không auto-deploy).
+Done: build 0 · tsc 0 · vitest 87/87 · grep token 2 file pass. Gate vàng 2-tab sync = USER smoke (cần login Supabase thật).
