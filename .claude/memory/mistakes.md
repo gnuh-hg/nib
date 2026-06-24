@@ -79,6 +79,38 @@ Fix: `const server = new Server({port, onRequest, onAuthenticate}); server.liste
 Health W1: `onRequest` hook write `response.end('OK')` rồi `return Promise.reject()` để ngắt hook chain — Hocuspocus catch reject nội bộ, KHÔNG sinh unhandled-rejection log. Không cần E1 fallback httpServer.on('request').
 Confirm: `npx tsc --noEmit` exit 0; ts-node start → `curl localhost:3000/health` = 200 body "OK", log sạch (chỉ banner Hocuspocus v4.3.0).
 
+## 2026-06-24 13:22 — ghost-park-ime-invalid-selection-must-materialize-on-click
+
+Triệu chứng: IME (tiếng Việt) → ghost caret hiện nhưng ký tự nhảy vào row khác. Console: "TextSelection endpoint not pointing into a node with inline content". 
+Root cause: (1) ghost-park parked PM selection tại pos cấp-doc (endPos=doc.content.size) → không phải inline content → TextSelection.create throw → selection rớt về row gần nhất. (2) IME: e.key==='Process' trong composition → handleKeyDown bỏ qua (e.key.length===1 check fail) → text vào parked selection thay vì materialize. Cơ chế ghost-park hoàn toàn không tương thích IME.
+Fix: ĐỔI SANG MATERIALIZE-ON-CLICK. Virtual click (classifyClick→'virtual') → `insertRowAtLine` tạo row ngay lập tức + đặt `Selection.near(rowStart+1)` (cursor trong row, inline content hợp lệ). Xóa: GhostPark state, materializeAtGhostPark, handleKeyDown ghost interceptor, ghost caret span. Thêm: pendingEmptyRowId ref + cleanupPendingEmptyRow (delete empty row on next click/blur).
+Bài học: KHÔNG bao giờ park PM selection tại pos cấp-doc (doc.content.size) cho mục đích "chờ keystroke" — IME bypass mọi keydown interceptor. Nếu cần cursor ở vị trí ảo → tạo row thật luôn, đặt selection bên trong.
+Confirm: tsc 0 · vitest 170/170 · build 0.
+
+## 2026-06-24 08:15 — ghost-park-keystroke-race-window-vs-pm
+
+Triệu chứng: ghost-park active, gõ printable char → rows vẫn 0, ký tự rớt (empty doc) hoặc double-insert (doc có row).
+Root cause: window.addEventListener('keydown') fires AFTER PM đã xử lý key. PM không tìm được inline position để insert (doc trống → reject schema) → nothing, NHƯNG materialize cũng có thể chạy sau PM với state đã thay đổi. Race condition PM↔React window listener.
+Fix: chuyển ghost-park materialize + Escape vào editorProps.handleKeyDown (TipTap). Callback này fires TRƯỚC PM default processing; return true → PM không xử lý key nữa. Dùng ref pattern: `ghostKeyHandlerRef.current = (e) => {...}` cập nhật mỗi render (closure đọc refs mới nhất); stable wrapper `(_view, e) => ghostKeyHandlerRef.current(e)` trong editorProps (stable pointer tránh unnecessary TipTap setProps). editorRef.current = editor sau useEditor call.
+Gotcha: `editorRef.current = editor` PHẢI đặt AFTER `const editor = useEditor(...)` — đặt trước gây TS2448/TS2454 "block-scoped variable used before declaration".
+Confirm: tsc 0 · vitest 174/174 · build 0.
+
+## 2026-06-23 20:30 — mathlive-font-artifact-steals-focus
+
+Triệu chứng: load app → user click vùng trống giấy → gõ không vào editor (ghost-park đúng nhưng không nhận phím). document.activeElement = `ML__fonts-did-not-load` (element MathLive tạo khi CDN font unreachable ở dev/offline).
+Root cause: `import 'mathlive'` trong mathliveSetup.ts có side effect: append + focus element `#ML__fonts-did-not-load` vào DOM. `editor.view.focus()` gọi sau handleClickOnPaper (trong Workspace.tsx) không đủ — đã muộn sau React re-render, hoặc MathLive artifact vẫn giữ focus.
+Fix (2 lớp): (1) `handleClickOnPaper` (ghostCaret.ts) thêm `view.focus()` trong CẢ HAI nhánh (doGhostPark helper + content-hit branch) — focus ngay trong click handler trước bất kỳ re-render nào; (2) WorkspaceEditor thêm `useEffect([editor])` → `requestAnimationFrame(() => { if activeElement là artifact/body/null → editor.view.focus() })` — auto-focus sau mount 1 frame để MathLive settle, không steal focus từ interactive element thật (input/modal/math-field).
+Pattern class-check artifact: `activeEl?.id === 'ML__fonts-did-not-load' || activeEl?.classList.contains('ML__fonts-did-not-load')`.
+Confirm: tsc 0 · vitest 172/172 · build 0.
+
+## 2026-06-23 20:11 — posAtCoords-never-null-virtual-space-detection
+
+Triệu chứng: click vùng trống giấy → gõ nối vào dòng có sẵn thay vì tạo dòng mới tại vị trí click. Ghost-park không bao giờ kích hoạt.
+Root cause: `handleClickOnPaper` (ghostCaret.ts) giả định `view.posAtCoords()` trả `null` khi click vùng trống — sai. ProseMirror LUÔN trả pos gần nhất (không null). Nhánh `if (posAtClick !== null)` = luôn true → ghost-park path chết hoàn toàn.
+Fix: sau khi nhận `posAtClick` (không null), gọi `view.coordsAtPos(posAtClick.pos)` để lấy rect render thật của pos đó. So sánh với click: `verticalMiss` (click cách hơn RULE_HEIGHT/2 từ content), `horizontalMiss` (click qua phải rect.right+threshold khi pos ở cuối text). Nếu miss → ghost-park; ngược lại → set selection. Tách pure helper `classifyClick(clickX,clickY,rect,isAtEndOfRow)` để unit-test với rect mock (không cần browser layout).
+Cũng fix: `materializeAtGhostPark` luôn insert cuối doc — đổi thành insert đúng doc-order (trước row có absLine > targetLine) + adjust blankBefore của row kế.
+Confirm: `npx tsc --noEmit` 0 · `npx vitest run` 172/172 (+15 test mới classifyClick+new paths+insert-before) · `npm run build` exit 0.
+
 ## 2026-06-22 15:12 — hocuspocus-provider-manageSocket-no-attach
 
 Triệu chứng (gate vàng Phase C): client login OK, token ES256, URL/endpoint Render sống, NHƯNG WS không bao giờ connect/sync → bảng yjs_updates trống.
@@ -86,3 +118,11 @@ Root cause: src/lib/yProvider.ts tạo `new HocuspocusProvider({ websocketProvid
 Fix: BỎ custom websocketProvider + handler on('destroy'); truyền thẳng `url` vào HocuspocusProvider (URL-variant → manageSocket=true → attach+connect; destroy tự dọn socket).
 GOTCHA type: option URL-variant `HocuspocusProviderConfiguration` (dist dòng 297) chỉ type `url`+`preserveTrailingSlash`, KHÔNG có delay/factor/maxDelay → truyền vào = TS2353. Runtime có forward nhưng type chặn. Giải: BỎ 3 option vì lib default trùng khít ý ta (dist defaults delay:1000/factor:2/maxDelay:30000 = giá trị cũ) → typed sạch, cùng hành vi backoff.
 Confirm: tsc 0 · build 0 · vitest 87/87 · grep HocuspocusProviderWebsocket=0. Connect thật = USER gate vàng (2-tab).
+
+## 2026-06-24 01:30 — stale-HMR-dev-server-phantom-failures (LEAD-PROCESS)
+
+Triệu chứng: lead browser-gate Phase C free-caret FAIL nhiều vòng (click trống không ghost-park / gõ rớt / focus chập chờn) → gửi editor ≥3 brief "vẫn lỗi"; nhưng editor build+tsc+vitest đều PASS mỗi vòng. User cũng báo "vẫn lỗi".
+Root cause: dev server `npm run dev` chạy lâu + NHIỀU server chồng (1420/1421/1422) → Vite HMR tích luỹ module hỏng / KHÔNG áp được thay đổi editor-core (useEditor setup, plugin, editorProps.handleKeyDown, focus listener). Lead test nhầm code CŨ. Bằng chứng quyết định: console có `ReferenceError: Cannot access 'editor' before initialization` từ bản HMR trung gian (`?t=` timestamp cũ) — KHÔNG phải code trên đĩa.
+Fix process: (1) editor-core change → KHÔNG tin HMR; `pkill -f vite` + chạy 1 server SẠCH trước khi gate; (2) runtime fail mà build/test pass → đọc console tìm exception + check `?t=` timestamp module (cũ=stale); (3) instrument console.log đường nghi → reload sạch → đọc log pinpoint thay vì đoán-fix mù.
+Hệ quả: build+unit-test (jsdom) KHÔNG render full editor lifecycle → miss crash runtime → motivated cho tester tự execute browser (Playwright headless, ISSUE-19) bắt runtime trước khi tới lead/user.
+Confirm: server sạch :1420 + IDB xoá → 1 starter row, click trống→gõ "hi"→row "hi" đúng vị trí, ghost cleared. Phase C free-caret PASS.

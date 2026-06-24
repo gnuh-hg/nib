@@ -209,7 +209,47 @@
 - **target**: `.claude/` — đề xuất `team-ops` cân nhắc (CHƯA sửa). Lưu ý: rule §13/§3 đã TỒN TẠI đầy đủ trong CLAUDE.md/master/playbook — đây là **lead non-compliance**, không phải thiếu rule. Mới 1 lần → log để theo dõi tái diễn (như ISSUE-3 lần đầu). Nếu lặp ≥2 → cứng-hoá (vd thêm checklist "đã đọc 3 file?" vào recipe §2 bước 0, hoặc reminder ở §13).
 - **note**: Lead tự khắc phục trong-phiên: đọc đủ 3 file, ghi issue này. Researcher (dù spawn sai recipe) đã hoàn thành với output PASS gate §7 (4 mục đầy đủ, câu-hỏi-còn-chặn thực sự chặn) → KHÔNG re-run identical (lãng phí token); gate output đã có + tiếp chain ĐÚNG recipe từ planner trở đi (TaskCreate brief 4 phần + plan-gate). N hiện tại = 1 pane (researcher đã rest) → không cần layout §8.
 
-## Status tổng quan (2026-06-21)
+## ISSUE-17 — OTHER (thêm vai tester + whole-server chrome perms) — fixed
+
+- **time**: 2026-06-23
+- **teammate**: — (cải tiến chủ động theo yêu cầu user)
+- **symptom**: Không có lỗi phối hợp — đây là bổ sung có chủ đích: user yêu cầu thêm vai `tester` E2E browser + cấp full quyền chrome cho bộ máy team.
+- **target**: ĐÃ SỬA (team-ops, 2026-06-23):
+  1. `.claude/agents/tester.md` — TẠO MỚI: agent body tester (E2E browser, 2 pha PLAN/EXECUTE, ISSUE-8 foreground-only, 22 tool).
+  2. `.claude/skills/test-planning/SKILL.md` — TẠO MỚI: skill lên kế hoạch flow (6 nhóm case + 3 req nền, cấu trúc tests/flows/).
+  3. `.claude/skills/browser-test/SKILL.md` — TẠO MỚI: skill thực thi Chrome (trình tự 5 bước, tránh dialog, click-through checklist cho background).
+  4. `.claude/master.md` — `Roster 9→10 vai` + dòng tester + rewrite note hai lớp gate + §4 rubric + §7 hướng dẫn lead.
+  5. `.claude/teams/playbook.md` — 2x `roster 9→10` + §1/§3/§7 tester + note "tester tách biệt 6-vai build chain".
+  6. 10 agent body (`Đọc đầu phiên`) — tất cả `roster 9→10 vai`.
+  7. `.claude/settings.json` — `mcp__claude-in-chrome` whole-server (thay 12 entry riêng lẻ) — user duyệt.
+- **note**: HIGH-IMPACT (master/playbook/settings) — đã trình lead + user duyệt trước khi áp settings whole-server. CLAUDE.md §13(a) "roster 8 vai" → lead tự sửa (ngoài ranh giới .claude/).
+
+## ISSUE-18 — OTHER (tmux zombie-pane stale + N≥5 chật + serialize tester↔code-fix) — fixed
+
+- **time**: 2026-06-24
+- **teammate**: `team-lead` (team `caret-input` re-spawn) — user báo layout vỡ: 6 pane tiled chật, có pane "architect" 21h cũ còn sót
+- **symptom**: (1) **Zombie pane stale**: pane từ session cũ (vd "architect" 21h trước) vẫn hiện dù process đã thoát — `pane_dead=1` nhưng chưa được kill. `tmux list-panes` đếm cả pane dead → N lệch → layout sai. (2) **N≥5 tiled chật**: Re-apply helper cũ `N≤4 → main-vertical; else tiled` khiến N=5 (1 lead + 4 teammate) bị tiled = 5 pane đều = chật. Ngưỡng N≤4 quá thấp vì N=5 vẫn vừa main-vertical đẹp. (3) **Tester EXECUTE vs code-fix đồng thời**: chưa có rule serialization → HMR/server-restart phá test.
+- **target**: ĐÃ SỬA (team-ops, 2026-06-24) — user duyệt xác nhận:
+  1. `.claude/teams/playbook.md §8` — (a) Thêm quy tắc 4 "Dọn zombie pane TRƯỚC khi đếm N"; (b) Re-apply helper mới 2-bước: Bước 1 kill pane_dead=1 (`xargs -r tmux kill-pane`), Bước 2 re-apply với ngưỡng N≤5 (thay N≤4) → main-vertical; N≥6 → tiled; (c) Ghi khuyến nghị ≤4 teammate đồng thời.
+  2. `.claude/teams/playbook.md §9` — Thêm bullet "Tester-execute ↔ code-fix không đồng thời": serialize rule + trỏ 3 agent body.
+  3. `.claude/agents/tester.md` Hard constraints — Thêm: KHÔNG Pha 2 EXECUTE khi editor-frontend/backend-cas đang sửa code.
+  4. `.claude/agents/editor-frontend.md` Hard constraints — Thêm: KHÔNG sửa code khi tester đang EXECUTE.
+  5. `.claude/agents/backend-cas.md` Hard constraints — Thêm: KHÔNG restart server khi tester đang EXECUTE.
+- **note**: User duyệt 2026-06-24. (team-ops, 2026-06-24)
+
+## ISSUE-19 — OTHER (tester không tự execute được — Playwright headless giải block) — fixed
+
+- **time**: 2026-06-24
+- **teammate**: `tester` (architectural constraint ISSUE-8: Chrome extension foreground-only → background tester chỉ plan được)
+- **symptom**: User muốn tester TỰ test qua chrome khi spawn nền. Chrome MCP extension foreground-only → background tester KHÔNG reach. Giải pháp tạm = click-through checklist cho user.
+- **target**: ĐÃ SỬA (team-ops, 2026-06-24) — user duyệt + apply:
+  1. `package.json` devDependencies — thêm `@playwright/test@^1.61.1` (npm install + npx playwright install chromium → 114.2 MB, OK).
+  2. `.claude/skills/browser-test/SKILL.md` — thêm §0 "Playwright headless (PRIMARY, background-safe)": template spec `.ts` + 2 mode (inline/file) + thu evidence (screenshot/console/video) + gate (`npx playwright test` exit 0). Chrome MCP heading đổi → "secondary fallback".
+  3. `.claude/agents/tester.md` — đổi section ISSUE-8 thành "2 đường execute" (Playwright primary / Chrome MCP secondary); Pha 2 EXECUTE cập nhật Playwright path; gate table thêm cột Playwright.
+  - KHÔNG cần MCP tool mới — Playwright qua Bash (tester đã có).
+- **note**: User duyệt 2026-06-24. `@playwright/test` resolve ^1.61.1 (npm tự pin latest). Chrome MCP giữ nguyên làm fallback foreground. (team-ops, 2026-06-24)
+
+## Status tổng quan (2026-06-24)
 Open issues: #16
-Fixed issues: #0, #1, #2, #3, #4, #5, #6, #7, #8, #9, #10, #11, #12, #13, #14, #15
-(Cập nhật 2026-06-21 — ISSUE-16 lead spawn sai gate/recipe, mới 1 lần, theo dõi tái diễn)
+Fixed issues: #0, #1, #2, #3, #4, #5, #6, #7, #8, #9, #10, #11, #12, #13, #14, #15, #17, #18, #19
+(Cập nhật 2026-06-24 — team-ops; user duyệt #18/#19 2026-06-24)

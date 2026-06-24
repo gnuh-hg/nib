@@ -1,5 +1,9 @@
+import { useCallback } from 'react';
 import { useI18n } from '@/hooks/useI18n';
 import { useProfile } from '@/providers/ProfileProvider';
+import { signOutIntentional } from '@/hooks/useSessionExpiredNotice';
+import { useSettingsContext } from './settings-context';
+import { IconLogOut } from '../icons';
 
 /**
  * Account section — UI-only local profile (no auth/backend, settings-redesign).
@@ -9,10 +13,19 @@ import { useProfile } from '@/providers/ProfileProvider';
 export function AccountSection() {
   const { t } = useI18n();
   const { profile, setDisplayName, setEmail } = useProfile();
+  const { onClose } = useSettingsContext();
+
+  // Sign out (flagged intentional → suppresses the session-expired notice) and
+  // close the overlay once Supabase has cleared the local session. Local
+  // documents are NOT touched — IndexedDB is never deleted on sign-out.
+  const handleSignOut = useCallback(async () => {
+    await signOutIntentional();
+    onClose();
+  }, [onClose]);
 
   // Since Phase A, profile is null when signed out (guest). The signed-out
-  // state (sign-in form) is rendered by LoginModal — wired in the next A.3-UI
-  // task. Until then, render nothing rather than crash on a null profile.
+  // state (sign-in form) is rendered by LoginModal. Render nothing rather than
+  // crash on a null profile — the Sign out button only exists when signed in.
   if (!profile) return null;
 
   return (
@@ -63,6 +76,19 @@ export function AccountSection() {
           onChange={(e) => setEmail(e.target.value)}
         />
       </label>
+
+      <p className="nib-settings-account__hint">{t('settings.account.local_hint')}</p>
+
+      <div className="nib-settings-account__actions">
+        <button
+          type="button"
+          className="nib-settings-account__signout"
+          onClick={() => void handleSignOut()}
+        >
+          <IconLogOut width={16} height={16} />
+          <span>{t('settings.account.sign_out')}</span>
+        </button>
+      </div>
     </div>
   );
 }

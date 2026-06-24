@@ -145,6 +145,9 @@
 | `.nib-settings__section-title` | H1 section (`--font-size-doc-heading`, bold) |
 | `.nib-settings-account` | Layout Account section (flex column gap-20) |
 | `.nib-settings-account__avatar` | Avatar circle 64px, `background: color-mix(--avatar-color)` |
+| `.nib-settings-account__hint` | Dòng phụ "Được lưu trên máy này" (`--text-muted`, `--font-size-ui-xs`) |
+| `.nib-settings-account__actions` | Row hành động, border-top `--border`, padding-top 16px |
+| `.nib-settings-account__signout` | Nút Đăng xuất (min-height 44px hit-target, hover → `--error`) |
 | `.nib-settings-field` | Form field (label + input) |
 | `.nib-settings-field__input` | Input 40px, border `--border`, focus outline `--accent` |
 | `.nib-settings-appearance` | Layout Appearance section |

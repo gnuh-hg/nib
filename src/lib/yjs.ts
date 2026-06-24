@@ -14,8 +14,14 @@ import * as Y from 'yjs';
 
 /** Shared-type key for the ProseMirror document fragment. */
 export const PROSEMIRROR_FRAGMENT = 'prosemirror';
-/** Shared-type key for the block-meta side-channel map (CC-1). */
+/** Shared-type key for the math-atom meta side-channel map (CC-1). */
 export const BLOCK_META_MAP = 'blockMeta';
+/**
+ * Shared-type key for the row layout side-channel map (Phase B.2 free-caret).
+ * Keyed by row-id, values are Y.Map { blankBefore: number, indent: number }.
+ * Mirrors blockMeta pattern — layout mutates often (CRDT per-field LWW).
+ */
+export const ROW_META_MAP = 'rowMeta';
 
 /** Per-docId Y.Doc cache — guarantees a single shared instance per document. */
 const docCache = new Map<string, Y.Doc>();
@@ -38,9 +44,14 @@ export function getProseMirrorFragment(ydoc: Y.Doc): Y.XmlFragment {
   return ydoc.getXmlFragment(PROSEMIRROR_FRAGMENT);
 }
 
-/** The shared block-meta map for this doc (CC-1 side-channel; filled in B.2). */
+/** The shared block-meta map for this doc (CC-1 side-channel; keyed by math-atom-id). */
 export function getBlockMetaMap(ydoc: Y.Doc): Y.Map<unknown> {
   return ydoc.getMap(BLOCK_META_MAP);
+}
+
+/** The shared row-meta map for this doc (row layout side-channel; keyed by row-id). */
+export function getRowMetaMap(ydoc: Y.Doc): Y.Map<unknown> {
+  return ydoc.getMap(ROW_META_MAP);
 }
 
 /**

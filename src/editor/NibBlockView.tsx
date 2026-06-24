@@ -40,8 +40,6 @@ export function NibBlockView(props: NodeViewProps) {
   const blockType = node.attrs.blockType as BlockType;
   const meta = useBlockMeta(ydoc, id);
   const {
-    lineIndex,
-    xOffset,
     blockState,
     latexContent: latex,
     exactLatex,
@@ -52,6 +50,12 @@ export function NibBlockView(props: NodeViewProps) {
     mathSize,
     color,
   } = meta;
+
+  // Phase B: xOffset + lineIndex removed from blockMeta (ARCHITECTURE.md §2).
+  // NibBlock is legacy (not registered in schema). Use 0 as positional fallback
+  // for the legacy NodeView render path — Phase C RowView owns positioning.
+  const xOffset = 0;
+  const lineIndex = 0;
 
   const wrapperRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<number>(0);

@@ -119,7 +119,7 @@ Sai lầm cũ = dùng vanilla JS cho app lớn → thiếu cấu trúc, không s
 
 > **Hard gate — đọc đủ 3 file dưới TRƯỚC khi spawn bất kỳ team nào.** Không spawn team trước khi đọc 3 file này.
 
-- **(a)** Đọc `.claude/master.md` — nguyên tắc bất biến (lead điều phối không tự code task phức tạp), roster 8 vai, vòng lặp TaskList loop, phân biệt subagent vs teammate.
+- **(a)** Đọc `.claude/master.md` — nguyên tắc bất biến (lead điều phối không tự code task phức tạp), roster 10 vai, vòng lặp TaskList loop, phân biệt subagent vs teammate.
 - **(b)** Đọc `.claude/teams/playbook.md` — khi nào TeamCreate vs Agent one-shot vs lead tự làm, recipe 7 bước spawn, brief 4 phần, gate evidence, anti-patterns.
 - **(c)** Đọc `.claude/memory/context.md` — trạng thái hiện tại + task đang chạy + kết quả smoke-test.
 - **(d)** Đọc `docs/requirements.md` + `docs/feature.md` — spec sản phẩm: 3 yêu cầu nền [LOCKED] (song ngữ / thiết bị / theme + root màu) và 2 đường nhập. Mọi task chạm UI phải bám.
@@ -127,7 +127,7 @@ Sai lầm cũ = dùng vanilla JS cho app lớn → thiếu cấu trúc, không s
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **nib** (1533 symbols, 2290 relationships, 52 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **nib** (1791 symbols, 2758 relationships, 71 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 

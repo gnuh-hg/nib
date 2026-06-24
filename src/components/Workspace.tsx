@@ -12,7 +12,8 @@ import type { Editor } from '@tiptap/react';
 import type * as Y from 'yjs';
 import { NibDocument } from '@/editor/extensions/NibDocument';
 import { NibText } from '@/editor/extensions/NibText';
-import { NibBlock } from '@/editor/extensions/NibBlock';
+import { Row } from '@/editor/extensions/Row';
+import { MathInline } from '@/editor/extensions/MathInline';
 import { YjsSync } from '@/editor/extensions/YjsSync';
 import {
   NibBold,
@@ -23,8 +24,12 @@ import {
 import { EditorContext } from '@/editor/editor-context';
 import { lineIndexFromY, xOffsetFromX } from '@/editor/geometry';
 import { findBlock, deleteBlock, patchBlock } from '@/editor/blockActions';
-import { initBlockMeta } from '@/editor/yBlockMeta';
+import { patchBlockMeta } from '@/editor/yBlockMeta';
 import { PROSEMIRROR_FRAGMENT } from '@/lib/yjs';
+import { patchRowMeta, deleteRowMeta } from '@/lib/yRowMeta';
+import { MetaSyncPlugin } from '@/editor/extensions/MetaSyncPlugin';
+import { handleClickOnPaper } from '@/editor/plugins/ghostCaret';
+import { CaretNav } from '@/editor/plugins/caretNav';
 import { YjsProvider, useYjs } from '@/providers/YjsProvider';
 import { useProfile } from '@/providers/ProfileProvider';
 import { useI18n } from '@/hooks/useI18n';
@@ -52,35 +57,82 @@ interface WorkspaceProps {
  * the document is empty) — see `seedStarter` — because with y-prosemirror the
  * document content is driven by the shared Y.XmlFragment, not TipTap `content`.
  * Fades out on the user's first block.
+ *
+ * Phase B: creates a `row` containing a `mathInline` atom.
+ * STARTER_ID is the mathInline atom id (used by findBlock / deleteBlock).
  */
 const STARTER_ID = 'starter-demo';
 
+function genId(): string {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+const STARTER_ROW_ID = `${STARTER_ID}-row`;
+
 function seedStarter(editor: Editor, ydoc: Y.Doc): void {
-  // Idempotent across devices: a CRDT flag guards re-seeding. If the doc already
-  // has content (from IndexedDB or a remote peer), just mark it seeded.
+  // Multi-layer idempotency guard — seedStarter must never insert >1 starter row.
+  //
+  // Layer 1: Y.Doc flag (survives across peers / IDB reload).
   const docMeta = ydoc.getMap<boolean>('docMeta');
   if (docMeta.get('seeded')) return;
+
+  // Layer 2: Yjs XmlFragment already has content (loaded from IDB async before this
+  // effect ran, or a remote peer already seeded).
   const fragment = ydoc.getXmlFragment(PROSEMIRROR_FRAGMENT);
   if (fragment.length > 0) {
     docMeta.set('seeded', true);
     return;
   }
-  docMeta.set('seeded', true);
-  const node = editor.schema.nodes.nibBlock.create({
-    id: STARTER_ID,
-    blockType: 'math',
-    starter: true,
+
+  // Layer 3: PM doc already has rows — catches React StrictMode double-effect where
+  // the first effect run inserts the starter but the seeded Y.Doc flag may not have
+  // propagated yet if YjsProvider created a fresh Y.Doc on the StrictMode remount.
+  if (editor.state.doc.childCount > 0) {
+    docMeta.set('seeded', true);
+    return;
+  }
+
+  // Layer 4: explicit scan for the starter row ID in PM doc (belt+suspenders for the
+  // StrictMode race where a new editor instance is paired with the same Y.Doc that
+  // already received the insert from the first run).
+  let starterAlreadyPresent = false;
+  editor.state.doc.forEach((node) => {
+    if (node.attrs.id === STARTER_ROW_ID) starterAlreadyPresent = true;
   });
-  editor.view.dispatch(editor.state.tr.insert(0, node));
-  initBlockMeta(ydoc, STARTER_ID, {
-    lineIndex: 1,
-    // Authoring intent = render position: xOffset 56 == MARGIN_L (left gutter).
-    xOffset: 56,
+  if (starterAlreadyPresent) {
+    docMeta.set('seeded', true);
+    return;
+  }
+
+  docMeta.set('seeded', true);
+
+  // Phase B: row-based schema. The starter mathInline atom uses STARTER_ID so
+  // dismissStarter() can find it via findBlock(editor, STARTER_ID).
+  const mathAtom = editor.schema.nodes.mathInline?.create({ id: STARTER_ID });
+  if (!mathAtom) return;
+  const rowNode = editor.schema.nodes.row?.create({ id: STARTER_ROW_ID }, mathAtom);
+  if (!rowNode) return;
+  // Insert the row — MetaSyncPlugin appendTransaction auto-inits blockMeta/rowMeta
+  // with DEFAULT values during this dispatch.
+  editor.view.dispatch(editor.state.tr.insert(0, rowNode));
+
+  // Doc now has ≥1 row → safe to focus (no "TextSelection endpoint not inline" throw).
+  // This covers the common first-load path where IDB was empty and we seed the demo.
+  editor.view.focus();
+
+  // Patch with actual starter values AFTER dispatch (appendTransaction has already
+  // created the entries idempotently with DEFAULT_META / DEFAULT_ROW_META).
+  patchBlockMeta(ydoc, STARTER_ID, {
     blockState: 'result-exact',
     latexContent: '\\int x^2\\,dx',
     exactLatex: '\\frac{x^3}{3}+C',
     isApprox: false,
   });
+  // Row position: blankBefore=1 line above, indent=56px (MARGIN_L gutter).
+  patchRowMeta(ydoc, STARTER_ROW_ID, { blankBefore: 1, indent: 56 });
 }
 
 /**
@@ -112,6 +164,12 @@ function WorkspaceEditor({
   const [symbolMenu, setSymbolMenu] = useState<{ x: number; y: number } | null>(
     null,
   );
+  // Phase C.2 (materialize-on-click): when the user clicks on empty paper a real
+  // PM row is created immediately and the cursor is placed inside it.  If the user
+  // clicks elsewhere or the editor blurs WITHOUT having typed anything, the empty
+  // row is deleted (pendingEmptyRowId tracks it).
+  const pendingEmptyRowId = useRef<string | null>(null);
+
   const [, force] = useReducer((x: number) => x + 1, 0);
   const { tipKey, trigger, dismiss } = useContextualTips();
 
@@ -139,7 +197,14 @@ function WorkspaceEditor({
         NibItalic,
         NibUnderline,
         NibStrike,
-        NibBlock,
+        // Phase B: row-based schema (ARCHITECTURE.md §1).
+        Row,
+        MathInline,
+        // Phase B.2: auto-init rowMeta + blockMeta on each PM transaction.
+        MetaSyncPlugin.configure({ ydoc }),
+        // Phase C.3: 2D arrow-nav (goalX) + Tab atom-jump.
+        // setGhostPark no-op: ghost-park state removed in C.2 materialize-on-click.
+        CaretNav.configure({ setGhostPark: () => {} }),
       ],
       editorProps: {
         attributes: { class: 'nib-pm', spellcheck: 'false' },
@@ -162,14 +227,111 @@ function WorkspaceEditor({
     seedStarter(editor, ydoc);
   }, [editor, ydoc]);
 
-  // Recompute ghost visibility on doc changes.
+  // Auto-focus + MathLive artifact suppression.
+  //
+  // IMPORTANT: editor.view.focus() on an empty doc(row*) causes PM to throw
+  // "TextSelection endpoint not pointing into a node with inline content" because
+  // PM tries to ensure a valid selection when focusing.  We MUST guard every
+  // focus call with doc.content.size > 0.
+  //
+  // Focus timing:
+  //   - seedStarter calls focus() after inserting the starter row (common path).
+  //   - The transaction listener below handles IDB hydration (doc arrives async).
+  //   - The focusin listener here redirects ML artifact steals (doc may be non-empty
+  //     by the time the steal happens).
   useEffect(() => {
     if (!editor) return;
-    const h = () => force();
-    editor.on('transaction', h);
-    return () => {
-      editor.off('transaction', h);
+
+    const isArtifact = (el: Element | null): boolean =>
+      el !== null && (
+        el.id === 'ML__fonts-did-not-load' ||
+        el.classList.contains('ML__fonts-did-not-load')
+      );
+
+    // Safe focus: only when doc has ≥1 row (PM can place a valid inline selection).
+    const safeFocus = () => {
+      if (editor.isDestroyed) return;
+      if (editor.state.doc.content.size > 0) editor.view.focus();
     };
+
+    // Layer 1: suppress artifact from the tab order (tabindex=-1 blocks user Tab
+    // traversal; programmatic .focus() can still land on it, hence Layer 2).
+    const suppressArtifact = () => {
+      const el = document.getElementById('ML__fonts-did-not-load');
+      if (el && el.getAttribute('tabindex') !== '-1') {
+        el.setAttribute('tabindex', '-1');
+      }
+    };
+    suppressArtifact();
+
+    // Watch for late-appended artifact nodes (MathLive may append after mount).
+    const mo = new MutationObserver(suppressArtifact);
+    mo.observe(document.body, { childList: true });
+
+    // Layer 2: focusin listener — redirect artifact/body focus → editor.
+    // Guard: only when doc has content (see above).
+    const onFocusIn = (e: FocusEvent) => {
+      const tgt = e.target as Element | null;
+      if (isArtifact(tgt) || tgt === document.body || tgt === null) {
+        safeFocus();
+      }
+    };
+    document.addEventListener('focusin', onFocusIn);
+
+    // Layer 3: attempt immediate focus (no-op if doc still empty at this point —
+    // seedStarter or the transaction listener will focus once content arrives).
+    safeFocus();
+
+    return () => {
+      document.removeEventListener('focusin', onFocusIn);
+      mo.disconnect();
+    };
+  }, [editor]);
+
+  // One-shot focus ref: once we auto-focus after content arrives, don't repeat
+  // on every subsequent transaction (avoids stealing focus during user interaction).
+  const autoFocusedOnContent = useRef(false);
+  // Reset per editor instance.
+  useEffect(() => { autoFocusedOnContent.current = false; }, [editor]);
+
+  // Recompute on doc changes:
+  //   1. Clear pendingEmptyRowId when the pending row receives content.
+  //   2. One-shot auto-focus when doc transitions empty→content (IDB hydration:
+  //      IndexeddbPersistence loads asynchronously; by the time the PM transaction
+  //      fires the doc is non-empty and editor.view.focus() is safe).
+  useEffect(() => {
+    if (!editor) return;
+    const h = () => {
+      force();
+
+      // Clear pendingEmptyRowId if the tracked row now has content (user typed).
+      const rowId = pendingEmptyRowId.current;
+      if (rowId) {
+        editor.state.doc.forEach((node) => {
+          if (node.attrs.id === rowId && node.textContent.length > 0) {
+            pendingEmptyRowId.current = null;
+          }
+        });
+      }
+
+      // One-shot auto-focus after IDB hydration: seedStarter calls focus() on the
+      // fresh-seed path, but if IDB loaded content BEFORE seedStarter ran (the
+      // fragment.length > 0 early return), no focus was called yet.  Detect the
+      // first transaction where doc becomes non-empty and we haven't focused yet.
+      if (!autoFocusedOnContent.current && editor.state.doc.content.size > 0) {
+        autoFocusedOnContent.current = true;
+        const active = document.activeElement;
+        const isArtifact =
+          active?.id === 'ML__fonts-did-not-load' ||
+          active?.classList.contains('ML__fonts-did-not-load');
+        // Only focus if no real interactive element already has focus.
+        if (!active || active === document.body || isArtifact) {
+          if (!editor.isDestroyed) editor.view.focus();
+        }
+      }
+    };
+    editor.on('transaction', h);
+    return () => { editor.off('transaction', h); };
   }, [editor]);
 
   const dismissStarter = useCallback(() => {
@@ -180,6 +342,33 @@ function WorkspaceEditor({
     el?.classList.add('nib-block--fading');
     window.setTimeout(() => deleteBlock(editor, ydoc, STARTER_ID), 260);
   }, [editor, ydoc]);
+
+  /**
+   * Delete the pending empty row (if any) when the user clicks elsewhere or
+   * the editor loses focus without having typed anything.
+   * Checks PM doc state: if the row is still empty, deletes it + rowMeta.
+   */
+  const cleanupPendingEmptyRow = useCallback(() => {
+    const rowId = pendingEmptyRowId.current;
+    if (!rowId || !editor) return;
+    pendingEmptyRowId.current = null;
+    const doc = editor.state.doc;
+    doc.forEach((node, pos) => {
+      if (node.attrs.id === rowId && node.textContent.length === 0) {
+        try {
+          editor.view.dispatch(editor.state.tr.delete(pos, pos + node.nodeSize));
+        } catch { /* defensive */ }
+        deleteRowMeta(ydoc, rowId);
+      }
+    });
+  }, [editor, ydoc]);
+
+  // Clean up the pending empty row on editor blur (user left without typing).
+  useEffect(() => {
+    if (!editor) return;
+    editor.on('blur', cleanupPendingEmptyRow);
+    return () => { editor.off('blur', cleanupPendingEmptyRow); };
+  }, [editor, cleanupPendingEmptyRow]);
 
   const coordsFromPointer = (clientX: number, clientY: number) => {
     // Coords are paper-relative (R6): xOffset/lineIndex measured from the sheet's
@@ -200,27 +389,63 @@ function WorkspaceEditor({
     if (!editor) return;
     dismissStarter();
     const { lineIndex, xOffset } = coordsFromPointer(clientX, clientY);
-    editor.chain().focus().insertNibBlock({ lineIndex, xOffset, blockType }).run();
-    // Layout (+ optional latex) lives in blockMeta now — initialise it for the
-    // freshly inserted block so it renders at the pointer position.
-    const last = editor.state.doc.lastChild;
-    const id = last?.attrs.id as string | undefined;
-    if (id) {
-      initBlockMeta(ydoc, id, { lineIndex, xOffset });
-      if (latex) patchBlock(ydoc, id, { latexContent: latex });
+
+    // Phase B: directly insert row + optional mathInline atom.
+    // Command-based insertNibBlock is removed; caret/input UX arrives in Phase C/D.
+    const rowId = genId();
+    let rowNode;
+    let mathId: string | null = null;
+
+    if (blockType === 'math') {
+      mathId = genId();
+      const mathAtom = editor.schema.nodes.mathInline?.create({ id: mathId });
+      rowNode = mathAtom
+        ? editor.schema.nodes.row?.create({ id: rowId }, mathAtom)
+        : editor.schema.nodes.row?.create({ id: rowId });
+    } else {
+      rowNode = editor.schema.nodes.row?.create({ id: rowId });
     }
+
+    if (!rowNode) return;
+    const pos = editor.state.doc.content.size;
+    // Insert row — MetaSyncPlugin appendTransaction auto-inits rowMeta/blockMeta.
+    editor.view.dispatch(editor.state.tr.insert(pos, rowNode));
+
+    // Patch actual position on the ROW (not the atom — layout is row-scoped now).
+    patchRowMeta(ydoc, rowId, { blankBefore: lineIndex, indent: xOffset });
+    // Patch optional latex on the atom.
+    if (mathId && latex) patchBlock(ydoc, mathId, { latexContent: latex });
   };
 
   const handlePointerDown = (e: PointerEvent<HTMLDivElement>) => {
-    if (!paperRef.current) return;
+    if (!paperRef.current || !editor) return;
     lastPointer.current = { x: e.clientX, y: e.clientY };
-    if (!editor) return;
+
+    // Clean up any empty row from a previous virtual click before handling this one.
+    cleanupPendingEmptyRow();
+
     const target = e.target as HTMLElement;
-    if (target.closest('.nib-block')) return;
-    createBlock(e.clientX, e.clientY, 'math');
+
+    // Clicks inside an existing row → PM handles selection naturally (no new row).
+    if (target.closest('.nib-row')) return;
+
+    // Click on empty paper: classifyClick → materialize-on-click.
+    // Also reset goalX (click resets 2D nav state per ARCHITECTURE.md §6).
+    if (editor.storage?.caretNav) editor.storage.caretNav.goalX = null;
+    const rect = paperRef.current.getBoundingClientRect();
+    handleClickOnPaper(
+      editor.view,
+      editor,
+      ydoc,
+      e.clientX,
+      e.clientY,
+      rect,
+      (rowId) => { pendingEmptyRowId.current = rowId; },
+    );
   };
 
   // Ctrl/Cmd+K palette · `\` document-level symbol menu · Ctrl+Shift+M convert.
+  // Ghost-park key interception is gone (materialize-on-click replaces it).
   useEffect(() => {
     if (!editor) return;
     const onKey = (e: KeyboardEvent) => {
@@ -236,7 +461,7 @@ function WorkspaceEditor({
         activeBlockId
       ) {
         e.preventDefault();
-        editor.commands.convertNibBlock(activeBlockId);
+        // Phase B: convertNibBlock removed from schema. Convert command → Phase D.
         return;
       }
       // `\` at document level (no active block) → symbol/insert menu.

@@ -1,5 +1,6 @@
 import './canvas.css';
 import './blocks.css';
+import '../editor/row-view.css';
 import { type PointerEvent, type RefObject } from 'react';
 import { EditorContent, type Editor } from '@tiptap/react';
 import { useI18n } from '@/hooks/useI18n';
@@ -16,6 +17,10 @@ interface CanvasProps {
  * Presentational canvas: the desk surface + the fixed-width paper sheet (margin
  * line, ruling, ghost hint, editor host, overlays). All editor state and
  * interaction handlers live in <Workspace>; this component only renders.
+ *
+ * Phase C.2 (materialize-on-click): the ghost-caret span and ghostPark prop are
+ * removed. Virtual clicks now immediately insert a real PM row and place the cursor
+ * inside it, so the browser's native blinking caret serves as the visual indicator.
  */
 export function Canvas({ editor, paperRef, onPointerDown, total }: CanvasProps) {
   const { t } = useI18n();

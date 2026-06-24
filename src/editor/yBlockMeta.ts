@@ -1,12 +1,13 @@
-// Yjs blockMeta side-channel bridge (Phase B, Session B.2).
+// Yjs blockMeta side-channel bridge (Phase B free-caret rebuild).
 //
-// CC-1 (ARCHITECTURE §CC-1/§B): block layout + CAS fields live in a Yjs
-// `Map "blockMeta"` keyed by block id — NOT in ProseMirror node attrs, which
-// y-prosemirror does not sync reliably. Each entry is its own Y.Map so every
-// field merges independently (LWW per key) across devices.
+// CC-1 (ARCHITECTURE §2): CAS + style fields live in a Yjs `Map "blockMeta"`
+// keyed by **math-atom-id** (mathInline node `id`) — NOT in ProseMirror node
+// attrs. Each entry is its own Y.Map so every field merges independently
+// (LWW per key) across devices.
 //
-// This module is the typed read/write bridge; NibBlockView starts using it in
-// Session B.3.
+// Phase B change: xOffset + lineIndex REMOVED from BlockMetaRecord.
+// Layout (blankBefore, indent) now lives in `rowMeta` (yRowMeta.ts).
+// NodeView (RowView/MathInlineView) reads rowMeta for positioning.
 
 import * as Y from 'yjs';
 import { getBlockMetaMap } from '@/lib/yjs';
@@ -15,14 +16,11 @@ import type { BlockMetaRecord } from '@/types/block';
 export type { BlockMetaRecord };
 
 /**
- * Defaults for a block with no meta entry yet — mirrors the old
- * `defaultBlockAttrs` layout/CAS defaults (minus the structural attrs). Used as
- * the fallback in `getBlockMeta` and the initial render value in `useBlockMeta`
- * (R3: render defaults until the entry arrives, then re-render on observe).
+ * Defaults for a math atom with no meta entry yet (R3 race tolerance: render
+ * defaults until the entry arrives, then re-render on observe).
+ * Phase B: xOffset + lineIndex removed — layout lives in rowMeta.
  */
 export const DEFAULT_META: BlockMetaRecord = {
-  xOffset: 0,
-  lineIndex: 0,
   blockState: 'editing-math',
   latexContent: '',
   exactLatex: '',
@@ -35,15 +33,13 @@ export const DEFAULT_META: BlockMetaRecord = {
   inkStrokes: '[]',
 };
 
-/** Read one block's meta entry into a plain record, filling any missing field. */
+/** Read one atom's meta entry into a plain record, filling any missing field. */
 function readEntry(entry: Y.Map<unknown>): BlockMetaRecord {
   const field = <K extends keyof BlockMetaRecord>(key: K): BlockMetaRecord[K] => {
     const v = entry.get(key);
     return (v === undefined ? DEFAULT_META[key] : v) as BlockMetaRecord[K];
   };
   return {
-    xOffset: field('xOffset'),
-    lineIndex: field('lineIndex'),
     blockState: field('blockState'),
     latexContent: field('latexContent'),
     exactLatex: field('exactLatex'),

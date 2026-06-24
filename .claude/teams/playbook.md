@@ -1,7 +1,7 @@
 # playbook — orchestration thao tác (Nib)
 
 > "Bộ não" thao tác của **lead** khi vận hành Nib như native Claude Code team (Agent Teams).
-> Đọc cùng `.claude/master.md` (3 bất biến + roster 9 vai + vòng lặp TaskList loop + subagent-vs-teammate).
+> Đọc cùng `.claude/master.md` (3 bất biến + roster 10 vai + vòng lặp TaskList loop + subagent-vs-teammate).
 > File này = **HOW chi tiết**: khi nào lập team, recipe spawn, brief template, layout terminal,
 > failure-mode + issue-queue, PASS-criteria per-vai, giới hạn Agent Teams, plan-approval mode.
 >
@@ -24,6 +24,7 @@ Lập team **không phải mặc định** — tốn token + tăng coordination 
 | Tích hợp **IPC frontend↔Python sidecar** + đóng gói Tauri desktop (glue §12, đường găng cross-stack) → full chain | Đổi `timeout` từ 5s→8s trong 1 hàm backend đã có (scope rõ, ≤3 file) | Tra **SymPy**: `integrate` có hỗ trợ hàm X không — tra cứu đóng |
 | Thêm tính năng "toggle exact↔decimal" chạm cả editor + CAS (≥2 stack) → chain rút gọn (planner-light → implementer) | Trả lời "file nào giữ block model" / `grep` 1 symbol | Tra **latex2sympy2**: cú pháp `\frac{d}{dx}` parse ra gì — 1 shot |
 | **Thiết kế visual multi-screen** (mockup HTML/CSS pixel-accurate, design system, component mới) → researcher → planner → design | Đọc mockup HTML đã có (`docs/design-artifacts/`) — không tạo mới | **Đọc artifact HTML** hiện có + grep class/token tham chiếu (1 shot, không follow-up) |
+| **Test/QA E2E** — kiểm luồng toàn cục nhiều case từ góc nhìn user (sau feature testable / trước release / khi đụng vùng liên quan) → **tester** | Lead kiểm flow đã có (`tests/flows/`) — 1 shot | Tra flow file đã có (1 shot) |
 
 > **Dấu hiệu BẮT BUỘC spawn team** (bất kỳ 1): deliverable > 3 file hoặc > 1 stack/domain · cần
 > research context trước khi plan · cần thiết kế HOW (architect) trước khi code · cần self-verify
@@ -39,6 +40,7 @@ Lập team **không phải mặc định** — tốn token + tăng coordination 
 > **Quy tắc size:** spawn **tối thiểu cần thiết**. Full chain Nib tối đa 6 vai
 > (researcher → planner → architect → design → editor-frontend → backend-cas; design song song architect khi cần visual mockup HTML/CSS). Over-staffing = anti-pattern
 > Lead #2. **1 team tại 1 thời điểm** — TeamDelete team cũ trước khi TeamCreate mới (xem §9).
+> **`tester` là vai E2E TÁCH BIỆT** build chain — KHÔNG tính vào 6 vai build; spawn riêng sau khi implementer báo done. Execute Chrome CHỈ foreground (ISSUE-8).
 
 ---
 
@@ -116,6 +118,7 @@ output_format: <lead expect nhận gì — trỏ "Output format" trong agent bod
 - **handwriting** — **TRƯỚC tiên** xác nhận §11.2 (license MyScript) đã chốt (xem §10 human gate). Sau đó: thiết kế bút→LaTeX. **STOP**: bút→LaTeX nhận diện ≥1 ký hiệu + `npm run build` exit 0; nộp evidence.
 - **glue-packaging** — thiết kế IPC + tên sidecar. **STOP**: `cargo build` trong `src-tauri/` pass + app launch + ≥1 IPC call frontend→sidecar trả về (console 0 error); nộp evidence.
 - **team-ops** — code+triệu chứng issue (từ `.claude/teams/issues.md`) + target sửa. **STOP**: diff file `.claude/` báo lead; thay đổi high-impact (`master.md`/`playbook.md`/`settings.json`) chờ user duyệt; KHÔNG đụng `src/`/`backend/`/`src-tauri/`.
+- **tester** — feature slug + trigger (khi nào chạy) + tiền điều kiện (dev server :1420, login state...). **STOP pha plan**: `tests/flows/<slug>.flow.md` tồn tại + `status: ready` + đủ 6 nhóm case (N/A có lý do) + 3 req nền [LOCKED] (i18n/theme/thiết bị) + mỗi case có expected đo được + Catalog README.md cập nhật. **Execute (CHỈ foreground ISSUE-8)**: verdict PASS/FAIL per-case + evidence screenshot/GIF + console 0 error. Nếu background → nộp flow + click-through checklist cho user.
 
 ---
 
@@ -211,6 +214,7 @@ Mapping triệu chứng → code: không ack/báo xong = `SILENT`; cần resend 
 | `handwriting` | **chỉ PASS sau khi §11.2 (license) đã chốt**; sau đó: bút→LaTeX nhận diện ≥1 ký hiệu + `npm run build` exit 0 |
 | `glue-packaging` | `cargo build` trong `src-tauri/` pass + app launch + ≥1 IPC call frontend→sidecar trả về (console 0 error) |
 | `team-ops` | issue-queue được đọc; diff thay đổi báo lead; thay đổi high-impact (`master.md`/`playbook.md`/`settings.json`) **chờ user duyệt** trước khi coi là done; **KHÔNG sửa file ngoài `.claude/`** |
+| `tester` | **Pha plan**: `tests/flows/<slug>.flow.md` tồn tại + `status: ready` + đủ 6 nhóm case (N/A có lý do cụ thể) + 3 req nền [LOCKED] + mỗi case có expected đo được + Catalog README.md cập nhật. **Pha execute (foreground)**: verdict PASS/FAIL per-case + evidence screenshot/GIF + console 0 error. **Nếu background**: nộp flow `ready` + click-through checklist đầy đủ cho user. |
 
 FAIL bất kỳ → feedback diff-style (§4) + re-spawn. Tối đa 2 vòng, lần 3 → escalate user.
 
@@ -247,10 +251,11 @@ Sau `TeamCreate` + spawn N teammate, chạy lệnh tmux từ **pane lead (pane 1
 **Spawn order = pane index** (spawn theo thứ tự vai trong chain để pane `2..N+1` khớp vai; lead = pane `1` luôn).
 Block 1 = setup mới; Block 2 = sau khi kill 1 pane (renumber + re-layout).
 
-> **⚠️ ISSUE-11 (lặp ≥3 lần: ISSUE-2/6/11) — 3 quy tắc bắt buộc:**
+> **⚠️ ISSUE-11/18 (lặp ≥3 lần: ISSUE-2/6/11; zombie-pane ISSUE-18) — 4 quy tắc bắt buộc:**
 > 1. **`main-pane-width 60%` TRƯỚC `select-layout`** — set ngay đầu mỗi block lệnh để lead pane luôn là main rộng (~60% màn), teammate xếp vào phần còn lại. Không set → tmux dùng 50% default → lead pane hẹp hơn teammate.
-> 2. **Re-apply sau MỖI lần đổi N** — không chỉ sau spawn mà cả sau shutdown/TeamDelete. Khi teammate thoát, pane biến mất nhưng layout không tự cân → lead phải chủ động re-apply. Helper: `N=$(tmux list-panes | wc -l); [ $N -le 4 ] && tmux set main-pane-width 60% && tmux select-layout main-vertical || tmux select-layout tiled`.
+> 2. **Re-apply sau MỖI lần đổi N** — không chỉ sau spawn mà cả sau shutdown/TeamDelete. Khi teammate thoát, pane biến mất nhưng layout không tự cân → lead phải chủ động re-apply. Dùng Re-apply helper (gồm kill zombie TRƯỚC khi đếm N).
 > 3. **Guard `$TMUX` luôn áp** (đã có ở §2) — nếu không có tmux → skip toàn bộ, no-op.
+> 4. **Dọn zombie pane TRƯỚC khi đếm N** (ISSUE-18): pane cũ còn hiển thị dù process đã thoát (pane_dead=1) làm lệch N + chiếm không gian. Re-apply helper đã tích hợp bước kill-zombie; chạy nó thay vì chỉ `select-layout`. Giới hạn khuyến nghị: **≤4 teammate đồng thời** (N=5 tổng pane → main-vertical vừa đẹp). N≥6 tiled → chật; cân nhắc sequential thay parallel.
 
 **N=2** — main + 2 pane dọc phải (vd planner-light → editor-frontend):
 ```
@@ -312,11 +317,13 @@ tmux set-window-option main-pane-width 60% && tmux select-layout main-vertical &
 tmux move-window -r -s 1:1 && tmux set-window-option main-pane-width 60% && tmux select-layout main-vertical && tmux join-pane -h -s :.3 -t :.2 && tmux join-pane -h -s :.5 -t :.4 && tmux resize-pane -t :.6 -y 18
 ```
 
-**Re-apply helper (dùng sau shutdown/TeamDelete):**
+**Re-apply helper (dùng sau shutdown/TeamDelete — tích hợp kill zombie):**
 ```bash
-# Đếm N pane sống, chọn layout phù hợp — chạy sau mỗi lần đổi N teammate
+# Bước 1 — Dọn zombie pane (pane_dead=1): process thoát nhưng pane còn → kill trước khi đếm N
+[ -n "$TMUX" ] && tmux list-panes -F "#{pane_id} #{pane_dead}" | awk '$2==1{print $1}' | xargs -r -I{} tmux kill-pane -t {}
+# Bước 2 — Re-apply layout: N≤5 pane → main-vertical (lead 60%); N≥6 → tiled (hiếm, tránh)
 [ -n "$TMUX" ] && N=$(tmux list-panes | wc -l) && \
-  { [ "$N" -le 4 ] && tmux set-window-option main-pane-width 60% && tmux select-layout main-vertical || tmux select-layout tiled; }
+  { [ "$N" -le 5 ] && tmux set-window-option main-pane-width 60% && tmux select-layout main-vertical || tmux select-layout tiled; }
 ```
 
 > Tested Ubuntu + tmux 3.x pattern. Nếu index lệch sau renumber → fallback `tmux select-layout tiled`.
@@ -333,7 +340,8 @@ tmux move-window -r -s 1:1 && tmux set-window-option main-pane-width 60% && tmux
 - **in-process teammate KHÔNG resume** qua `/resume` hoặc `/rewind` — session gián đoạn → spawn lại từ đầu.
 - **Permissions teammate = kế thừa mode của lead** lúc spawn — không set permission riêng từng teammate (mode lấy từ `.claude/settings.json` `defaultMode: acceptEdits`).
 - **Yêu cầu**: Claude Code **≥ v2.1.32** + `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` (đã set trong `.claude/settings.json`).
-- **Browser/click-through smoke = gate do USER, KHÔNG phải teammate (ISSUE-8):** Chrome extension bind vào 1 foreground session → background teammate KHÔNG reach được extension (xác nhận ≥4 session xuyên nhiều phiên, kể cả lead context). Config gap (tools `mcp__claude-in-chrome__*` trong frontmatter + allow list `settings.json`) đã fix → tool khả dụng cho **lead foreground** tự smoke. NHƯNG ngay cả sau fix, background teammate vẫn không connect → implementer **KHÔNG block chờ browser smoke**; nộp build-verify evidence + **click-through checklist** cho user thay thế. Khác Figma MCP (API-based → teammate dùng bình thường). Template checklist: `build-verify/SKILL.md §5`.
+- **Browser/click-through smoke = gate do USER, KHÔNG phải teammate (ISSUE-8):** Chrome extension bind vào 1 foreground session → background teammate KHÔNG reach được extension (xác nhận ≥4 session xuyên nhiều phiên, kể cả lead context). Config gap (tools `mcp__claude-in-chrome__*` trong frontmatter + allow list `settings.json`) đã fix → tool khả dụng cho **lead foreground** tự smoke. NHƯNG ngay cả sau fix, background teammate vẫn không connect → implementer **KHÔNG block chờ browser smoke**; nộp build-verify evidence + **click-through checklist** cho user thay thế. Khác Figma MCP (API-based → teammate dùng bình thường). Template checklist: `build-verify/SKILL.md §5`. *(Playwright headless là hướng giải ISSUE-8 — xem ISSUE-19, chờ user duyệt.)*
+- **Tester-execute ↔ code-fix không đồng thời (ISSUE-18)**: khi `tester` đang Pha 2 EXECUTE flow (lái Chrome/Playwright), `editor-frontend` và `backend-cas` KHÔNG nhận task sửa code — HMR reload / server restart làm hỏng test đang chạy. Lead **serializes**: chờ EXECUTE xong + verdict PASS/FAIL → mới giao task code-fix (hoặc ngược lại). Rule cũng được enforce trong agent body của 3 vai: tester / editor-frontend / backend-cas.
 
 ---
 
@@ -387,7 +395,7 @@ có section "Human gate §11.2" enforce điều này.
 ## Tham chiếu nhanh
 
 - Agent Teams cần `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` (đã set `.claude/settings.json`) + Claude Code v2.1.32+.
-- 3 bất biến + roster 9 vai + vòng lặp TaskList loop + subagent-vs-teammate: `.claude/master.md`.
+- 3 bất biến + roster 10 vai + vòng lặp TaskList loop + subagent-vs-teammate: `.claude/master.md`.
 - Spec sản phẩm — yêu cầu nền [LOCKED] (song ngữ en/vi · thiết bị desktop-class + 3 input · theme light/dark/system + root màu/tokens): `docs/requirements.md`. Đường nhập cốt lõi: `docs/feature.md`. Mọi task chạm UI bám 2 file này.
 - Agent body (self-contained, lead không cần repeat protocol): `.claude/agents/*.md`.
 - Skill gate implementer: `.claude/skills/build-verify/SKILL.md` · memory: `.claude/skills/memory/SKILL.md` · team-fix: `.claude/skills/team-fix/SKILL.md`.

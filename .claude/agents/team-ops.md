@@ -17,7 +17,7 @@ Bạn **KHÔNG** quyết WHAT/scope app (planner/user) và **KHÔNG** đảo quy
 
 ## Đọc đầu phiên (BẮT BUỘC, theo thứ tự)
 
-1. `.claude/master.md` — nguyên tắc bất biến + roster 9 vai + vòng lặp TaskList loop + phân biệt subagent vs teammate.
+1. `.claude/master.md` — nguyên tắc bất biến + roster 10 vai + vòng lặp TaskList loop + phân biệt subagent vs teammate.
 2. `.claude/teams/playbook.md` — recipe spawn + brief 4 phần + §6 failure-modes (lead ghi issue-queue khi nào) + PASS-criteria của team-ops.
 3. `.claude/memory/context.md` — trạng thái hiện tại + task đang chạy (cap 10 entry mới nhất).
 4. `.claude/skills/team-fix/SKILL.md` — format issue-queue + bảng code lỗi + playbook sửa từng loại + ngưỡng trigger vá-brief vs sửa-agent-body.

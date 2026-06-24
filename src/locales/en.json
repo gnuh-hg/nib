@@ -75,6 +75,8 @@
   "settings.account.email_placeholder": "your@email.com",
   "settings.account.avatar_photo": "Change photo",
   "settings.account.avatar_coming_soon": "Coming soon",
+  "settings.account.local_hint": "Saved on this device",
+  "settings.account.sign_out": "Sign out",
   "settings.appearance.title": "Appearance",
   "settings.appearance.theme": "Theme",
   "settings.appearance.language": "Language",
@@ -111,6 +113,7 @@
   "account.menu": "Account menu",
   "account.signed_in_as": "Signed in as",
   "account.sign_out": "Sign out",
+  "auth.session_expired": "Your session expired. Please sign in again to keep syncing.",
 
   "toolbar.label": "Block toolbar",
   "toolbar.calc": "Calculate",
@@ -200,5 +203,8 @@
   "tip.sqrt": "Tip: press Shift+Enter to calculate this expression.",
   "tip.no_eval": "Tip: press Shift+Enter (or the Calculate button) to evaluate.",
   "tip.approx": "This is an approximate result — toggle to see the exact form.",
-  "tip.selection": "Tip: select part of an expression to calculate just that part."
+  "tip.selection": "Tip: select part of an expression to calculate just that part.",
+
+  "migration.failed_preserved": "Your document could not be migrated to the new format. Your original data is preserved.",
+  "migration.retry": "Retry"
 }

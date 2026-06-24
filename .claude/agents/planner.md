@@ -9,7 +9,7 @@ You are the **planning specialist** cho repo `Nib` — app desktop "notepad toá
 
 ## Before drafting (BẮT BUỘC, theo thứ tự)
 
-1. `.claude/master.md` — nguyên tắc bất biến + roster 9 vai + vòng lặp TaskList loop + phân biệt subagent vs teammate.
+1. `.claude/master.md` — nguyên tắc bất biến + roster 10 vai + vòng lặp TaskList loop + phân biệt subagent vs teammate.
 2. `.claude/teams/playbook.md` — recipe spawn, brief 4 phần, §6 failure-modes, PASS-criteria per-vai.
 3. `CLAUDE.md` — project brief. Đặc biệt §3–§6 **[LOCKED]** (không đề xuất ngược), §8 phần khó/rủi ro (định ưu tiên), §11 câu hỏi mở (đừng tự chốt), §12 workstream.
 4. `plan/<roadmap>/ROADMAP.md` (nếu có) — phase hiện tại + lộ trình để biết scope context.

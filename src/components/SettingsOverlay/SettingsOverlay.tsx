@@ -25,7 +25,10 @@ export function SettingsOverlay({ open, onClose }: SettingsOverlayProps) {
   const firstReal = SECTION_REGISTRY.find((s) => !s.comingSoon) ?? SECTION_REGISTRY[0];
   const [activeId, setActiveId] = useState(firstReal.id);
 
-  const ctxValue = useMemo(() => ({ activeId, setActiveId }), [activeId]);
+  const ctxValue = useMemo(
+    () => ({ activeId, setActiveId, onClose }),
+    [activeId, onClose],
+  );
 
   return (
     <div className="nib-settings-overlay" data-open={open}>

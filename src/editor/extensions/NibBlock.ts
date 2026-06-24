@@ -1,3 +1,18 @@
+/**
+ * LEGACY — Phase B free-caret rebuild.
+ *
+ * NibBlock is NO LONGER REGISTERED in the TipTap editor schema (see Workspace.tsx).
+ * The schema now uses `row` + `mathInline` (ARCHITECTURE.md §1).
+ *
+ * This file is KEPT for:
+ *   1. TypeScript module augmentation of editor.commands (insertNibBlock /
+ *      convertNibBlock) — still referenced by CommandPalette/UnifiedDock stubs.
+ *   2. Migration detection via raw Y.Doc in Phase B.3 (`migration.ts`) — the old
+ *      XML nodes in IndexedDB store use 'nibBlock' element name; migration reads
+ *      them without needing the TipTap extension registered.
+ *
+ * DO NOT register NibBlock in any editor.extensions list.
+ */
 import { Node, mergeAttributes } from '@tiptap/core';
 import { ReactNodeViewRenderer } from '@tiptap/react';
 import { TextSelection } from '@tiptap/pm/state';

@@ -75,6 +75,8 @@
   "settings.account.email_placeholder": "your@email.com",
   "settings.account.avatar_photo": "Đổi ảnh",
   "settings.account.avatar_coming_soon": "Sắp có",
+  "settings.account.local_hint": "Được lưu trên máy này",
+  "settings.account.sign_out": "Đăng xuất",
   "settings.appearance.title": "Giao diện",
   "settings.appearance.theme": "Giao diện",
   "settings.appearance.language": "Ngôn ngữ",
@@ -111,6 +113,7 @@
   "account.menu": "Trình đơn tài khoản",
   "account.signed_in_as": "Đăng nhập với",
   "account.sign_out": "Đăng xuất",
+  "auth.session_expired": "Phiên đã hết hạn. Vui lòng đăng nhập lại để tiếp tục đồng bộ.",
 
   "toolbar.label": "Thanh công cụ block",
   "toolbar.calc": "Tính",
@@ -200,5 +203,8 @@
   "tip.sqrt": "Mẹo: nhấn Shift+Enter để tính biểu thức này.",
   "tip.no_eval": "Mẹo: nhấn Shift+Enter (hoặc nút Tính) để tính kết quả.",
   "tip.approx": "Đây là kết quả gần đúng — chuyển để xem dạng chính xác.",
-  "tip.selection": "Mẹo: bôi đen một phần biểu thức để chỉ tính phần đó."
+  "tip.selection": "Mẹo: bôi đen một phần biểu thức để chỉ tính phần đó.",
+
+  "migration.failed_preserved": "Không thể chuyển đổi tài liệu sang định dạng mới. Dữ liệu gốc của bạn vẫn được giữ nguyên.",
+  "migration.retry": "Thử lại"
 }

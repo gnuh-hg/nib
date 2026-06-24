@@ -3,7 +3,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { createPortal } from 'react-dom';
 import { useI18n } from '@/hooks/useI18n';
 import { useProfile } from '@/providers/ProfileProvider';
-import { signOut } from '@/lib/auth';
+import { signOutIntentional } from '@/hooks/useSessionExpiredNotice';
 import { IconUser, IconLogOut } from '../icons';
 
 export interface AccountChipProps {
@@ -70,7 +70,8 @@ export function AccountChip({ onOpenLogin }: AccountChipProps) {
 
   const handleSignOut = useCallback(() => {
     setMenuOpen(false);
-    void signOut();
+    // Flagged intentional → no session-expired notice. Local docs untouched.
+    void signOutIntentional();
   }, []);
 
   // Signed out → a dock button that opens the login modal.

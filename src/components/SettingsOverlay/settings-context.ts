@@ -9,6 +9,8 @@ import { createContext, useContext } from 'react';
 export interface SettingsContextValue {
   activeId: string;
   setActiveId: (id: string) => void;
+  /** Close the overlay (e.g. a section signs the user out and dismisses settings). */
+  onClose: () => void;
 }
 
 export const SettingsContext = createContext<SettingsContextValue | null>(null);

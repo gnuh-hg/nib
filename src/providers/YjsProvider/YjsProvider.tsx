@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { HocuspocusProvider } from '@hocuspocus/provider';
 import type { IndexeddbPersistence } from 'y-indexeddb';
+import type * as Y from 'yjs';
 import { createYDoc } from '@/lib/yjs';
 import { createIndexeddbPersistence, waitForSync } from '@/lib/yPersistence';
 import { createHocuspocusProvider, getHocuspocusUrl } from '@/lib/yProvider';
+import { migrateIfNeeded } from '@/lib/migration';
+import { useI18n } from '@/hooks/useI18n';
 import { YjsContext, type SyncStatus } from './yjs-context';
 
 export interface YjsProviderProps {
@@ -29,7 +32,9 @@ export interface YjsProviderProps {
  * IndexedDB). All resources are destroyed on unmount / docId-userId-token change.
  */
 export function YjsProvider({ docId, userId, token, children }: YjsProviderProps) {
-  // Same shared Y.Doc instance for editor + persistence + provider.
+  const { t } = useI18n();
+
+  // Canonical Y.Doc for this docId. Shared by editor, persistence, and WS provider.
   const ydoc = useMemo(() => createYDoc(docId), [docId]);
 
   // Cloud sync requires both a signed-in token and a configured server URL.
@@ -38,6 +43,9 @@ export function YjsProvider({ docId, userId, token, children }: YjsProviderProps
   // Gate children on local hydration so we don't flash an empty doc.
   const [ready, setReady] = useState(false);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(cloudEnabled ? 'syncing' : 'local');
+  // Migration state: 'migrated' doc (use instead of ydoc) or 'fallback' notice.
+  const [activeDoc, setActiveDoc] = useState<Y.Doc>(ydoc);
+  const [migrationFailed, setMigrationFailed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -45,17 +53,18 @@ export function YjsProvider({ docId, userId, token, children }: YjsProviderProps
     let provider: HocuspocusProvider | null = null;
 
     setReady(false);
+    setMigrationFailed(false);
+    setActiveDoc(ydoc);
     setSyncStatus(cloudEnabled ? 'syncing' : 'local');
 
     const start = async () => {
       // 1. Local persistence first (offline-first). Skip entirely when IndexedDB
-      //    is unavailable (jsdom / SSR / some sandboxed webviews) so the editor
-      //    still renders; y-indexeddb would otherwise raise an unhandled
-      //    rejection deep in its internals. waitForSync stays resilient for the
-      //    private-mode case where indexedDB exists but open() rejects.
+      //    is unavailable (jsdom / SSR / some sandboxed webviews).
       if (typeof indexedDB !== 'undefined') {
         try {
-          persistence = createIndexeddbPersistence(ydoc, docId);
+          // Per-user store namespace: signed-in users get an isolated local copy;
+          // guest (userId 'local') keeps the legacy store name.
+          persistence = createIndexeddbPersistence(ydoc, docId, userId);
           await waitForSync(persistence);
         } catch {
           persistence = null;
@@ -63,19 +72,36 @@ export function YjsProvider({ docId, userId, token, children }: YjsProviderProps
       }
       if (cancelled) return;
 
-      // 2. Render children now — do not block on the WS connection.
+      // 2. Migration gate (ARCHITECTURE.md §3 — free-caret Phase B.3).
+      //    Run BEFORE the editor binds to the ydoc so PM never sees old nibBlock nodes.
+      //    This is intentionally after waitForSync so the ydoc is fully hydrated.
+      if (typeof indexedDB !== 'undefined') {
+        const migResult = await migrateIfNeeded(ydoc, docId, userId);
+        if (migResult.status === 'migrated' && migResult.newDoc) {
+          // Use the converted doc for the editor (row/mathInline schema).
+          setActiveDoc(migResult.newDoc);
+        } else if (migResult.status === 'fallback') {
+          // Conversion failed — open with current ydoc (may be empty/corrupt for editor).
+          // Show non-destructive notice; old data is preserved in IDB.
+          setMigrationFailed(true);
+        }
+        // 'v2-existing' and 'empty-stamped' → use ydoc as-is.
+      }
+      if (cancelled) return;
+
+      // 3. Render children now — do not block on the WS connection.
       setReady(true);
 
-      // 3. If signed in AND a server is configured, connect for cross-device sync.
+      // 4. If signed in AND a server is configured, connect for cross-device sync.
+      //    Uses activeDoc (migrated or original) for the WS binding.
+      const docForWs = activeDoc; // capture current value
       if (cloudEnabled && token) {
-        provider = createHocuspocusProvider(ydoc, docId, userId, token);
+        provider = createHocuspocusProvider(docForWs, docId, userId, token);
         provider.on('synced', ({ state }: { state: boolean }) => {
           if (!cancelled && state) setSyncStatus('synced');
         });
         provider.on('status', ({ status }: { status: string }) => {
           if (cancelled) return;
-          // 'connected' before the first 'synced' is still "syncing";
-          // 'connecting'/'disconnected' means we're (re)establishing the link.
           setSyncStatus((prev) => (prev === 'synced' && status === 'connected' ? prev : 'syncing'));
         });
         provider.on('authenticationFailed', () => {
@@ -93,12 +119,30 @@ export function YjsProvider({ docId, userId, token, children }: YjsProviderProps
       provider?.destroy();
       void persistence?.destroy();
     };
-  }, [ydoc, docId, userId, token, cloudEnabled]);
+  }, [ydoc, docId, userId, token, cloudEnabled]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const value = useMemo(() => ({ ydoc, syncStatus }), [ydoc, syncStatus]);
+  const value = useMemo(
+    () => ({ ydoc: activeDoc, syncStatus }),
+    [activeDoc, syncStatus],
+  );
 
   // Hold children until local state is hydrated (or persistence was skipped).
   if (!ready) return null;
 
-  return <YjsContext.Provider value={value}>{children}</YjsContext.Provider>;
+  return (
+    <YjsContext.Provider value={value}>
+      {migrationFailed && (
+        <div className="nib-migration-notice" role="alert">
+          <span>{t('migration.failed_preserved')}</span>
+          <button
+            className="nib-migration-notice__retry"
+            onClick={() => window.location.reload()}
+          >
+            {t('migration.retry')}
+          </button>
+        </div>
+      )}
+      {children}
+    </YjsContext.Provider>
+  );
 }

@@ -39,17 +39,17 @@ export interface NibBlockAttrs {
 }
 
 /**
- * Block layout + CAS fields stored in the Yjs `blockMeta` side-channel
- * (CC-1, ARCHITECTURE §B) — keyed by block id, kept OUT of ProseMirror node
- * attrs because y-prosemirror does not sync attrs reliably. Structural attrs
- * (`id`/`blockType`/`starter`) stay on the PM node; everything below is CRDT
- * per-field (LWW). Wired into NibBlockView in Session B.3.
+ * CAS + style fields stored in the Yjs `blockMeta` side-channel
+ * (CC-1, ARCHITECTURE §B) — keyed by **math-atom-id** (mathInline node `id`).
+ *
+ * Phase B (free-caret rebuild): xOffset + lineIndex REMOVED.
+ *   - Position (layout) now lives in `rowMeta` keyed by row-id (yRowMeta.ts):
+ *     { blankBefore: number, indent: number }.
+ *   - mathInline atoms are inline in their row; they have no independent xy.
+ *
+ * Kept fields: math/CAS content only (ARCHITECTURE.md §2).
  */
 export interface BlockMetaRecord {
-  /** Authoring intent X in px from canvas left (NOT clamped render position). */
-  xOffset: number;
-  /** Ruled-line index — top = lineIndex × 64px. */
-  lineIndex: number;
   blockState: BlockState;
   latexContent: string;
   exactLatex: string;

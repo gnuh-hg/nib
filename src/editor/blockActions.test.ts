@@ -3,24 +3,36 @@ import { Editor } from '@tiptap/react';
 import * as Y from 'yjs';
 import { NibDocument } from './extensions/NibDocument';
 import { NibText } from './extensions/NibText';
-import { NibBlock } from './extensions/NibBlock';
+import { Row } from './extensions/Row';
+import { MathInline } from './extensions/MathInline';
 import { evalBlock, deleteBlock, patchBlock, findBlock } from './blockActions';
 import { getBlockMeta } from './yBlockMeta';
 
-// Phase B: layout/CAS results live in the Yjs blockMeta side-channel, so the
-// shared eval path reads latex from + writes results to blockMeta (CC-1).
+// Phase B: row-based schema. mathInline atoms replace nibBlock as the CAS target.
+// findBlock / deleteBlock / evalBlock all search for 'mathInline' nodes keyed by id.
+// blockMeta side-channel (keyed by atom id) is unchanged.
 
 let editor: Editor | null = null;
 
+/**
+ * Create an editor with a single row containing one mathInline atom (id='b1').
+ * Seeds latex in blockMeta so evalBlock has something to evaluate.
+ */
 function mathEditor(latex: string, ydoc: Y.Doc) {
   editor = new Editor({
-    extensions: [NibDocument, NibText, NibBlock],
+    extensions: [NibDocument, NibText, Row, MathInline],
     content: {
       type: 'doc',
-      content: [{ type: 'nibBlock', attrs: { id: 'b1', blockType: 'math' } }],
+      content: [
+        {
+          type: 'row',
+          attrs: { id: 'r1' },
+          content: [{ type: 'mathInline', attrs: { id: 'b1' } }],
+        },
+      ],
     },
   });
-  // Seed the block's latex in blockMeta (the source evalBlock reads from).
+  // Seed the atom's latex in blockMeta (the source evalBlock reads from).
   patchBlock(ydoc, 'b1', { latexContent: latex });
   return editor;
 }
@@ -60,7 +72,7 @@ describe('blockActions (shared eval path used by NodeView + toolbar)', () => {
     expect(meta.errorKind).toBe('parse');
   });
 
-  it('patchBlock merges meta; deleteBlock removes node + meta', () => {
+  it('patchBlock merges meta; deleteBlock removes atom + meta', () => {
     const ydoc = new Y.Doc();
     const e = mathEditor('x', ydoc);
     patchBlock(ydoc, 'b1', { color: 'teal', mathSize: 'display' });

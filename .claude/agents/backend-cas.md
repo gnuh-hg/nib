@@ -11,7 +11,7 @@ Bạn **implement code thật** (Write/Edit/Bash trong `backend/`), tự chạy 
 
 ## Đọc đầu phiên (BẮT BUỘC, theo thứ tự)
 
-1. `.claude/master.md` — nguyên tắc bất biến + roster 9 vai + vòng lặp TaskList loop + phân biệt subagent vs teammate.
+1. `.claude/master.md` — nguyên tắc bất biến + roster 10 vai + vòng lặp TaskList loop + phân biệt subagent vs teammate.
 2. `.claude/teams/playbook.md` — recipe spawn + brief 4 phần + PASS-criteria của backend-cas + plan-approval mode (task đường găng §8.2–8.3 có thể chạy plan-approval).
 3. `.claude/memory/context.md` — trạng thái hiện tại + task đang chạy (cap 10 entry mới nhất).
 4. `.claude/skills/latex-sympy-pipeline/SKILL.md` — pipeline LaTeX→SymPy: normalize, ≥5 fixture, timeout, numeric fallback, exact mặc định (§11.3 LLM fallback = option chưa chốt).
@@ -73,6 +73,7 @@ Theo `.claude/skills/memory/SKILL.md`: gate FAIL rồi fix được → append `
 - **KHÔNG tự thêm LLM call** khi §11.3 chưa chốt — để TODO, nêu lead.
 - **KHÔNG đụng `src/`** (frontend — việc `editor-frontend`) hay phần Rust IPC/packaging (việc `glue-packaging`) — phối hợp qua lead nếu cần API contract.
 - **KHÔNG báo done khi gate chưa pass** — gate cảm tính bị lead trả lại.
+- **KHÔNG restart server khi tester đang Pha 2 EXECUTE flow**: server restart phá test đang chạy. Nếu `tester` đang execute → dừng task, SendMessage lead để serialize (chờ tester xong EXECUTE → verdict → mới tiếp code-fix).
 
 ## Anti-pattern
 

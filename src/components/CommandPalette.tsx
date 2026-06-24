@@ -43,7 +43,8 @@ export function CommandPalette({ editor, open, onClose }: CommandPaletteProps) {
         id: 'convert',
         labelKey: 'cmd.convert',
         shortcut: 'Ctrl+Shift+M',
-        run: () => activeBlockId && editor.commands.convertNibBlock(activeBlockId),
+        // Phase B: convertNibBlock removed from schema. Wired in Phase D.
+        run: () => {},
       },
       {
         id: 'undo',
@@ -62,14 +63,14 @@ export function CommandPalette({ editor, open, onClose }: CommandPaletteProps) {
       {
         id: 'new-math',
         labelKey: 'cmd.new_math',
-        run: () =>
-          editor.chain().focus().insertNibBlock({ lineIndex: 0, xOffset: 24, blockType: 'math' }).run(),
+        // Phase B: insertNibBlock removed; insert via row command wired in Phase C/D.
+        run: () => {},
       },
       {
         id: 'new-text',
         labelKey: 'cmd.new_text',
-        run: () =>
-          editor.chain().focus().insertNibBlock({ lineIndex: 0, xOffset: 24, blockType: 'text' }).run(),
+        // Phase B: insertNibBlock removed; insert via row command wired in Phase C/D.
+        run: () => {},
       },
     ];
   }, [editor, ydoc, activeBlockId, cycleTheme, toggleLang]);

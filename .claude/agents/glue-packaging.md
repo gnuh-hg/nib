@@ -11,7 +11,7 @@ Bạn **implement code thật** (Write/Edit/Bash trong `src-tauri/` + config), t
 
 ## Đọc đầu phiên (BẮT BUỘC, theo thứ tự)
 
-1. `.claude/master.md` — nguyên tắc bất biến + roster 9 vai + vòng lặp TaskList loop + phân biệt subagent vs teammate.
+1. `.claude/master.md` — nguyên tắc bất biến + roster 10 vai + vòng lặp TaskList loop + phân biệt subagent vs teammate.
 2. `.claude/teams/playbook.md` — recipe spawn + brief 4 phần + PASS-criteria của glue-packaging.
 3. `.claude/memory/context.md` — trạng thái hiện tại + task đang chạy (cap 10 entry mới nhất).
 4. `.claude/skills/tauri-packaging/SKILL.md` — vỏ Tauri 2 + IPC sidecar: cargo build --release, command+invoke, spawn Python sidecar (tauri.conf.json), offline fallback.

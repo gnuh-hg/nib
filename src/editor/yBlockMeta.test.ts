@@ -1,6 +1,9 @@
-// Real-Y.Doc tests for the blockMeta side-channel (Phase B, Session B.2).
+// Real-Y.Doc tests for the blockMeta side-channel (Phase B free-caret rebuild).
 // No mocks — exercises actual Yjs CRDT semantics (per-field merge, idempotent
 // init) that the editor relies on for cross-device sync.
+//
+// Phase B change: xOffset + lineIndex removed from BlockMetaRecord.
+// Tests updated to use CAS fields (latexContent, color, etc.) instead.
 
 import { describe, it, expect } from 'vitest';
 import * as Y from 'yjs';
@@ -15,15 +18,15 @@ import {
 describe('yBlockMeta — Yjs blockMeta bridge', () => {
   it('patchBlockMeta → getBlockMeta returns the written values (and defaults elsewhere)', () => {
     const doc = new Y.Doc();
-    patchBlockMeta(doc, 'b1', { xOffset: 120, latexContent: 'x^2', isApprox: true });
+    patchBlockMeta(doc, 'b1', { latexContent: 'x^2', color: 'teal', isApprox: true });
 
     const meta = getBlockMeta(doc, 'b1');
-    expect(meta.xOffset).toBe(120);
     expect(meta.latexContent).toBe('x^2');
+    expect(meta.color).toBe('teal');
     expect(meta.isApprox).toBe(true);
     // Unwritten fields fall back to defaults.
-    expect(meta.lineIndex).toBe(DEFAULT_META.lineIndex);
     expect(meta.exactLatex).toBe('');
+    expect(meta.blockState).toBe(DEFAULT_META.blockState);
   });
 
   it('returns DEFAULT_META for an unknown block (R3 race tolerance)', () => {
@@ -40,8 +43,8 @@ describe('yBlockMeta — Yjs blockMeta bridge', () => {
     Y.applyUpdate(docB, Y.encodeStateAsUpdate(docA));
 
     // Concurrent edits on different fields, made offline relative to each other.
-    patchBlockMeta(docA, 'b1', { xOffset: 100 });
-    patchBlockMeta(docB, 'b1', { latexContent: 'a+b' });
+    patchBlockMeta(docA, 'b1', { latexContent: 'x^2' });
+    patchBlockMeta(docB, 'b1', { color: 'blue' });
 
     // Exchange updates both ways.
     Y.applyUpdate(docB, Y.encodeStateAsUpdate(docA));
@@ -49,30 +52,37 @@ describe('yBlockMeta — Yjs blockMeta bridge', () => {
 
     for (const doc of [docA, docB]) {
       const meta = getBlockMeta(doc, 'b1');
-      expect(meta.xOffset).toBe(100);
-      expect(meta.latexContent).toBe('a+b');
+      expect(meta.latexContent).toBe('x^2');
+      expect(meta.color).toBe('blue');
     }
   });
 
   it('initBlockMeta is idempotent — a second call never resets existing values', () => {
     const doc = new Y.Doc();
-    initBlockMeta(doc, 'b1', { xOffset: 50 });
-    patchBlockMeta(doc, 'b1', { xOffset: 999, latexContent: 'kept' });
+    initBlockMeta(doc, 'b1', { latexContent: 'x+1' });
+    patchBlockMeta(doc, 'b1', { latexContent: '2x', color: 'teal' });
 
     // Calling init again must NOT clobber the live values.
-    initBlockMeta(doc, 'b1', { xOffset: 0, latexContent: '' });
+    initBlockMeta(doc, 'b1', { latexContent: '', color: '' });
 
     const meta = getBlockMeta(doc, 'b1');
-    expect(meta.xOffset).toBe(999);
-    expect(meta.latexContent).toBe('kept');
+    expect(meta.latexContent).toBe('2x');
+    expect(meta.color).toBe('teal');
   });
 
   it('deleteBlockMeta removes the entry (falls back to defaults afterwards)', () => {
     const doc = new Y.Doc();
-    patchBlockMeta(doc, 'b1', { xOffset: 77 });
-    expect(getBlockMeta(doc, 'b1').xOffset).toBe(77);
+    patchBlockMeta(doc, 'b1', { latexContent: 'x^2', blockState: 'result-exact' });
+    expect(getBlockMeta(doc, 'b1').latexContent).toBe('x^2');
 
     deleteBlockMeta(doc, 'b1');
     expect(getBlockMeta(doc, 'b1')).toEqual(DEFAULT_META);
+  });
+
+  it('DEFAULT_META has no xOffset or lineIndex fields (Phase B cleanup)', () => {
+    // Cast to unknown first to avoid TS narrowing complaint.
+    const meta = DEFAULT_META as unknown as Record<string, unknown>;
+    expect(meta['xOffset']).toBeUndefined();
+    expect(meta['lineIndex']).toBeUndefined();
   });
 });

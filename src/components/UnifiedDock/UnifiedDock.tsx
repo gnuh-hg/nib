@@ -308,8 +308,9 @@ export function UnifiedDock({
     if (editor && activeBlockId) void evalBlock(editor, ydoc, activeBlockId);
   }, [editor, ydoc, activeBlockId]);
   const onConvert = useCallback(() => {
-    if (editor && activeBlockId) editor.commands.convertNibBlock(activeBlockId);
-  }, [editor, activeBlockId]);
+    // Phase B: convertNibBlock removed from schema. Wired in Phase D.
+    // if (editor && activeBlockId) editor.commands.convertNibBlock(activeBlockId);
+  }, []);
 
   const PenIcon = PEN_ICONS[penTool];
 

@@ -50,10 +50,12 @@ export function createHocuspocusProvider(
   // Callers gate on getHocuspocusUrl(); this is non-null here.
   const url = getHocuspocusUrl() ?? 'ws://localhost:1234';
 
-  // Room name = `${userId}:${docId}`. The server validates this room in
-  // onAuthenticate — comparing `userId` against the Supabase JWT `sub` claim so a
-  // user cannot open another user's room (see ARCHITECTURE.md §E R5).
-  const room = `${userId}:${docId}`;
+  // Room name = `${userId}:${docId}:v2`.
+  // The `:v2` suffix versions the WS room for the free-caret schema (ARCHITECTURE.md §3
+  // rủi ro #1: client v2 MUST NOT merge updates from a v1 server room that still
+  // contains nibBlock XML nodes — wrong schema ⇒ corrupt merge). Phase F sync
+  // testing will verify the server supports v2 room names.
+  const room = `${userId}:${docId}:v2`;
 
   return new HocuspocusProvider({
     url,

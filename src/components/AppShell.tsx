@@ -1,10 +1,12 @@
 import './app-shell.css';
 import { useState } from 'react';
 import { useI18n } from '@/hooks/useI18n';
+import { useSessionExpiredNotice } from '@/hooks/useSessionExpiredNotice';
 import { Workspace } from './Workspace';
 import { LibraryOverlay } from './LibraryOverlay';
 import { SettingsOverlay } from './SettingsOverlay';
 import { LoginModal } from './LoginModal';
+import { IconAlertCircle, IconClose } from './icons';
 import { MOCK_DOCS } from '@/data/mockDocs';
 import { sortDocs, type DocEntry, type SortKey, type ViewMode } from '@/types/doc';
 
@@ -21,6 +23,7 @@ function makeDoc(title: string): DocEntry {
  */
 export function AppShell() {
   const { t } = useI18n();
+  const { expired, dismiss } = useSessionExpiredNotice();
   const [docs, setDocs] = useState<DocEntry[]>(MOCK_DOCS);
   const [activeDocId, setActiveDocId] = useState(MOCK_DOCS[0].id);
 
@@ -149,6 +152,36 @@ export function AppShell() {
       />
 
       <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
+
+      {/* Session-expired notice: an involuntary sign-out (expired/revoked token).
+          Local documents are intact; prompt the user to sign back in to resume sync. */}
+      {expired && (
+        <div className="nib-session-banner" role="alert">
+          <span className="nib-session-banner__icon" aria-hidden="true">
+            <IconAlertCircle width={16} height={16} />
+          </span>
+          <span className="nib-session-banner__text">{t('auth.session_expired')}</span>
+          <button
+            type="button"
+            className="nib-session-banner__action"
+            onClick={() => {
+              dismiss();
+              setLoginOpen(true);
+            }}
+          >
+            {t('account.open_login')}
+          </button>
+          <button
+            type="button"
+            className="nib-session-banner__dismiss"
+            onClick={dismiss}
+            title={t('library.cancel')}
+            aria-label={t('library.cancel')}
+          >
+            <IconClose width={14} height={14} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -118,4 +118,4 @@ Mỗi lần build 1 phase: user trỏ vào phase → dùng `plan-long` dựng `p
 | A — Auth | `plan/accounts-cloud-sync/phase-a-auth/` | 🔄 |
 | B — Sync Engine | `plan/accounts-cloud-sync/phase-b-sync-engine/` | 🔄 |
 | C — Backend Deploy | `plan/accounts-cloud-sync/phase-c-backend-deploy/` | 🔄 |
-| D — UI / Polish | `plan/accounts-cloud-sync/phase-d-ui-polish/` | ⬜ |
+| D — UI / Polish | plan-short inline (2026-06-22) | 🟡 Sign Out + per-user IDB isolation + session-expired notice DONE; **sync-status badge HOÃN** (user 'làm sau') |

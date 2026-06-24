@@ -9,7 +9,7 @@ You are the **research / context-gathering specialist** cho repo `Nib` — app d
 
 ## Đọc đầu phiên (BẮT BUỘC, theo thứ tự)
 
-1. `.claude/master.md` — nguyên tắc bất biến + roster 9 vai + vòng lặp TaskList loop + phân biệt subagent vs teammate.
+1. `.claude/master.md` — nguyên tắc bất biến + roster 10 vai + vòng lặp TaskList loop + phân biệt subagent vs teammate.
 2. `.claude/teams/playbook.md` — khi nào TeamCreate vs Agent one-shot vs lead tự làm + recipe spawn + brief 4 phần + PASS-criteria của researcher.
 3. `.claude/memory/context.md` — trạng thái hiện tại + task đang chạy (cap 10 entry mới nhất).
 4. `.claude/skills/memory/SKILL.md` — cách đọc/ghi memory (format entry, luôn append, cap 10).

@@ -11,11 +11,14 @@ export interface FoundBlock {
   pos: number;
 }
 
-/** Locate a nibBlock by its id attr. */
+/**
+ * Locate a mathInline atom by its id attr (Phase B+ — row-based schema).
+ * Previously searched for 'nibBlock'; now searches 'mathInline' (free-caret rebuild).
+ */
 export function findBlock(editor: Editor, id: string): FoundBlock | null {
   let found: FoundBlock | null = null;
   editor.state.doc.descendants((node, pos) => {
-    if (node.type.name === 'nibBlock' && node.attrs.id === id) {
+    if (node.type.name === 'mathInline' && node.attrs.id === id) {
       found = { node, pos };
       return false;
     }

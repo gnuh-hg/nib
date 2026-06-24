@@ -270,6 +270,40 @@
   font-weight: 600;
 }
 
+.nib-settings-account__hint {
+  margin: -8px 0 0;
+  color: var(--text-muted);
+  font-size: var(--font-size-ui-xs);
+}
+.nib-settings-account__actions {
+  display: flex;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+.nib-settings-account__signout {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+  font-size: var(--font-size-doc-small);
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+.nib-settings-account__signout:hover {
+  border-color: var(--error);
+  color: var(--error);
+}
+.nib-settings-account__signout:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+}
+
 .nib-settings-field {
   display: flex;
   flex-direction: column;
