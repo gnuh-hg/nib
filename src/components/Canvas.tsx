@@ -1,6 +1,5 @@
 import './canvas.css';
 import './blocks.css';
-import '../editor/row-view.css';
 import { type PointerEvent, type RefObject } from 'react';
 import { EditorContent, type Editor } from '@tiptap/react';
 import { useI18n } from '@/hooks/useI18n';

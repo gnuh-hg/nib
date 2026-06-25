@@ -132,16 +132,22 @@ tests/flows/
 ├── README.md                    # Catalog tổng (team-ops sở hữu; tester cập nhật Catalog)
 ├── _TEMPLATE.flow.md            # Template bắt buộc copy khi tạo mới
 ├── <feature-slug>.flow.md       # Flow mỗi tính năng/màn (tester sở hữu)
+├── playwright/
+│   └── <feature-slug>.spec.ts  # Playwright spec — 1 flow = 1 spec, cùng slug với .flow.md
 └── evidence/
-    └── <feature-slug>/          # Screenshot/GIF/console per flow
+    └── <feature-slug>/          # Screenshot/GIF/console per flow (commit; tái dùng làm baseline)
         ├── case-1-happy.png
         ├── case-3-error.gif
         └── console.txt
 ```
 
+> **Artifact tạm (KHÔNG commit):** `test-results/`, `playwright-report/` — đã ghi vào `.gitignore`.
+> **Evidence** (`tests/flows/evidence/<slug>/`) = artifact có chủ đích, **CÓ commit** để làm baseline regression.
+
 | File | Quy ước |
 |---|---|
 | Tên flow | `<feature-slug>.flow.md` — kebab-case tên tính năng; 1 tính năng = 1 file |
+| Playwright spec | `tests/flows/playwright/<feature-slug>.spec.ts` — cùng slug với flow.md tương ứng |
 | Status | `draft` (đang soạn) → `ready` (đủ case) → `executed` (đã chạy có evidence) |
 | Evidence | `tests/flows/evidence/<slug>/` — tên file gợi nhớ case (vd `case-1-happy.png`) |
 | Catalog | Thêm dòng vào bảng README.md khi tạo flow mới; cập nhật "Lần chạy gần nhất" khi executed |

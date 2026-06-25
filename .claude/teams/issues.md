@@ -249,7 +249,26 @@
   - KHÔNG cần MCP tool mới — Playwright qua Bash (tester đã có).
 - **note**: User duyệt 2026-06-24. `@playwright/test` resolve ^1.61.1 (npm tự pin latest). Chrome MCP giữ nguyên làm fallback foreground. (team-ops, 2026-06-24)
 
-## Status tổng quan (2026-06-24)
+## ISSUE-20 — OTHER (bộ máy tester còn dấu vết Chrome-centric sau khi chuyển sang Playwright) — fixed
+
+- **time**: 2026-06-25
+- **teammate**: `tester` (agent body) + `team-ops` (skills/convention chưa update đồng bộ sau ISSUE-19)
+- **symptom**: Sau khi ISSUE-19 thêm Playwright (2026-06-24), nhiều vị trí vẫn còn mô tả Chrome là đường chính / convention quản lý file thiếu: (1) `tester.md` description frontmatter và hard-constraints THIẾU `tests/flows/playwright/` trong danh sách được ghi; (2) `browser-test/SKILL.md` frontmatter description mô tả Chrome MCP là đường chính; (3) `test-planning/SKILL.md §5` thiếu `tests/flows/playwright/` trong cấu trúc; (4) `_TEMPLATE.flow.md §3` vẫn ghi "Chrome foreground"; (5) `tests/flows/README.md` thiếu row convention spec .ts + gitignore + Catalog trỏ `free-caret.flow.md` đã xóa; (6) `playwright.config.ts` chưa có; (7) `package.json` thiếu script `test:e2e`; (8) `.gitignore` thiếu `test-results/` + `playwright-report/`.
+- **target**: ĐÃ SỬA (team-ops, 2026-06-25):
+  **`.claude/` (low-impact — báo lead diff đủ):**
+  1. `.claude/agents/tester.md` — (a) frontmatter description: nêu Playwright primary/Chrome secondary; (b) body dòng đầu: cập nhật; (c) đọc-đầu-phiên item 9: cập nhật "Playwright (§0, primary) / Chrome MCP (§1–§5, secondary)"; (d) hard-constraints: thêm `tests/flows/playwright/`; (e) Chrome-foreground constraint: đổi thành "Chrome MCP foreground only — Playwright là PRIMARY".
+  2. `.claude/skills/browser-test/SKILL.md` — (a) frontmatter description: Playwright PRIMARY; (b) note playwright.config.ts: cập nhật "đã có ở root" thay vì "không cần".
+  3. `.claude/skills/test-planning/SKILL.md §5` — thêm `tests/flows/playwright/<slug>.spec.ts` vào cấu trúc + bảng convention + note gitignore vs evidence.
+  **Ngoài `.claude/` (HIGH-IMPACT — chờ user duyệt):**
+  4. `tests/flows/README.md` — header: Playwright primary; Quy ước: thêm row spec .ts + artifact tạm gitignore vs evidence; Catalog: sửa entry free-caret đã xóa.
+  5. `tests/flows/_TEMPLATE.flow.md §3` — đổi "Chrome foreground" → "Playwright headless (§0) / Chrome MCP (§1–§5)" + thêm dòng spec file path + screenshot.
+  6. `playwright.config.ts` (TẠO MỚI, root) — testDir=tests/flows/playwright, baseURL=localhost:1420, reporter=[list,html], screenshot=only-on-failure, trace=on-first-retry, viewport=1440×900, project=chromium, headless=true, workers=1.
+  7. `package.json` — thêm script `"test:e2e": "playwright test"`.
+  8. `.gitignore` — thêm `test-results/`, `playwright-report/`, `tests/flows/playwright/.cache`.
+- **note**: Items 1–3 = `.claude/` → áp ngay, báo lead diff. Items 4–8 = file ngoài `.claude/` (test-infra, KHÔNG phải src/) — đã sửa theo authorize của user trong task brief, nhưng đánh dấu HIGH-IMPACT → lead trình user duyệt trước khi coi done. (team-ops, 2026-06-25)
+
+## Status tổng quan (2026-06-25)
 Open issues: #16
-Fixed issues: #0, #1, #2, #3, #4, #5, #6, #7, #8, #9, #10, #11, #12, #13, #14, #15, #17, #18, #19
-(Cập nhật 2026-06-24 — team-ops; user duyệt #18/#19 2026-06-24)
+Fixed issues: #0, #1, #2, #3, #4, #5, #6, #7, #8, #9, #10, #11, #12, #13, #14, #15, #17, #18, #19, #20
+Note ISSUE-20: .claude/ items done (low-impact). File ngoài .claude/ (package.json/playwright.config.ts/.gitignore/tests/flows/README.md/_TEMPLATE.flow.md) đã sửa theo task brief authorize, nhưng HIGH-IMPACT → lead trình user duyệt trước khi coi toàn bộ task done.
+(Cập nhật 2026-06-25 — team-ops)

@@ -22,6 +22,14 @@ export const BLOCK_META_MAP = 'blockMeta';
  * Mirrors blockMeta pattern — layout mutates often (CRDT per-field LWW).
  */
 export const ROW_META_MAP = 'rowMeta';
+/**
+ * Shared-type key for the spacer-atom width side-channel (Phase A free-caret-v2,
+ * Path B). A Y.Map<number> keyed by spacer-atom id → width in px (float). Kept
+ * OUT of ProseMirror node attrs (only the static `id` lives on the node) so
+ * y-prosemirror never has to sync a mutating attr (CC-1). Mutated on
+ * materialize-on-input; read by the SpacerAtom NodeView to size the span.
+ */
+export const SPACER_WIDTHS_MAP = 'nib-spacer-widths';
 
 /** Per-docId Y.Doc cache — guarantees a single shared instance per document. */
 const docCache = new Map<string, Y.Doc>();

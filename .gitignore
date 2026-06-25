@@ -23,3 +23,8 @@ npm-debug.log*
 
 # GitNexus index
 .gitnexus/
+
+# Playwright E2E — artifact tạm (KHÔNG commit; evidence có chủ đích vẫn commit tại tests/flows/evidence/)
+test-results/
+playwright-report/
+tests/flows/playwright/.cache

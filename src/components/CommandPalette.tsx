@@ -4,8 +4,6 @@ import { createPortal } from 'react-dom';
 import type { Editor } from '@tiptap/react';
 import { useI18n } from '@/hooks/useI18n';
 import { useTheme } from '@/hooks/useTheme';
-import { useEditorContext } from '@/editor/editor-context';
-import { evalBlock } from '@/editor/blockActions';
 import type { I18nKey } from '@/providers/i18n-context';
 
 interface CommandPaletteProps {
@@ -25,7 +23,6 @@ interface Command {
 export function CommandPalette({ editor, open, onClose }: CommandPaletteProps) {
   const { t, toggleLang } = useI18n();
   const { cycleTheme } = useTheme();
-  const { ydoc, activeBlockId } = useEditorContext();
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
   const [index, setIndex] = useState(0);
@@ -37,7 +34,8 @@ export function CommandPalette({ editor, open, onClose }: CommandPaletteProps) {
         id: 'calc',
         labelKey: 'cmd.calc',
         shortcut: 'Shift+Enter',
-        run: () => activeBlockId && void evalBlock(editor, ydoc, activeBlockId),
+        // TODO rebuild typing: wire calc once the new schema + CAS pipeline exist.
+        run: () => {},
       },
       {
         id: 'convert',
@@ -73,7 +71,7 @@ export function CommandPalette({ editor, open, onClose }: CommandPaletteProps) {
         run: () => {},
       },
     ];
-  }, [editor, ydoc, activeBlockId, cycleTheme, toggleLang]);
+  }, [editor, cycleTheme, toggleLang]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();

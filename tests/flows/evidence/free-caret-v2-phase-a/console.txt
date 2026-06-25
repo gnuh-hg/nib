@@ -1,0 +1,45 @@
+BUG REPORT — Cases 3 & 9 FAIL (2026-06-25)
+=============================================
+
+Symptom: .nib-spacer NOT created after pressing printable key while vcaret is active.
+Paragraph content after 'h' press: "Hi h" (no spacer), vcaret cleared.
+
+Root cause (diagnosed via DOM inspection in debug test):
+
+When setVirtualCaret() dispatches a PM transaction, the vcaret decoration widget is
+added to the paragraph DOM at lineDocPos (= 4 = after "Hi ") with side:1 (after content):
+
+  DOM: Hi <span class="nib-vcaret" style="position:absolute; left:169px;">...</span> ...
+
+The vcaret span has position:absolute and left:169px relative to <p> (position:relative),
+which places it at viewport x = pmLeft + 169 = 388 + 169 = 557 (exactly where we clicked).
+
+When materialize() is later called (inside handleKeyDown for 'h'), it calls:
+  const coords = view.coordsAtPos(lineDocPos);
+  const gap = Math.max(0, virtualXClient - coords.right);
+
+ProseMirror's coordsAtPos(lineDocPos) appears to find the vcaret widget DOM element
+(which is at PM pos=lineDocPos with side:1) and returns its viewport x-position (557+2=559)
+instead of the text content's right edge (407).
+
+This gives: gap = 557 - 559 = -2 → max(0, -2) = 0 < MATERIALIZE_THRESHOLD(4)
+→ NO SPACER created → only 'h' is inserted (at lineDocPos, not after spacer).
+
+Evidence:
+- Text measurements: textRightViewport = 407 (text "Hi " ends at x=407)
+- vcaret-span BoundingRect: x = 557 (at click position)
+- PM selector image: gap = 0 because coordsAtPos returns 559 (span.right) not 407 (text.right)
+
+WARNING logged: "TextSelection endpoint not pointing into a node with inline content (doc)"
+This is from tr.setSelection() when insertPos (= lineDocPos + 'h'.length = 5)
+resolves to paragraph-close position.
+
+Fix needed in src/editor/materializeInput.ts: Do NOT rely on view.coordsAtPos(lineDocPos)
+after the vcaret decoration has been placed at the same position. Instead, either:
+  Option A: clearVirtualCaret before calling coordsAtPos in materialize
+  Option B: store textRight (coordsAtPos at click time) in vcaret state alongside virtualXClient
+  Option C: use Decoration.widget with side:-1 (before pos) so the widget doesn't interfere
+  Option D: compute gap from virtualXClient vs stored "textRightViewport" (pure viewport coords,
+             no PM position involved) — measure text right once in handleClick using Range API
+
+Verdict: FAIL Cases 3, 9. NOT a test design issue. Bug confirmed in app code.

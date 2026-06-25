@@ -79,6 +79,27 @@ Fix: `const server = new Server({port, onRequest, onAuthenticate}); server.liste
 Health W1: `onRequest` hook write `response.end('OK')` rồi `return Promise.reject()` để ngắt hook chain — Hocuspocus catch reject nội bộ, KHÔNG sinh unhandled-rejection log. Không cần E1 fallback httpServer.on('request').
 Confirm: `npx tsc --noEmit` exit 0; ts-node start → `curl localhost:3000/health` = 200 body "OK", log sạch (chỉ banner Hocuspocus v4.3.0).
 
+## 2026-06-24 18:46 — y-prosemirror-allselection-empty-doc-restore
+
+Triệu chứng: console warn "TextSelection endpoint not pointing into inline content" ngay lúc load từ y-prosemirror (không phải app code).
+Root cause: y-prosemirror sync-plugin `_prosemirrorObserver` (khi Yjs/IDB update đến) đọc current PM selection làm `beforeTransactionSelection` (relative pos), sau đó gọi `restoreRelativeSelection`. Nếu selection là TextSelection(anchor=0) trên doc(row*) với pos 0 = doc-root (không phải inline content) → `TextSelection.between(doc.resolve(0), ...)` → throw. Xảy ra khi IDB load async sau khi editor mount với doc rỗng.
+Fix: thêm PM plugin trong YjsSync.addProseMirrorPlugins, dùng `appendTransaction`: nếu doc rỗng (content.size=0) và selection KHÔNG phải AllSelection → set AllSelection. y-prosemirror xử lý AllSelection: `getRelativeSelection` → `{type:'all'}` → `restoreRelativeSelection` → `new AllSelection(tr.doc)` → luôn hợp lệ.
+Bài học: doc(row*) với 0 rows không có inline content ở bất kỳ pos nào. TextSelection.create(doc, 0) hoặc TextSelection.between(doc.resolve(0)) đều throw. Phải dùng AllSelection khi doc rỗng.
+Confirm: tsc 0 · vitest 174/174 · build 0.
+
+## 2026-06-24 19:04 — caret-ref-must-be-set-after-useeditor
+
+Pattern: khi cần pass callback vào CaretNav.configure (bên trong useEditor deps=[xmlFragment]) mà callback cần truy cập editor/ydoc chưa sẵn sàng → dùng ref pattern: `materializeCaretAtRef.current = fn` gán SAU useEditor call (không trước). Stable wrapper `(l,c) => ref.current(l,c)` truyền vào configure. Tương tự ghostKeyHandlerRef trước đó. Nếu gán TRƯỚC useEditor → "Cannot find name 'editor'" / "variable used before declaration".
+Confirm: tsc 0 · vitest 194/194 · build 0.
+
+## 2026-06-24 18:46 — same-line-column-click-synth-spaces
+
+Triệu chứng: row có text → click cột khác cùng dòng (bên phải text-end) → không đặt được caret tại đó (chỉ gõ vào vị trí text cũ).
+Root cause: `classifyClick` trả 'virtual' (= insertRowAtLine) cho CẢ vertical miss (khác dòng) lẫn horizontal miss (cùng dòng, quá phải text-end). Không phân biệt → tạo row mới thay vì synth spaces cùng row.
+Fix: `classifyClick` đổi return type thành `'content' | 'virtual-new-row' | 'virtual-same-row'`. verticalMiss → 'virtual-new-row' (row mới). horizontalMiss (không verticalMiss) → 'virtual-same-row' → synth trailing spaces tại posAtClick.pos + set TextSelection(pos+nSpaces). tr.insertText KHÔNG tự di chuyển cursor → phải thêm tr.setSelection sau insert.
+Bài học: `tr.insertText(text, pos)` KHÔNG tự đặt cursor về sau insertion — phải gọi `tr.setSelection(TextSelection.create(tr.doc, pos + text.length))` riêng.
+Confirm: tsc 0 · vitest 174/174 · build 0.
+
 ## 2026-06-24 13:22 — ghost-park-ime-invalid-selection-must-materialize-on-click
 
 Triệu chứng: IME (tiếng Việt) → ghost caret hiện nhưng ký tự nhảy vào row khác. Console: "TextSelection endpoint not pointing into a node with inline content". 
@@ -126,3 +147,21 @@ Root cause: dev server `npm run dev` chạy lâu + NHIỀU server chồng (1420/
 Fix process: (1) editor-core change → KHÔNG tin HMR; `pkill -f vite` + chạy 1 server SẠCH trước khi gate; (2) runtime fail mà build/test pass → đọc console tìm exception + check `?t=` timestamp module (cũ=stale); (3) instrument console.log đường nghi → reload sạch → đọc log pinpoint thay vì đoán-fix mù.
 Hệ quả: build+unit-test (jsdom) KHÔNG render full editor lifecycle → miss crash runtime → motivated cho tester tự execute browser (Playwright headless, ISSUE-19) bắt runtime trước khi tới lead/user.
 Confirm: server sạch :1420 + IDB xoá → 1 starter row, click trống→gõ "hi"→row "hi" đúng vị trí, ghost cleared. Phase C free-caret PASS.
+
+## 2026-06-25 00:08 — virtual-same-row-trailing-gap-litter (no-litter §9-D)
+
+Triệu chứng: click vào gap giữa/sau text cùng dòng → nhánh 'virtual-same-row' (ghostCaret.handleClickOnPaper) synth `' '.repeat(nSpaces)` để đặt caret tại cột click. Nếu user click chỗ khác / nav away / blur mà KHÔNG gõ ký tự non-space → trailing space synth bị bỏ lại = rác document (vi phạm §9-D no-litter / R1). `cleanupPendingEmptyRow` cũ chỉ trim row RỖNG (textContent===''), KHÔNG trim trailing spaces của row có sẵn text.
+Fix (cơ chế SONG SONG với pendingEmptyRowId — §9 pending = union {emptyRow|trailingGap}):
+1. Pure helper `trailingGapTrimLength(rowText, baseLen)` (ghostCaret.ts, unit-test): tail=rowText.slice(baseLen); nếu tail có non-space → user gõ thật → return 0 (keep); else trả tail.length (trim hết về baseLen). Một nguồn chân lý cho cả cleanup lẫn commit-check.
+2. `handleClickOnPaper` thêm callback optional `onTrailingGapSynth(rowId, baseLen, nSpaces)` — capture `$pos.parent.attrs.id` + `$pos.parent.textContent.length` TRƯỚC khi insert spaces, emit sau dispatch.
+3. Workspace: ref `pendingTrailingGap{rowId,baseLen}`; cleanup (blur + pointerdown + materializeCaretAt) trim `end=pos+1+node.content.size; delete(end-trim,end)` với `addToHistory:false` (KHÔNG undo rác). Transaction handler: tail có non-space → clear pending (commit, giữ nội dung).
+Gotcha: trim theo POSITION từ cuối row (end-trim..end), KHÔNG theo text-offset — spaces synth luôn ở cuối + mỗi space=1 pos → đúng kể cả row có math atom (atom ở trước). baseLen dùng textContent (khớp cleanup đọc textContent).
+Phụ: `CHAR_W` import trong ghostCaret.ts đang dead (dùng magic `SPACE_WIDTH_PX=7`) → tsc TS6133 chặn gate; thay magic bằng `CHAR_W` (đúng §9-A `nSpaces≈round(gap/CHAR_W)`) → tiêu thụ import + bỏ magic number.
+Confirm: tsc 0 · vitest 203/203 (+8 test: trailingGapTrimLength pure 6 + integration synth-report/nav-away-trim/type-real-keep) · build 0.
+
+## 2026-06-25 19:43 — coordsAtPos-returns-widget-coords-not-text-right (free-caret-v2 A.3 gate vàng)
+Triệu chứng (tester Playwright case 3&9 FAIL): click vùng trống x≈200 → gõ → text dính vào text cũ tại x sai, spacer KHÔNG tạo. virtual caret blink hiện đúng chỗ (click→setVirtualCaret OK) nhưng materialize hỏng.
+Root cause: `materialize()` gọi LẠI `view.coordsAtPos(lineDocPos)` để tính `gap = virtualXClient − coords.right`. NHƯNG giữa lúc click và lúc gõ, `Decoration.widget(lineDocPos, ..., {side:1})` (vcaret) ĐÃ render TẠI lineDocPos. ProseMirror `coordsAtPos` ở vị trí có widget trả về coords của WIDGET (≈ click x, vì widget vẽ tại virtualXEditorRelative) thay vì text-right thật → gap = virtualXClient − (≈click x) ≈ 0 < THRESHOLD(4) → bỏ spacer → char insert tại lineDocPos (dính text cũ).
+Fix (Option A — đo 1 lần lúc click, KHÔNG đo lại): capture text-right TẠI handleClick (`coords.right` đã có TRƯỚC khi widget render) → lưu vào `VirtualCaretState.textRightClient` → materialize tính `gap = max(0, virtualXClient − vcState.textRightClient)`, BỎ HẲN coordsAtPos trong materialize. Regression guard: mock `view.coordsAtPos` THROW trong materializeInput.test.ts → test pass = chứng minh không còn gọi.
+Bài học: coordsAtPos/posAtCoords tại pos có Decoration.widget (side:1) bị "nhiễm" coords widget. Khi cần đo hình học của TEXT/CONTENT tại pos sắp/đang có widget → đo TRƯỚC khi widget render và CACHE, đừng đo lại sau. (Tương tự tinh thần "đo trong rAF sau paint" nhưng ngược: đo trước khi widget chen vào.)
+Confirm: tsc 0 · vitest 84/84 (mock coordsAtPos throw guard) · build 0 · grep coordsAtPos materializeInput.ts = 0 call (chỉ comment).

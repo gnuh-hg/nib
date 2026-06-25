@@ -3,6 +3,14 @@
 /** Ruled line height — must equal --ruled-line-height (64px). */
 export const RULE_HEIGHT = 64;
 
+/**
+ * Advance-width of one ASCII space character (px) at the editor's base font
+ * size (~16px Inter).  Used by clipboard serializer to convert pixel indent↔
+ * space count.  The conversion is intentionally lossy (±1 space) because Inter
+ * is proportional; blankBefore (vertical) is exact.
+ */
+export const CHAR_W = 7;
+
 /** Left margin inside the canvas usable area (ruled-paper left gutter, mock = 56px). */
 export const MARGIN_L = 56;
 

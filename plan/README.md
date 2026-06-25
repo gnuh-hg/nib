@@ -70,5 +70,7 @@ Cấm gate cảm tính ("render đẹp", "ổn rồi").
 | `free-caret-rebuild/phase-a-architect` | long-plan (Phase A) | Architect giải 6 rủi ro blocking (R1 CRDT bloat / R2 dual-caret / R3 migration an toàn / R4 insert semantics / R5 arrow-nav 2D / R6 vòng lõi continuity) → ARCHITECTURE.md. 2 session. | ✅ ARCHITECTURE.md gate PASS 2026-06-23 |
 | `free-caret-rebuild/phase-b-schema-migration` | long-plan (Phase B) | Schema + Migration: PM schema row-based (Row/MathInline extensions) + Y.Doc adapt (blockMeta keyed atom-id + NEW rowMeta) + R1 proof + migration module an toàn (4 test case, deleteDatabase NEVER) + WS room v2. 3 session. | ✅ vitest 118/118, R1<1KB, migration PASS 2026-06-23 |
 | `free-caret-rebuild/phase-c-text-cursor` | long-plan (Phase C) | Text Engine + Cursor: RowView thật (blankBefore/indent geometry) + text insert + click-to-position + ghost caret virtual-space + arrow nav 2D (up/down goalX + Tab). MathInline vẫn placeholder. 3 session. | 🔄 |
+| `free-caret-v2` | roadmap | Rebuild đường gõ từ zero (WIPE 2026-06-25) theo Path B "spacer-atom" (virtual-space free-caret). 5 phase: A schema+caret / B nav+edit / C IME+undo / D MathLive inline / E CAS+vòng lõi. | 🔄 |
+| `free-caret-v2/phase-a-schema-caret` | long-plan (Phase A) | SpacerAtom extension + schema NibParagraph update + click→virtual-caret + type→materialize. 3 session. Gate vàng: "click→gõ→text đúng x". | 🔄 |
 
 > Cập nhật bảng này mỗi khi tạo/đóng một plan. Trạng thái: ⬜ chưa bắt đầu · 🔄 đang chạy · ✅ done.

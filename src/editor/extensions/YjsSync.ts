@@ -1,6 +1,7 @@
 import { Extension } from '@tiptap/core';
 import * as Y from 'yjs';
 import { ySyncPlugin, yUndoPlugin } from 'y-prosemirror';
+import { AllSelection, Plugin } from '@tiptap/pm/state';
 
 /**
  * Binds the TipTap document to the Yjs XmlFragment (collaborative sync) and
@@ -37,7 +38,39 @@ export const YjsSync = Extension.create<YjsSyncOptions, YjsSyncStorage>({
     if (!xmlFragment) return []; // not wired yet (B.4→B.5 intermediate)
     const undoManager = new Y.UndoManager(xmlFragment);
     this.storage.undoManager = undoManager;
-    return [ySyncPlugin(xmlFragment), yUndoPlugin({ undoManager })];
+
+    // Ensure AllSelection when the doc is empty so y-prosemirror stores
+    // { type: 'all' } as the "before-transaction" selection instead of
+    // TextSelection at pos 0 (doc-root).
+    //
+    // y-prosemirror sync-plugin restores the selection after applying Yjs
+    // updates (restoreRelativeSelection).  If the stored type is 'text' with
+    // anchor mapped to pos 0 in the new doc, it calls TextSelection.between(
+    //   doc.resolve(0), ...
+    // ) which throws "TextSelection endpoint not pointing into a node with
+    // inline content" because pos 0 in doc(row*) is the doc node, not a row.
+    //
+    // AllSelection.jsonID = 'all'; restoreRelativeSelection('all') → always
+    // uses new AllSelection(tr.doc) which is valid for any doc content.
+    const safeEmptyDocPlugin = new Plugin({
+      appendTransaction(_trs, _oldState, newState) {
+        if (
+          newState.doc.content.size === 0 &&
+          !(newState.selection instanceof AllSelection)
+        ) {
+          try {
+            return newState.tr.setSelection(new AllSelection(newState.doc));
+          } catch { /* defensive: some edge-case schema may reject AllSelection */ }
+        }
+        return null;
+      },
+    });
+
+    return [
+      safeEmptyDocPlugin,
+      ySyncPlugin(xmlFragment),
+      yUndoPlugin({ undoManager }),
+    ];
   },
 
   addKeyboardShortcuts() {

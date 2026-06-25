@@ -34,12 +34,15 @@ last_run: null       # YYYY-MM-DD khi đã executed
 
 ## 3. Các bước thao tác (browser)
 
-> Thực thi bằng skill `browser-test` (Chrome foreground). Đánh số, mỗi bước 1 hành động + quan sát.
+> Thực thi bằng skill `browser-test` — **Playwright headless (PRIMARY, §0)** hoặc Chrome MCP (secondary foreground, §1–§5).
+> Spec Playwright đặt tại `tests/flows/playwright/<feature-slug>.spec.ts` (cùng slug với file này).
+> Đánh số, mỗi bước 1 hành động + quan sát.
 
 1. <navigate tới route> → quan sát <gì>
-2. <computer: click/type ...> → quan sát <gì>
-3. <read_console_messages: kỳ vọng 0 error>
-4. ...
+2. <page.locator / computer: click/type ...> → quan sát <gì>
+3. <kiểm console errors (page.on('console') trong spec / read_console_messages): kỳ vọng 0 error>
+4. <page.screenshot → tests/flows/evidence/<slug>/case-N.png>
+5. ...
 
 ## 4. Kết quả kỳ vọng & evidence
 

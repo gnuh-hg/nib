@@ -1,0 +1,62 @@
+/*
+ * Free-caret-v2 (Path B) — spacer-atom + virtual-caret styling.
+ * ARCHITECTURE.md §A.8. Session A.1 ships the schema-side rules (CC-1 pre-wrap +
+ * the spacer span); the `.nib-vcaret` virtual-cursor rules land in Session A.2.
+ */
+
+/*
+ * CC-1: preserve multiple/leading spaces so materialized whitespace renders at
+ * its true width, and establish a positioning context for the (A.2) virtual
+ * caret widget. min-height keeps an empty line clickable without collapsing.
+ */
+.nib-pm p {
+  white-space: pre-wrap;
+  position: relative;
+  min-height: 1.5em;
+}
+
+/*
+ * The spacer atom: an inline-block leaf whose width is driven by the NodeView
+ * from the Yjs side-channel. pointer-events:none so a click over a spacer falls
+ * through to the paragraph (the caret logic in A.2 measures from coords, not the
+ * span itself).
+ */
+.nib-spacer {
+  display: inline-block;
+  height: 1em;
+  vertical-align: text-bottom;
+  pointer-events: none;
+}
+
+/*
+ * Virtual caret (Session A.2): a blinking 2px bar drawn at the clicked x inside
+ * the line. Positioned absolutely against `.nib-pm p` (position:relative above).
+ * E6: height is capped to (1em + 4px) with top:0 so the caret never grows the
+ * line box and shifts the lines below.
+ */
+.nib-vcaret {
+  position: absolute;
+  top: 0;
+  bottom: auto;
+  height: calc(1em + 4px);
+  width: 2px;
+  background: var(--accent);
+  pointer-events: none;
+  animation: nib-blink 1s step-end infinite;
+}
+
+@keyframes nib-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nib-vcaret {
+    animation: none;
+  }
+}

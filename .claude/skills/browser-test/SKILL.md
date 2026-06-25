@@ -1,6 +1,6 @@
 ---
 name: browser-test
-description: "Thực thi flow test Nib bằng Chrome MCP: lái Chrome foreground, thao tác theo flow file đã ready, thu evidence (screenshot/GIF/console). CẢNH BÁO: foreground-only (ISSUE-8) — background teammate không reach extension."
+description: "Thực thi flow test Nib: Playwright headless PRIMARY (background-safe, Bash) hoặc Chrome MCP SECONDARY (foreground-only, ISSUE-8). Spec file tại tests/flows/playwright/<slug>.spec.ts; evidence tại tests/flows/evidence/<slug>/."
 ---
 
 # browser-test — thực thi flow test bằng Chrome / Playwright
@@ -91,7 +91,7 @@ ls tests/flows/evidence/<slug>/
 ### Cẩn thận với Playwright
 
 - **Dev server PHẢI đang chạy** (`npm run dev` :1420) — Playwright không tự khởi server.
-- **KHÔNG cần `playwright.config.ts`** cho inline test (--project=chromium đủ).
+- **`playwright.config.ts`** ở root repo đã có (testDir=tests/flows/playwright, baseURL=http://localhost:1420). Mode 2 (`tests/flows/playwright/<slug>.spec.ts`) sẽ tự dùng config này. Mode 1 inline dùng `--project=chromium` flag đủ (không cần config).
 - **MathLive web component**: đợi hydrate trước khi click → `page.waitForSelector('math-field')` hoặc `page.waitForLoadState('networkidle')`.
 - **`page.goto` timeout default = 30s** — đủ cho Vite dev server.
 

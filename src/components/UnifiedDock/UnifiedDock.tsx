@@ -4,8 +4,6 @@ import { createPortal } from 'react-dom';
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react';
 import type { Editor } from '@tiptap/react';
 import { useI18n } from '@/hooks/useI18n';
-import { useEditorContext } from '@/editor/editor-context';
-import { evalBlock } from '@/editor/blockActions';
 import {
   IconCursor,
   IconPan,
@@ -117,7 +115,6 @@ export function UnifiedDock({
   onOpenLogin,
 }: UnifiedDockProps) {
   const { t } = useI18n();
-  const { ydoc, activeBlockId } = useEditorContext();
 
   const [mode, setMode] = useState<DockMode>(readMode);
   // Drill-down level — in-memory only, always starts at NAV (S1.1 Q1, not persisted).
@@ -303,14 +300,10 @@ export function UnifiedDock({
     if (tapped) doExpand();
   }, [doExpand]);
 
-  // Editor-affecting actions (Session 2.1). No-op without an active block.
-  const onCalc = useCallback(() => {
-    if (editor && activeBlockId) void evalBlock(editor, ydoc, activeBlockId);
-  }, [editor, ydoc, activeBlockId]);
-  const onConvert = useCallback(() => {
-    // Phase B: convertNibBlock removed from schema. Wired in Phase D.
-    // if (editor && activeBlockId) editor.commands.convertNibBlock(activeBlockId);
-  }, []);
+  // Editor-affecting actions. TODO rebuild typing: wire Calc/Convert once the new
+  // schema + CAS pipeline exist. Stubbed no-ops keep the dock shell intact.
+  const onCalc = useCallback(() => {}, []);
+  const onConvert = useCallback(() => {}, []);
 
   const PenIcon = PEN_ICONS[penTool];
 
