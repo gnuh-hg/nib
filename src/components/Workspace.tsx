@@ -12,8 +12,24 @@ import {
   clearVirtualCaret,
   getVirtualCaret,
   MATERIALIZE_THRESHOLD,
+  INACTIVE,
+  virtualCaretKey,
 } from '@/editor/virtualCaret';
-import { materialize, materializeGap, isPrintableKey } from '@/editor/materializeInput';
+import {
+  materialize,
+  materializeGap,
+  isPrintableKey,
+  findNextSpacer,
+  shrinkOrDeleteSpacer,
+  measureSpaceWidth,
+  insertSpacer,
+} from '@/editor/materializeInput';
+import { TextSelection } from '@tiptap/pm/state';
+import {
+  tryMoveHorizontal,
+  tryMoveVertical,
+  resetGoalX,
+} from '@/editor/arrowNav';
 import { YjsSync } from '@/editor/extensions/YjsSync';
 import '@/editor/spacer.css';
 import {
@@ -118,6 +134,7 @@ function WorkspaceEditor({
           } else if (getVirtualCaret(view.state).active) {
             clearVirtualCaret(view);
           }
+          resetGoalX(); // a click defines a new column → forget the vertical goal
           return false;
         },
         // A printable keypress while the virtual caret is active materializes the
@@ -125,21 +142,120 @@ function WorkspaceEditor({
         // own selection (which would land the char in the wrong place).
         handleKeyDown(view, event) {
           const vc = getVirtualCaret(view.state);
+
+          // Arrow navigation (Session B.2) — handled in BOTH caret states. The
+          // try* helpers branch internally on vc.active; horizontal arrows reset
+          // the vertical goal column, vertical arrows preserve it. Returning the
+          // helper's boolean lets PM fall back to its default when we decline.
+          if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+            resetGoalX();
+            return tryMoveHorizontal(
+              view,
+              vc,
+              event.key === 'ArrowLeft' ? 'left' : 'right',
+            );
+          }
+          if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+            return tryMoveVertical(view, vc, event.key === 'ArrowUp' ? 'up' : 'down');
+          }
+
+          // Tab inserts a 4×space-width spacer (Session B.3) — a DELIBERATE gap,
+          // so (unlike materialize) it does NOT compensate a neighbour. Handled in
+          // BOTH caret states. preventDefault stops the browser/PM focus tab-out.
+          if (event.key === 'Tab') {
+            event.preventDefault();
+            const tabW = 4 * measureSpaceWidth(view);
+            if (vc.active) {
+              // Insert the tab spacer at the gap origin (lineDocPos). Its LEFT edge
+              // renders at lineDocPos's x — captured as textRightClient (the line's
+              // content right). A free-gap click does NOT materialize its offset
+              // (model: space only materializes on input), so the caret lands at
+              // the spacer's RIGHT edge = textRightClient + tabW, NOT the old click
+              // x. State shape mirrors B.2 enterSpacerFromRight (lineDocPos = left
+              // boundary, virtualX = right edge, textRight = left edge).
+              const { tr } = insertSpacer(
+                view.state.tr,
+                view.state.schema,
+                spacerWidthMap,
+                vc.lineDocPos,
+                tabW,
+              );
+              const viewLeft = view.dom.getBoundingClientRect().left;
+              const caretX = vc.textRightClient + tabW;
+              view.dispatch(
+                tr.setMeta(virtualCaretKey, {
+                  active: true,
+                  lineDocPos: vc.lineDocPos,
+                  virtualXClient: caretX,
+                  virtualXEditorRelative: caretX - viewLeft,
+                  textRightClient: vc.textRightClient,
+                }),
+              );
+              return true;
+            }
+            // Plain PM cursor (not in a gap): insert at the cursor, land after it.
+            const pos = view.state.selection.from;
+            const { tr } = insertSpacer(
+              view.state.tr,
+              view.state.schema,
+              spacerWidthMap,
+              pos,
+              tabW,
+            );
+            view.dispatch(tr.setSelection(TextSelection.near(tr.doc.resolve(pos + 1))));
+            return true;
+          }
+          // Delete at a text↔spacer boundary is left to ProseMirror's default
+          // forward-delete: a cursor immediately before a spacer_atom removes the
+          // whole atom in ONE press → the two text runs merge (confirmed by the
+          // B.3 Delete probe: count 1→0, "AA"+spacer+"BB" → "AABB"). Adding code
+          // here would only diverge from the proven-correct default.
+
           if (!vc.active) return false;
           if (event.key === 'Escape') {
             clearVirtualCaret(view);
             return true;
           }
+          // Backspace inside a gap (Session B.1, merge-side of the add-char/merge
+          // law): shrink the spacer to the caret's right by one space-width — or
+          // delete it (merge) when that empties it — and step the caret left by
+          // the same amount. No real text to delete here; the gap IS the spacer.
+          if (event.key === 'Backspace') {
+            const spacer = findNextSpacer(view.state.doc, vc.lineDocPos);
+            if (!spacer) {
+              clearVirtualCaret(view);
+              return true;
+            }
+            const spaceW = measureSpaceWidth(view);
+            const oldWidth = spacerWidthMap.get(spacer.id) ?? 0;
+            const newWidth = oldWidth - spaceW;
+            let tr = view.state.tr;
+            tr = shrinkOrDeleteSpacer(
+              tr,
+              spacerWidthMap,
+              spacer.pos,
+              spacer.nodeSize,
+              spacer.id,
+              spaceW,
+            );
+            tr =
+              newWidth > 0
+                ? tr.setMeta(virtualCaretKey, {
+                    ...vc,
+                    virtualXClient: vc.virtualXClient - spaceW,
+                    virtualXEditorRelative: vc.virtualXEditorRelative - spaceW,
+                  })
+                : tr.setMeta(virtualCaretKey, INACTIVE);
+            view.dispatch(tr);
+            return true;
+          }
           if (isPrintableKey(event)) {
+            resetGoalX(); // typing breaks the vertical goal column
             materialize(view, spacerWidthMap, vc, event.key);
             return true;
           }
-          // Phase A: arrows / Enter / Tab just dismiss the caret (real nav = Phase B).
-          if (
-            ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Enter', 'Tab'].includes(
-              event.key,
-            )
-          ) {
+          // Enter still dismisses the caret (Tab handled above, Session B.3).
+          if (event.key === 'Enter') {
             clearVirtualCaret(view);
           }
           return false;

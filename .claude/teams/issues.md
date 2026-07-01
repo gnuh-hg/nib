@@ -267,8 +267,140 @@
   8. `.gitignore` — thêm `test-results/`, `playwright-report/`, `tests/flows/playwright/.cache`.
 - **note**: Items 1–3 = `.claude/` → áp ngay, báo lead diff. Items 4–8 = file ngoài `.claude/` (test-infra, KHÔNG phải src/) — đã sửa theo authorize của user trong task brief, nhưng đánh dấu HIGH-IMPACT → lead trình user duyệt trước khi coi done. (team-ops, 2026-06-25)
 
-## Status tổng quan (2026-06-25)
+## ISSUE-21 — SCOPE/GATE (tester test THỪA baseline — lead không truyền changeset) — fixed
+
+- **time**: 2026-06-30
+- **teammate**: `team-lead` (brief gap) + `tester` (skill ép phủ tất cả) + `test-planning` skill
+- **symptom**: User báo: thay đổi **logic thuần** (vd caret insertion) nhưng tester vẫn test cả **theme light/dark** và **i18n anh/việt** — những phần KHÔNG liên quan đến thay đổi. Test thừa, lãng phí.
+- **root cause kép**:
+  1. **Brief tester thiếu "đã sửa gì"**: `playbook.md §3` per-role brief tester = "feature slug + trigger + tiền điều kiện" — KHÔNG có changeset (file đã sửa / hành vi đã đổi / acceptance criterion nguyên văn user). → tester plan từ số 0, phủ toàn bộ tính năng thay vì bám đúng vùng đã đổi. Lead không setup truyền "đã sửa những gì" cho tester.
+  2. **Skill ép phủ 9 dòng cho MỌI flow**: `test-planning/SKILL.md §3` + `_TEMPLATE.flow.md §2` ép đủ 6 nhóm + 3 nền LOCKED với "Thiết bị KHÔNG BAO GIỜ N/A", "i18n/theme N/A chỉ khi màn không text/màu" → tester buộc bịa case theme/i18n kể cả khi thay đổi không chạm text/màu/layout.
+- **target**:
+  - **PHẦN LOW-IMPACT (ĐÃ ÁP, team-ops, 2026-06-30):** `.claude/skills/test-planning/SKILL.md §3` đổi "BẮT BUỘC, không N/A tùy tiện" → **scope-driven relevance gate**: heading mới "scope-driven relevance gate"; note mới 3 nền chỉ test khi changeset CHẠM (i18n→đổi chuỗi; theme→đổi màu/CSS; thiết bị→đổi layout); logic thuần → `N/A — changeset không chạm <X>` hợp lệ. `.claude/agents/tester.md` Pha 1 step 3: cập nhật 3 nền scope-driven + phân hoạch tương đương; anti-pattern: thêm "Test theme/i18n khi changeset không chạm".
+  - **PHẦN HIGH-IMPACT (ĐÃ ÁP, team-ops, 2026-06-30 — user duyệt 2026-06-30):** `playbook.md §3` per-role brief `tester` — thêm **changeset block** (file/symbol đã sửa + hành vi đã đổi + acceptance nguyên văn) + scope-driven STOP pha plan. `master.md §7` Luồng spawn — bước 1 changeset block bắt buộc + block "Khi nghi ngờ verdict PASS" (ISSUE-24 combined). Grep verify: `grep "changeset" master.md` ≥2, `grep "changeset" playbook.md` ≥1.
+- **note**: Toàn bộ đã áp. LOW-IMPACT (skill/agent) 2026-06-30. HIGH-IMPACT (master/playbook) — user duyệt 2026-06-30 → áp Task #12. (team-ops, 2026-06-30)
+
+## ISSUE-22 — GATE (tester thiếu case — không phân hoạch tương đương/boundary/tổ hợp) — fixed
+
+- **time**: 2026-06-30
+- **teammate**: `tester` + `test-planning` skill (thiếu phương pháp enumerate)
+- **symptom**: User: hành vi "chèn ký tự ở vị trí bất kỳ trên cùng 1 dòng" — tester CHỈ test: thêm đầu, thêm giữa. **BỎ**: thêm cuối, thêm-2-bên-rồi-giữa, chèn liên tiếp, chèn sau undo… "tester làm thiếu rất nhiều".
+- **root cause**: `test-planning/SKILL.md §3` chỉ phân loại theo **NHÓM** (happy/edge/error/boundary/empty/concurrent) — đây là phân loại HÀNG DỌC. KHÔNG có phương pháp enumerate HÀNG NGANG bên TRONG hành vi đang test: **phân hoạch lớp tương đương** (vị trí: đầu/giữa/cuối/biên-trái/biên-phải), **boundary-value**, **tổ hợp chuỗi thao tác** (chèn A→chèn B vị trí khác→chèn C giữa). Skill ghi "Happy: ít nhất 1 case" → tester làm 1 case happy rồi dừng.
+- **target**: **ĐÃ SỬA (team-ops, 2026-06-30):**
+  1. `.claude/skills/test-planning/SKILL.md` — thêm section **"## 3b. Phân hoạch case TRONG 1 hành vi (equivalence + boundary + tổ hợp)"** sau §3: (A) phân hoạch lớp tương đương + worked example "chèn vị trí bất kỳ" → 5 lớp (đầu/giữa/cuối/giữa-2-đoạn/dòng-trống); (B) boundary-value (pos=0/len/len-1, 1 ký tự, rỗng); (C) tổ hợp chuỗi thao tác ≥2 thao tác; red-flag checklist "acceptance có 'bất kỳ' → BẮT BUỘC phân hoạch". Cập nhật §1 step 4 trỏ §3b; Quick reference ghi equivalence pattern.
+  2. `.claude/agents/tester.md` — Pha 1 step 3: thêm phân hoạch tương đương; anti-pattern: thêm 2 row mới (test theme/i18n khi không chạm + liệt 1–2 case cho "bất kỳ").
+- **note**: KHÔNG high-impact → áp ngay. (team-ops, 2026-06-30)
+
+## ISSUE-23 — GATE (false-PASS — gate "exit 0" không map acceptance thật) — fixed (phần LOW-IMPACT); phần HIGH-IMPACT chờ duyệt
+
+- **time**: 2026-06-30
+- **teammate**: `tester` (gate) + `team-lead` (gate handoff)
+- **symptom**: User: tester báo "PASS full" (vd `free-caret-v2-phase-a.flow.md` PASS 12/12 exit 0) nhưng user test tay TRỰC TIẾP lại lỗi. "không hiểu tại sao thông báo pass full nhưng vào test lại lỗi".
+- **root cause**: Gate idiom tester = "`npx playwright test` exit 0 + screenshot tồn tại = PASS" (`tester.md` Gate table + §Pha2). Nhưng exit 0 chỉ chứng minh **các assertion ĐÃ VIẾT** pass — KHÔNG chứng minh **acceptance thật của user** đúng. Case test x cố định (250px/580px) trong khi acceptance = "vị trí BẤT KỲ" → xanh ở 2 điểm nhưng bỏ điểm lỗi. Coverage thiếu (ISSUE-22) → green test ≠ hành vi đúng. Playwright headless còn không mô phỏng IME (Case 10 N/A) → đường gõ thật khác.
+- **target**:
+  - **PHẦN LOW-IMPACT (ĐÃ ÁP, team-ops, 2026-06-30):**
+    - `.claude/agents/tester.md` Gate table: cập nhật PASS = exit 0 **VÀ** case phủ đủ lớp tương đương **VÀ** verdict ghi rõ acceptance nguyên văn được case nào chứng minh; cấm "PASS full" thiếu coverage; ghi giới hạn Playwright headless (không IME → N/A + cần user-smoke).
+    - `.claude/skills/build-verify/SKILL.md` — thêm **Stack 6 "E2E tester Gate Playwright"**: bảng 3 row (Execute/Coverage/Verdict) + cảnh báo Playwright headless không IME.
+  - **PHẦN HIGH-IMPACT (chưa áp):** Nếu cần cứng hoá thêm trong build-verify §0 hoặc master → chờ user duyệt.
+- **note**: Phần tester.md + build-verify Stack 6 đã áp (low-impact). (team-ops, 2026-06-30)
+
+## ISSUE-24 — OTHER (lead tự test thay vì đọc evidence tester đã lưu) — fixed
+
+- **time**: 2026-06-30
+- **teammate**: `team-lead`
+- **symptom**: User: khi lead nhận thông báo từ tester và user bảo "không ổn", thay vì **xem tester đã test cái gì** (có folder `tests/flows/` + `evidence/` lưu sẵn), lead lại **trực tiếp tự vào test**. Vừa lead-DIY, vừa bỏ qua artifact đã có.
+- **root cause**: `master.md §7` + `playbook.md` (tester section) KHÔNG có quy trình xử lý **verdict tranh chấp**: khi user/ lead nghi ngờ một PASS của tester, bước ĐẦU TIÊN phải là đọc `tests/flows/<slug>.flow.md` (danh sách case đã liệt) + `tests/flows/evidence/<slug>/` (đã chụp gì) để tìm **lỗ hổng coverage** → giao tester MỞ RỘNG case, KHÔNG phải lead tự lái browser test bằng tay.
+- **target**: **ĐÃ ÁP (team-ops, 2026-06-30 — user duyệt 2026-06-30):** `master.md §7` — thêm block "Khi user/lead nghi ngờ verdict PASS (ISSUE-24): đọc flow.md → đọc evidence → giao tester mở rộng case → lead KHÔNG tự lái browser". `playbook.md §11` — thêm anti-pattern Lead **#19** "Tranh chấp PASS tester → lead tự lái browser thay vì đọc evidence".
+- **note**: HIGH-IMPACT (master/playbook) — user duyệt 2026-06-30 → áp Task #12. (team-ops, 2026-06-30)
+
+## ISSUE-25 — OTHER (cấu trúc tests/ — mọi thứ nhét trong tests/flows/) — fixed
+
+- **time**: 2026-06-30
+- **teammate**: `team-ops` (convention IA) — root cause = layout do ISSUE-17/20 dựng
+- **symptom**: User: "cấu trúc quản lý folder tests/ và test-results/ — với folder tests bạn nhét hết các file vào folder tests/flows/ và readme/template cũng ủng hộ nó". Hiện `tests/flows/` chứa: flow `.md` + `playwright/<slug>.spec.ts` + `evidence/<slug>/` + README + template — nhưng spec và evidence KHÔNG phải "flow"; gộp hết dưới "flows" là IA sai.
+- **target**: **ĐÃ ÁP Phương án A (team-ops, 2026-06-30 — user chốt A 2026-06-30):**
+  - `git mv tests/flows/playwright/*.spec.ts → tests/e2e/` + `git mv tests/flows/evidence/ → tests/evidence/` (history giữ nguyên).
+  - `playwright.config.ts` testDir đổi `./tests/flows/playwright` → `./tests/e2e`.
+  - `tests/flows/README.md` — cập nhật header cấu trúc 3-thư-mục + bảng quy ước paths mới.
+  - `tests/flows/_TEMPLATE.flow.md §3,§4` — đổi spec path `tests/e2e/<slug>.spec.ts` + evidence `tests/evidence/<slug>/`.
+  - `.claude/skills/test-planning/SKILL.md §5` — cấu trúc mới + bảng convention cập nhật.
+  - `.claude/agents/tester.md` — description + body dòng đầu + Pha 2 path + hard-constraints.
+  - `.claude/skills/browser-test/SKILL.md §0` — Mode 2 path + evidence template + config note.
+  - Verify: `grep -rn "flows/playwright\|flows/evidence" tests/ .claude/agents/ .claude/skills/ playwright.config.ts` = **0 match** (exit 1). `npx playwright test --list` = 12 tests OK.
+- **note**: User chốt Phương án A 2026-06-30. file moves + config + skill/agent đã áp Task #12. Hits trong issues.md/context.md = historical records (append-only, không sửa). (team-ops, 2026-06-30)
+
+## ISSUE-26 — OTHER (mở peer-DM có cấu trúc — quyết định WHAT của user, đảo nguyên tắc cấm cũ) — fixed
+
+- **time**: 2026-07-01
+- **teammate**: — (user + lead chốt Q1: mở peer-DM có cấu trúc, đảo playbook anti-pattern #12 cũ "cấm mọi peer-DM")
+- **symptom**: Không phải lỗi phối hợp — đây là thay đổi WHAT do user quyết: teammate cần tận dụng sức mạnh team (nói chuyện trực tiếp để consult/clarify) thay vì chỉ báo lead như subagent thuần.
+- **target**: **ĐÃ SOẠN, chờ user duyệt** (team-ops, 2026-07-01):
+  1. `.claude/master.md` §1 nguyên tắc #2 — thêm đoạn "Peer-DM CÓ CẤU TRÚC (whitelist hẹp)" tóm tắt 5 rule bất biến + trỏ `playbook.md §4`.
+  2. `.claude/teams/playbook.md §4` "SendMessage protocol" — thay bullet "KHÔNG peer-DM" bằng bảng whitelist 5 cặp vai (architect↔researcher / implementer↔architect / implementer↔implementer contract xuyên stack / team-ops↔researcher / tester↔implementer) + 5 rule giữ trật tự (lead sở hữu TaskList+gate; visibility bắt buộc tóm tắt vào report; chỉ consult/clarify không tranh luận thiết kế; deliverable luôn về lead; ngoài whitelist = SCOPE).
+  3. `.claude/teams/playbook.md` spawn-prompt-template (§2, dòng "Chờ task kế... KHÔNG peer-DM teammate khác") — sửa thành trỏ whitelist §4.
+  4. `.claude/teams/playbook.md §11` anti-pattern Teammate #12 — viết lại từ "cấm mọi peer-DM" → "peer-DM NGOÀI whitelist / dùng để handoff deliverable / giấu nội dung khỏi lead = SAI (issue SCOPE)".
+- **note**: **User duyệt 2026-07-01** (qua team-lead, cụm A) → coi done. Không cần revert. (team-ops, 2026-07-01)
+
+## ISSUE-27 — LEAD-DIY/OTHER (thiếu skill dispatch cho lead + lead lặp quên gọi tester — Q2 user chốt) — fixed
+
+- **time**: 2026-07-01
+- **teammate**: `team-lead` (lặp quên gọi tester giữa các session — root cause: chưa có skill/checklist dispatch riêng cho lead; skill routing thuộc LEAD theo user chốt Q2, không phải planner)
+- **symptom**: Không có công cụ nào giúp lead vẽ nhanh "request → chain vai → gate → khi nào tester" trước khi spawn; hệ quả từng ghi nhận lead nhiều lần kết thúc LOOP mà quên spawn `tester` dù feature đã testable.
+- **target**: **ĐÃ ÁP (low-impact) + ĐÃ SOẠN chờ duyệt (high-impact)** (team-ops, 2026-07-01):
+  1. **TẠO MỚI** `.claude/skills/orchestration-routing/SKILL.md` — skill riêng cho LEAD: bảng map loại-request→chain vai→gate→tester (rút gọn từ `master.md §4`), checklist DONE bắt buộc (dòng nhớ "testable → đã gọi tester chưa?"), ranh giới rõ với `planner` (WHAT khác DISPATCH), nhắc peer-DM + PLAN-GATE như công cụ điều phối. (Low-impact — file skill mới, không phải master/playbook/settings → áp ngay.)
+  2. **ĐÃ SOẠN, chờ user duyệt** — `.claude/master.md` §3 (pointer tới skill trước khi spawn) + §7 (block "Checklist DONE bắt buộc trước khi kết thúc LOOP") + §8 (thêm row trỏ skill mới vào bảng tài liệu).
+  3. **ĐÃ SOẠN, chờ user duyệt** — `.claude/teams/playbook.md §11` — thêm anti-pattern Lead **#20** "Kết thúc LOOP mà chưa cân nhắc tester".
+- **note**: **User duyệt 2026-07-01** (qua team-lead, cụm B — routing-skill wiring + anti-pattern Lead #20 + checklist tester) → coi done. Skill + pointer trong master/playbook giữ nguyên. (team-ops, 2026-07-01)
+
+## ISSUE-28 — OTHER (thêm hook SessionEnd gitnexus + nguồn Claude Code docs cho researcher) — fixed
+
+- **time**: 2026-07-01
+- **teammate**: — (cải tiến chủ động theo yêu cầu user)
+- **symptom**: Không phải lỗi phối hợp — bổ sung có chủ đích: (a) tự động re-index GitNexus cuối phiên qua hook `SessionEnd`; (b) researcher thiếu nguồn `https://code.claude.com/docs/en` khi câu hỏi liên quan Claude Code/Agent Teams/hooks/MCP.
+- **verify flag gitnexus (BẮT BUỘC trước khi encode)**: chạy `npx gitnexus analyze --help` → xác nhận **`--skip-gitgit` là TYPO** (không tồn tại flag đó). Flag đúng = **`--skip-git`** ("Treat the provided path/cwd as the index root and skip parent git-root discovery"). Đã dùng `--skip-git` trong hook.
+- **target**:
+  1. **`.claude/settings.json` — ĐÃ SOẠN, chờ user duyệt (HIGH-IMPACT)**: thêm block:
+     ```json
+     "hooks": {
+       "SessionEnd": [
+         { "hooks": [ { "type": "command", "command": "npx gitnexus analyze --skip-git", "timeout": 300 } ] }
+       ]
+     }
+     ```
+     (SessionEnd không hỗ trợ `matcher` → không thêm field đó.) JSON verify: `python3 -c "import json; json.load(open('.claude/settings.json'))"` → **exit 0, PASS**.
+  2. **`.claude/agents/researcher.md` — ĐÃ ÁP (low-impact)**: bước 3 "Tra docs kỹ thuật" — thêm câu "Câu hỏi về Claude Code / Agent Teams / hooks / MCP → dùng `https://code.claude.com/docs/en` làm nguồn chính thức."
+- **note**: **User duyệt 2026-07-01** (qua team-lead, cụm C — hook SessionEnd `--skip-git` + source researcher) → coi done. settings.json giữ nguyên block `hooks` đã Edit. (team-ops, 2026-07-01)
+
+## ISSUE-29 — OTHER (tmux layout §8 tái phát — join-pane hard-code index dễ vỡ, đơn giản hoá) — fixed
+
+- **time**: 2026-07-01
+- **teammate**: `team-lead` (triệu chứng: "không gian usable co lại / lỗi kể cả khi không cần cập nhật vẫn lỗi" — nối tiếp ISSUE-2/6/11/18)
+- **symptom**: Bản layout §8 cũ (N=4/5/6) dùng `tmux join-pane -h -s :.3 -t :.2 && join-pane -h -s :.5 -t :.4 [&& resize-pane -t :.6 -y 18]` để dựng grid 2×2 / 2+2+1 thủ công — các lệnh này **tham chiếu pane index hard-code**. Khi spawn order lệch hoặc pane đã đóng, index sai → lệnh fail/ghép sai pane → không gian bị bóp méo.
+- **target — ĐÃ ÁP (team-ops, 2026-07-01), USER DUYỆT (qua team-lead, 2026-07-01)**: `.claude/teams/playbook.md §8` — bỏ hẳn `join-pane`/`resize-pane` hard-code index cho mọi N. Thay bằng: N=2,3 → `tmux set-window-option main-pane-width 65% && tmux select-layout main-vertical`; N≥4 → `tmux select-layout tiled` (built-in tự chia đều, không cần biết index pane). Re-apply helper: kill-zombie (`pane_dead=1`) trước khi đếm N, ngưỡng N≤3→main-vertical / N≥4→tiled. `.claude/teams/playbook.md §2` recipe bước 2 cập nhật khớp ngưỡng mới.
+- **lịch sử rework (giữ lại để tránh lặp nhầm hướng)**: team-ops từng thử REWORK 2 (bỏ hẳn nhánh `tiled`, ép `main-vertical 65%` cho MỌI N kể cả N≥4) dựa trên chẩn đoán lead "pane lead 64 cột = bug squeeze". **Lead sau đó rút lại**: pane 64 cột lúc đó là **user CỐ TÌNH thu nhỏ** để quan sát, KHÔNG phải bug. Chẩn đoán gốc (join-pane hard-code index vỡ khi spawn lệch/zombie) mới là root cause thật, đúng như bản đã áp lần đầu. → **ĐÃ REVERT về đúng bản N≤3 main-vertical/N≥4 tiled này** (bỏ toàn bộ nội dung REWORK 2), KHÔNG áp "main-vertical cho mọi N".
+- **REWORK 3 (FINAL — team-lead, 2026-07-01, user duyệt)**: user làm rõ yêu cầu thật — lead phải là **cột trái HẸP 25-30%** (đúng pane 64 cột user cố tình đặt, KHÔNG phải bug), phần phải là **lưới grid**, và **BỎ cap "≤4 teammate"** (chưa ai yêu cầu). tmux không có built-in "lead-trái + grid-phải" → viết `.claude/scripts/tmux-grid-layout.sh`: tính layout-string từ pane thật + kích thước window (0 hardcode index), lead trái 30% full cao, teammate lưới `ceil(√M)`×`ceil(M/cols)`, tự dọn zombie, idempotent, **no cap**. Đo thật N=3..10 PASS (lead luôn 64×75; grid 2×1/2×2/3×2/3×3). `playbook.md §8` viết lại + `§2` bước 2 trỏ script. Bỏ hẳn nhánh main-vertical/tiled của bản trước.
+- **note**: FINAL = grid script (lead 30% trái + teammate grid phải, no cap). Bản "N≤3 main-vertical/N≥4 tiled" đã bị thay. Done. (team-lead, 2026-07-01)
+
+## Status tổng quan (2026-06-30, Task #12)
 Open issues: #16
-Fixed issues: #0, #1, #2, #3, #4, #5, #6, #7, #8, #9, #10, #11, #12, #13, #14, #15, #17, #18, #19, #20
-Note ISSUE-20: .claude/ items done (low-impact). File ngoài .claude/ (package.json/playwright.config.ts/.gitignore/tests/flows/README.md/_TEMPLATE.flow.md) đã sửa theo task brief authorize, nhưng HIGH-IMPACT → lead trình user duyệt trước khi coi toàn bộ task done.
-(Cập nhật 2026-06-25 — team-ops)
+Fixed issues: #0–#15, #17–#25 (tất cả đã áp)
+Note ISSUE-21: TOÀN BỘ fixed — low-impact (skill/agent) Task #11 + high-impact (master/playbook changeset block) Task #12 (user duyệt 2026-06-30).
+Note ISSUE-23: tester.md + build-verify Stack 6 fixed. HIGH-IMPACT thêm cứng hoá không cần thiết thêm.
+Note ISSUE-24: fixed — master.md §7 block + playbook.md §11 anti-pattern #19 (user duyệt 2026-06-30).
+Note ISSUE-25: fixed Phương án A — tests/e2e/ + tests/evidence/ tách hẳn khỏi tests/flows/. Playwright --list: 12/12 OK.
+(Cập nhật 2026-06-30 — team-ops Task #12)
+
+## ISSUE-30 — OTHER (peer-DM whitelist chỉ nằm ở playbook/master trung tâm — chưa wire xuống agent body) — fixed
+
+- **time**: 2026-07-01
+- **teammate**: — (follow-up trực tiếp từ Task #5 do lead giao, tiếp nối ISSUE-26)
+- **symptom**: ISSUE-26 đã mở peer-DM whitelist ở `master.md`/`playbook.md §4`, nhưng từng agent body `.claude/agents/*.md` chưa có mục riêng liệt kê kênh peer-DM của chính vai đó — teammate phải tự suy ra từ playbook trung tâm.
+- **target — ĐÃ ÁP (team-ops, 2026-07-01)**: thêm mục "## Peer-DM (whitelist theo vai)" vào cả 10 file `.claude/agents/*.md`, ngay trước "## Hard constraints":
+  - `architect.md` — ↔ researcher, ↔ implementer bất kỳ.
+  - `researcher.md` — ↔ architect, ↔ team-ops.
+  - `editor-frontend.md` / `backend-cas.md` / `handwriting.md` / `glue-packaging.md` — ↔ architect, ↔ implementer khác (contract xuyên stack), ↔ tester.
+  - `tester.md` — ↔ implementer bất kỳ.
+  - `team-ops.md` — ↔ researcher.
+  - `planner.md`, `design.md` — "KHÔNG có kênh peer-DM; mọi giao tiếp qua lead".
+  Mỗi mục kèm rule: chỉ consult/clarify (không handoff deliverable/giao-duyệt task), tóm tắt câu trả lời peer vào report lead (visibility), ngoài whitelist = issue `SCOPE`. Verify: `grep -l "Peer-DM" .claude/agents/*.md` → đủ 10 file; `git status` chỉ đổi 10 file trong `.claude/agents/` cho task này.
+- **note**: LOW-IMPACT (chỉ agent body, không đụng master/playbook/settings) → không cần user duyệt riêng, chỉ báo lead diff. Done (team-ops, 2026-07-01).

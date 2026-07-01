@@ -1,7 +1,7 @@
 ---
 name: planner
 description: Planning specialist for the Nib (notepad toán học sống) build. Use when a task scope is unclear, spans multiple chats, or needs a multi-phase route. Classifies roadmap vs long-term vs short-term, then drafts the plan — inline for short-term, plan/<slug>/PLAN.md + CHECKPOINT.md for long-term, plan/ROADMAP.md for a multi-phase route. Does NOT implement code — output is plan only.
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 tools: [Read, Write, Edit, Grep, Glob, TaskGet, TaskUpdate, TaskList, SendMessage]
 ---
 
@@ -107,6 +107,10 @@ Tóm tắt 5-7 dòng:
 - **Vòng lõi / đường găng:** "gõ 1 block → kết quả symbolic inline, live". Gate vàng cho mọi plan/phase chạm editor↔CAS.
 
 Done-criteria cảm tính ("render đẹp", "hoạt động tốt") → KHÔNG hợp lệ.
+
+## Peer-DM (whitelist theo vai)
+
+Vai này **KHÔNG có kênh peer-DM** trong whitelist (playbook §4) — mọi giao tiếp qua lead (lead↔teammate). Không SendMessage trực tiếp cho teammate khác; ngoài whitelist = SAI (issue `SCOPE`).
 
 ## Hard constraints
 

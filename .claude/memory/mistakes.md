@@ -165,3 +165,9 @@ Root cause: `materialize()` gọi LẠI `view.coordsAtPos(lineDocPos)` để tí
 Fix (Option A — đo 1 lần lúc click, KHÔNG đo lại): capture text-right TẠI handleClick (`coords.right` đã có TRƯỚC khi widget render) → lưu vào `VirtualCaretState.textRightClient` → materialize tính `gap = max(0, virtualXClient − vcState.textRightClient)`, BỎ HẲN coordsAtPos trong materialize. Regression guard: mock `view.coordsAtPos` THROW trong materializeInput.test.ts → test pass = chứng minh không còn gọi.
 Bài học: coordsAtPos/posAtCoords tại pos có Decoration.widget (side:1) bị "nhiễm" coords widget. Khi cần đo hình học của TEXT/CONTENT tại pos sắp/đang có widget → đo TRƯỚC khi widget render và CACHE, đừng đo lại sau. (Tương tự tinh thần "đo trong rAF sau paint" nhưng ngược: đo trước khi widget chen vào.)
 Confirm: tsc 0 · vitest 84/84 (mock coordsAtPos throw guard) · build 0 · grep coordsAtPos materializeInput.ts = 0 call (chỉ comment).
+
+## 2026-06-30 22:32 — vcaret-decoration-key-reuse-stale
+Build: `src/editor/virtualCaret.ts` — arrow-nav (B.2) di chuyển vcaret TRONG cùng gap (cùng lineDocPos, chỉ đổi virtualXEditorRelative) nhưng widget KHÔNG dịch — `left` style đứng yên (đo: ArrowRight L0=181→L1=181, +0px).
+Nguyên nhân: `Decoration.widget(..., {key:'nib-vcaret'})` key CỐ ĐỊNH → ProseMirror cache DOM theo key, KHÔNG chạy lại render closure khi key không đổi → `span.style.left` stale. Phase A không lộ vì vcaret chỉ tạo/xoá, chưa bao giờ dịch tại chỗ.
+Fix: key encode x → `nib-vcaret@${Math.round(virtualXEditorRelative)}` → mỗi x mới = key mới = DOM mới render đúng left. Class giữ 'nib-vcaret' (selector/style không đổi). KHÔNG đổi export/interface.
+Confirm: browser smoke ArrowRight 181.0→185.4 (+4.44px = 1 space-width Inter), ArrowLeft về 181.0; Playwright 17/17 vẫn xanh.

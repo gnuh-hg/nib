@@ -93,6 +93,20 @@ Ví dụ fixture: `x^2`→`x**2`; `\int x\,dx`→`x**2/2`; `\frac{d}{dx}x^2`→`
 
 ---
 
+### Stack 6 — E2E tester (vai `tester`) — Gate Playwright
+
+> Bổ sung **ISSUE-23**: gate `npx playwright test` exit 0 không đủ → cần coverage + verdict map acceptance.
+
+| Gate | Kiểm | PASS = |
+|---|---|---|
+| Execute | `npx playwright test <spec>` exit 0 | exit 0 **VÀ** case phủ đủ lớp tương đương acceptance |
+| Coverage | Acceptance có tham số biến thiên → ≥1 case/lớp tương đương (xem `test-planning/SKILL.md §3b`) | Không dừng ở 1–2 happy case khi acceptance = "bất kỳ/tùy ý" |
+| Verdict | Ghi rõ: `acceptance '<nguyên văn>' được chứng minh bởi case #N, #M` | Cấm "PASS full" khi case chỉ phủ 1–2 điểm của acceptance nhiều tham số |
+
+> **⚠️ Giới hạn Playwright headless:** KHÔNG mô phỏng IME tiếng Việt (compositionstart/compositionend). Đường gõ tiếng Việt / telex / VNI → bắt buộc ghi `N/A — headless không mô phỏng IME` + cần user-smoke tay. Cấm đánh PASS tuyệt đối cho vùng IME khi chưa có smoke thật.
+
+---
+
 ## 2. Format evidence (nộp kèm SendMessage done)
 
 ```markdown

@@ -236,3 +236,30 @@ Biến virtual-caret ảo thành nội dung thật khi gõ — KHÔNG park PM-se
 - **Test materialize không cần TipTap mount**: PM Schema tay có `spacer_atom` (group inline, inline:true, atom:true, attrs{id}); mock view `{ get state(), coordsAtPos:()=>({right:100}), dispatch:tr=>state=state.apply(tr), dom }`; vcState{lineDocPos, virtualXClient}; assert widthMap.values()/spacerCount(descendants)/doc.textContent/selection.from. crypto.randomUUID đã polyfill trong test/setup.ts.
 - **measureSpaceWidth**: `canvas.getContext('2d').measureText(' ')` font từ `getComputedStyle(view.dom).font`, fallback 7px khi ≤0 (font chưa load) — KHÔNG magic CHAR_W=7 cứng. (Dùng ở Phase B nav.)
 Gate: tsc 0 · vitest 84/84 (+5) · build 0 · 0 hex. Phase A (A.1+A.2+A.3) logic hoàn tất; visual/IME = browser gate (tester Playwright).
+
+## 2026-06-30 14:00 — tester-scope-driven-gate
+
+Pattern: Khi tester test THỪA (phủ theme/i18n cho logic thuần) → root cause = skill ép "luôn phủ 3 nền" không có scope-driven gate. Fix: đổi rule sang "3 nền chỉ test khi changeset CHẠM" + worked example scope-driven. Confirm: grep "scope-driven|changeset" test-planning/SKILL.md ≥9 match.
+
+## 2026-06-30 14:00 — tester-equivalence-partitioning
+
+Pattern: Tester liệt 1–2 case cho "vị trí bất kỳ" → false-pass. Root: skill chỉ có phân loại NHÓM (dọc), thiếu phân hoạch NGANG trong hành vi. Fix: thêm §3b equivalence+boundary+tổ hợp + worked example ≥5 lớp + red-flag checklist. Confirm: grep "tương đương|equivalence|boundary" test-planning/SKILL.md = 10 match.
+
+## 2026-06-30 22:05 — free-caret-v2 unified add-char/merge law (Phase B.1)
+Fix bug "chèn-trái/giữa-2-đoạn đẩy đoạn phải": sau khi materialize insert spacer0+char tại lineDocPos, tìm spacer kế (findNextSpacer trên `tr.doc` — POST-insertion, KHÔNG view.state.doc = E1) trong cùng paragraph, shrink nó đúng `displacement = gapWidth + measureCharWidth(char)` → đoạn sau net-zero dịch. newWidth≤0 → tr.delete + KHÔNG widthMap.set (E2: tránh rAF NodeView race khi node sắp destroy → merge tự nhiên). Backspace-in-gap = shrinkOrDeleteSpacer(spaceW) + step vcaret virtualX −spaceW (newWidth>0) / INACTIVE (≤0).
+findNextSpacer nhận PMNode (không EditorView) → unit-test không cần DOM; guard `node.type.name==='spacer_atom'` (E4). shrinkOrDeleteSpacer KHÔNG dispatch (atomicity: insert+char+shrink+caret-clear = 1 tx, caller dispatch).
+Done-criteria pass: tsc 0 · vitest 90/90 (+6) · build 0 · Playwright 17/17 — Case 14 diff 0.5px, Case 15 0.3px (≤2px), 13 case cũ + 16/17/18 XANH.
+Files: virtualCaret.ts (export INACTIVE), materializeInput.ts(+test), Workspace.tsx backspace handler.
+
+## 2026-06-30 22:33 — free-caret-v2 arrow-nav 2D (Phase B.2)
+Tách `src/editor/arrowNav.ts` (precedent dockState/geometry). goalX = MODULE ref (getGoalX/setGoalX/resetGoalX) — KHÔNG vào VirtualCaretState (phải sống qua INACTIVE khi up/down liên tiếp). Exports: tryMoveHorizontal/tryMoveVertical/resetGoalX/getGoalX.
+Horizontal: vc.active→step ±space-width trong gap, exit RIGHT khi `newVX>=spacerRightX−0.5` (E1 epsilon)/exit LEFT `<=spacerLeftX+0.5` hoặc free-gap `<=textRightClient`→PM selection+INACTIVE; vc.inactive→nodeAfter/nodeBefore spacer_atom→enterSpacerFromLeft/Right (lineDocPos=spacerPos). E5: nhánh không-insert đọc `view.state.doc` (KHÁC B.1 materialize dùng tr.doc).
+Vertical: gX=getGoalX()??compute; newLineY=`coords.bottom+2`/`coords.top−2` (E2: KHÔNG ±RULE_HEIGHT — DPR-safe); posAtCoords({gX,newLineY}); gX>targetRight+THRESHOLD→gap caret dòng mới, else PM selection(+INACTIVE nếu vc.active).
+Workspace handleKeyDown: arrow hoist TRÊN `!vc.active` guard (xử cả 2 state); H-arrow resetGoalX, V-arrow giữ; printable+click resetGoalX.
+Done-criteria pass: tsc 0 · vitest 97/97 (+7 arrowNav) · build 0 · Playwright 17/17 không regress · browser smoke ArrowR/L ±4.44px (1 space-width), ArrowDown về đúng cột goalX 137.0px (drift 0).
+
+## 2026-07-01 — free-caret-v2 Tab spacer + Delete-boundary (Phase B.3, session cuối)
+Tab = insert spacer_atom width `4×measureSpaceWidth` (KHÔNG char, KHÔNG neighbor-compensate — gap chủ đích). Tách helper dùng chung `insertSpacer(tr, schema, widthMap, pos, width):{tr,id}` (widthMap.set TRƯỚC dispatch = atomicity B.1) → materialize() refactor dùng lại (hành vi bất biến, Playwright 17/17 xác nhận). Tab xử CẢ 2 state (hoist trên `!vc.active` guard, preventDefault): vc.active→spacer tại lineDocPos, caret nhảy tới spacer right-edge = `textRightClient+tabW` (KHÔNG virtualXClient+tabW — click free-gap chưa materialize offset; model "space chỉ materialize khi gõ"); PM-caret→spacer tại selection.from, selection sau spacer.
+Delete-boundary = **PM DEFAULT ĐÚNG** (probe đo: cursor trước spacer_atom + Delete → xoá atom 1 lần, count 1→0, "AA"+spacer+"BB"→"AABB" merge) → KHÔNG thêm code, chỉ comment xác nhận.
+Done-criteria pass: tsc 0 · vitest 99/99 (+2 insertSpacer/Tab) · build 0 · Playwright 17/17 (Case14 0.5px/Case15 0.3px giữ xanh) · Tab smoke browser: spacer 17.8px = 4×4.44px (Inter space) cả 2 nhánh, vcaret-active giữ active tại spacer right-edge, console 0 error.
+Phase B HOÀN TẤT (B.1 merge-law + B.2 arrow-nav + B.3 Tab/Delete). Files: materializeInput.ts(+insertSpacer,+test) · Workspace.tsx(Tab handler+Delete comment).

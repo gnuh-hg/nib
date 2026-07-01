@@ -4,18 +4,18 @@
  *
  * Tests: spacer-atom + virtual-caret + materialize-on-input (Path B, ARCHITECTURE §A).
  *
- * Run: npx playwright test tests/flows/playwright/free-caret-v2-phase-a.spec.ts
+ * Run: npx playwright test tests/e2e/free-caret-v2-phase-a.spec.ts
  *      --project=chromium --reporter=list
  *
  * Server: npm run dev must be running at :1420 (clean restart after pkill vite).
- * Evidence: tests/flows/evidence/free-caret-v2-phase-a/
+ * Evidence: tests/evidence/free-caret-v2-phase-a/
  */
 
 import { test, expect, type Page } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
 
-const EVIDENCE_DIR = 'tests/flows/evidence/free-caret-v2-phase-a';
+const EVIDENCE_DIR = 'tests/evidence/free-caret-v2-phase-a';
 const BASE_URL = 'http://localhost:1420';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -615,6 +615,376 @@ test('Case 13 (Thiết bị LOCKED) — ≥1024px, no horizontal scroll', async 
   await page.screenshot({ path: path.join(EVIDENCE_DIR, 'case-13-device.png'), fullPage: true });
   expect(errs, `JS errors:\n${errs.join('\n')}`).toHaveLength(0);
   console.log(`Case 13 PASS — viewport=${vw}px, no H-scroll, editor clickable`);
+});
+
+// ── Multi-segment helpers (§3b equivalence partitioning) ───────────────────
+
+/**
+ * Click at a specific viewport-x in the LAST paragraph (y = mid of last para).
+ * Use when you know the exact target x (e.g. anchorLeft - 150).
+ */
+async function clickAtClientX(page: Page, clientX: number): Promise<void> {
+  const lastPara = await page.locator('.nib-pm p').last().boundingBox();
+  if (!lastPara) throw new Error('clickAtClientX: no paragraph found');
+  const clamped = Math.max(clientX, lastPara.x + 2);
+  await page.mouse.click(clamped, lastPara.y + lastPara.height / 2);
+  await page.waitForTimeout(200);
+}
+
+/**
+ * Return the LEFT viewport coordinate of the first occurrence of `searchText`
+ * inside the LAST paragraph's text nodes. Returns null if not found.
+ */
+async function getTextLeftInLastPara(page: Page, searchText: string): Promise<number | null> {
+  return page.evaluate((text: string) => {
+    const paras = document.querySelectorAll<HTMLElement>('.nib-pm p');
+    const last = paras[paras.length - 1];
+    if (!last) return null;
+    const walker = document.createTreeWalker(last, NodeFilter.SHOW_TEXT);
+    let node: Text | null;
+    while ((node = walker.nextNode() as Text | null)) {
+      const idx = node.textContent?.indexOf(text) ?? -1;
+      if (idx >= 0) {
+        const range = document.createRange();
+        range.setStart(node, idx);
+        range.setEnd(node, idx + text.length);
+        return range.getBoundingClientRect().left;
+      }
+    }
+    return null;
+  }, searchText);
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Case 14 (MS-1) — Chèn TRÁI đoạn có sẵn [§3b.B]  ← EXPECTED FAIL (Phase A bug)
+// Acceptance: "đoạn có sẵn phải ĐỨNG YÊN" — diff ≤ 2px
+// Bug: tr.insert(lineDocPos, spacerNode) pushes all content at ≥lineDocPos right.
+// ────────────────────────────────────────────────────────────────────────────
+test('Case 14 (MS-1) — Chèn TRÁI đoạn: AnchorL14 phải đứng yên [EXPECTED FAIL — Phase A bug]', async ({ page }) => {
+  const errs = collectErrors(page);
+  await page.goto(BASE_URL);
+  await waitForEditor(page);
+
+  // ── SETUP: [text "A"][spacer(~200px)][AnchorL14] in a fresh paragraph ──────
+  // NOTE: we use a short "A" anchor (not empty) so the last para has content
+  // and locator('.nib-pm p').last().boundingBox() works reliably (Yjs sync issue
+  // with empty <br>-only paragraphs can briefly detach them, causing timeout).
+  await typeInFreshParagraph(page, 'A');
+
+  // Click 200px past "A".right → vcaret(gap=200) → type "AnchorL14"
+  await clickPastText(page, 200);
+  await expect(page.locator('.nib-vcaret'), 'setup: vcaret at 200px gap').toBeVisible({ timeout: 5000 });
+  await page.keyboard.type('AnchorL14', { delay: 25 });
+  await page.waitForTimeout(500);
+
+  const setupContent = await page.locator('.ProseMirror').textContent();
+  expect(setupContent, 'AnchorL14 must exist after setup').toContain('AnchorL14');
+
+  // ── RECORD: AnchorL14 position BEFORE test-click ─────────────────────────
+  const anchorLeftBefore = await getTextLeftInLastPara(page, 'AnchorL14');
+  expect(anchorLeftBefore, 'AnchorL14 locatable before test-click').not.toBeNull();
+
+  // ── TEST ACTION: click in left quarter of spacer (spacer is ~200px) ───────
+  // AnchorL14.left ≈ pmBox.x + 200
+  // Click at AnchorL14.left - 150 → 50px from left edge of spacer (well in left half)
+  // PM caretRangeFromPoint → pos BEFORE spacer → coordsAtPos.right ≈ pmBox.x
+  // gap = (anchorLeft-150) - pmBox.x ≈ 50px → materialize inserts sp(50)+"t" BEFORE old sp(200)
+  await clickAtClientX(page, anchorLeftBefore! - 150);
+  await expect(
+    page.locator('.nib-vcaret'),
+    'vcaret must activate in left portion of spacer',
+  ).toBeVisible({ timeout: 5000 });
+
+  await page.keyboard.type('t'); // materialize: sp(50)+t inserted before sp(200)+AnchorL14
+  await page.waitForTimeout(500);
+
+  // ── RECORD: AnchorL14 position AFTER ─────────────────────────────────────
+  const anchorLeftAfter = await getTextLeftInLastPara(page, 'AnchorL14');
+  expect(anchorLeftAfter, 'AnchorL14 must still be findable').not.toBeNull();
+
+  const diff = Math.abs(anchorLeftAfter! - anchorLeftBefore!);
+
+  await page.screenshot({
+    path: path.join(EVIDENCE_DIR, 'case-14-ms1-insert-left.png'),
+    fullPage: true,
+  });
+  expect(errs, `JS errors:\n${errs.join('\n')}`).toHaveLength(0);
+
+  console.log(
+    `Case 14 [MS-1 CHÈN TRÁI]: AnchorL14.left before=${anchorLeftBefore!.toFixed(1)}px ` +
+    `after=${anchorLeftAfter!.toFixed(1)}px diff=${diff.toFixed(1)}px` +
+    (diff > 2
+      ? ' → BUG CONFIRMED (EXPECTED FAIL): Phase A pushes segment right. Fix = Phase B.'
+      : ' → Unexpectedly PASS — check if bug was fixed.'),
+  );
+
+  // Acceptance: "đoạn có sẵn phải ĐỨNG YÊN, không bị đẩy lệch" → diff ≤ 2px
+  // EXPECTED FAIL because Phase A has no merge-machinery (spacer insertion pushes neighbors)
+  expect(
+    diff,
+    `[MS-1 ACCEPTANCE] AnchorL14 phải đứng yên (≤2px). ` +
+    `Actual diff=${diff.toFixed(1)}px. Phase A bug: tr.insert(lineDocPos, sp) pushes right. Fix = Phase B.`,
+  ).toBeLessThanOrEqual(2);
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// Case 15 (MS-2) — Chèn GIỮA-2-ĐOẠN-SÁT [§3b.E]  ← EXPECTED FAIL (same bug)
+// Acceptance: "Right15 phải ĐỨNG YÊN" — diff ≤ 2px
+// ────────────────────────────────────────────────────────────────────────────
+test('Case 15 (MS-2) — Chèn GIỮA 2 đoạn sát nhau: Right15 phải đứng yên [EXPECTED FAIL — Phase A bug]', async ({ page }) => {
+  const errs = collectErrors(page);
+  await page.goto(BASE_URL);
+  await waitForEditor(page);
+
+  // ── SETUP: [text "Left15"][spacer(~150px)][text "Right15"] ───────────────
+  await typeInFreshParagraph(page, 'Left15');
+
+  // Click 150px past Left15.right → vcaret → type "Right15"
+  await clickPastText(page, 150);
+  await expect(page.locator('.nib-vcaret'), 'setup: vcaret for Right15').toBeVisible({ timeout: 5000 });
+  await page.keyboard.type('Right15', { delay: 25 });
+  await page.waitForTimeout(500);
+
+  expect(await page.locator('.ProseMirror').textContent()).toContain('Right15');
+
+  // ── RECORD: Right15 position BEFORE test-click ────────────────────────────
+  const right15Before = await getTextLeftInLastPara(page, 'Right15');
+  expect(right15Before, 'Right15 locatable before test').not.toBeNull();
+
+  // ── TEST ACTION: click 100px LEFT of Right15 (in left portion of 150px spacer) ─
+  // Left15.right ≈ right15Before - 150 (spacer = 150px)
+  // Click at right15Before - 100 → 50px from Left15.right → in left third of spacer
+  // PM pos → after "Left15" text → coordsAtPos.right = Left15.right
+  // gap = (right15Before-100) - (right15Before-150) = 50px → sp(50)+"m" before old sp(150)
+  // → Right15 shifts right by ~60px
+  await clickAtClientX(page, right15Before! - 100);
+  await expect(
+    page.locator('.nib-vcaret'),
+    'vcaret must activate in left portion of spacer between segments',
+  ).toBeVisible({ timeout: 5000 });
+
+  await page.keyboard.type('m'); // materialize: sp(50)+m before old sp(150)+Right15
+  await page.waitForTimeout(500);
+
+  // ── RECORD: Right15 position AFTER ───────────────────────────────────────
+  const right15After = await getTextLeftInLastPara(page, 'Right15');
+  expect(right15After, 'Right15 must still be findable').not.toBeNull();
+
+  const diff = Math.abs(right15After! - right15Before!);
+
+  await page.screenshot({
+    path: path.join(EVIDENCE_DIR, 'case-15-ms2-insert-between.png'),
+    fullPage: true,
+  });
+  expect(errs, `JS errors:\n${errs.join('\n')}`).toHaveLength(0);
+
+  console.log(
+    `Case 15 [MS-2 CHÈN GIỮA-2-ĐOẠN]: Right15.left before=${right15Before!.toFixed(1)}px ` +
+    `after=${right15After!.toFixed(1)}px diff=${diff.toFixed(1)}px` +
+    (diff > 2
+      ? ' → BUG CONFIRMED (EXPECTED FAIL): same Phase A push-right bug.'
+      : ' → Unexpectedly PASS — check if bug was fixed.'),
+  );
+
+  // Acceptance: "Right15 ĐỨNG YÊN" → diff ≤ 2px
+  // EXPECTED FAIL (Phase A bug — same root cause as Case 14)
+  expect(
+    diff,
+    `[MS-2 ACCEPTANCE] Right15 phải đứng yên (≤2px). ` +
+    `Actual diff=${diff.toFixed(1)}px. Phase A bug: insert before old spacer pushes Right15. Fix = Phase B.`,
+  ).toBeLessThanOrEqual(2);
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// Case 16 (MS-3) — Chèn PHẢI cuối đoạn: Left16 & Right16 không bị đẩy [§3b.D]
+// Acceptance: diff Left16 ≤ 2px AND diff Right16 ≤ 2px; "Z" appears in content
+// EXPECT PASS — insert to the right of last segment doesn't disturb earlier ones
+// ────────────────────────────────────────────────────────────────────────────
+test('Case 16 (MS-3) — Chèn PHẢI cuối: Left16 & Right16 đứng yên [EXPECT PASS]', async ({ page }) => {
+  const errs = collectErrors(page);
+  await page.goto(BASE_URL);
+  await waitForEditor(page);
+
+  // ── SETUP: [text "S"][sp(~120px)][Left16][sp(~100px)][Right16] ─────────────
+  // Use "S" placeholder (non-empty) to avoid Yjs-empty-para boundingBox timeout.
+  await typeInFreshParagraph(page, 'S');
+
+  // Step A: click 120px right of "S".right → "Left16"
+  await clickPastText(page, 120);
+  await expect(page.locator('.nib-vcaret')).toBeVisible({ timeout: 5000 });
+  await page.keyboard.type('Left16', { delay: 25 });
+  await page.waitForTimeout(400);
+
+  // Step B: click 100px right of Left16.right → "Right16"
+  await clickPastText(page, 100);
+  await expect(page.locator('.nib-vcaret')).toBeVisible({ timeout: 5000 });
+  await page.keyboard.type('Right16', { delay: 25 });
+  await page.waitForTimeout(500);
+
+  expect(await page.locator('.ProseMirror').textContent()).toContain('Left16');
+  expect(await page.locator('.ProseMirror').textContent()).toContain('Right16');
+
+  // ── RECORD: positions BEFORE test-click ──────────────────────────────────
+  const left16Before = await getTextLeftInLastPara(page, 'Left16');
+  const right16Before = await getTextLeftInLastPara(page, 'Right16');
+  expect(left16Before).not.toBeNull();
+  expect(right16Before).not.toBeNull();
+
+  // ── TEST ACTION: click 150px past Right16.right (far right, nothing to right) ─
+  await clickPastText(page, 150);
+  await expect(
+    page.locator('.nib-vcaret'),
+    'vcaret must activate 150px past Right16',
+  ).toBeVisible({ timeout: 5000 });
+  await page.keyboard.type('z');
+  await page.waitForTimeout(400);
+
+  // ── RECORD: positions AFTER ───────────────────────────────────────────────
+  const left16After = await getTextLeftInLastPara(page, 'Left16');
+  const right16After = await getTextLeftInLastPara(page, 'Right16');
+  expect(left16After).not.toBeNull();
+  expect(right16After).not.toBeNull();
+
+  const diffLeft16 = Math.abs(left16After! - left16Before!);
+  const diffRight16 = Math.abs(right16After! - right16Before!);
+
+  const content = await page.locator('.ProseMirror').textContent();
+  expect(content, '"z" must appear after insert').toContain('z');
+
+  await page.screenshot({
+    path: path.join(EVIDENCE_DIR, 'case-16-ms3-insert-right.png'),
+    fullPage: true,
+  });
+  expect(errs, `JS errors:\n${errs.join('\n')}`).toHaveLength(0);
+
+  console.log(
+    `Case 16 [MS-3 CHÈN PHẢI CUỐI]: Left16 diff=${diffLeft16.toFixed(1)}px, Right16 diff=${diffRight16.toFixed(1)}px (both ≤2 = PASS)`,
+  );
+
+  expect(
+    diffLeft16,
+    `Left16 phải đứng yên (≤2px), actual diff=${diffLeft16.toFixed(1)}px`,
+  ).toBeLessThanOrEqual(2);
+  expect(
+    diffRight16,
+    `Right16 phải đứng yên (≤2px), actual diff=${diffRight16.toFixed(1)}px`,
+  ).toBeLessThanOrEqual(2);
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// Case 17 (MS-4) — Chèn TRONG text (normal PM cursor, NO vcaret) [§3b.C]
+// Acceptance: "!" inserted at correct position; vcaret NOT active
+// EXPECT PASS — normal ProseMirror text insertion, no virtual-caret involvement
+// ────────────────────────────────────────────────────────────────────────────
+test('Case 17 (MS-4) — Chèn trong text: PM cursor only, no vcaret [EXPECT PASS]', async ({ page }) => {
+  const errs = collectErrors(page);
+  await page.goto(BASE_URL);
+  await waitForEditor(page);
+
+  // ── SETUP: paragraph with "Hello17" ──────────────────────────────────────
+  await typeInFreshParagraph(page, 'Hello17');
+
+  const beforeContent = await page.locator('.ProseMirror').textContent();
+  expect(beforeContent, 'Hello17 must exist').toContain('Hello17');
+
+  // ── TEST ACTION: navigate INSIDE text, type "!" ───────────────────────────
+  // After typeInFreshParagraph, cursor is at end of "Hello17" in the last para.
+  // Home → start of current line ("Hello17")
+  // ArrowRight → after "H"
+  await page.keyboard.press('Home');
+  await page.waitForTimeout(100);
+  await page.keyboard.press('ArrowRight'); // cursor: H|ello17
+  await page.waitForTimeout(100);
+
+  // Gate: vcaret must NOT be active (normal PM cursor, no gap)
+  const vcaretActive = await page.locator('.nib-vcaret').isVisible();
+  expect(vcaretActive, 'vcaret must NOT activate inside existing text').toBe(false);
+
+  // Insert "!"
+  await page.keyboard.type('!');
+  await page.waitForTimeout(200);
+
+  const content = await page.locator('.ProseMirror').textContent();
+
+  await page.screenshot({
+    path: path.join(EVIDENCE_DIR, 'case-17-ms4-insert-within-text.png'),
+    fullPage: true,
+  });
+  expect(errs, `JS errors:\n${errs.join('\n')}`).toHaveLength(0);
+
+  console.log(`Case 17 [MS-4 CHÈN TRONG TEXT]: content contains "H!ello17"? ${content?.includes('H!ello17')}`);
+
+  // Acceptance: "!" inserted between "H" and "e" → text is "H!ello17"
+  expect(content, 'Content must contain "H!ello17" — ! inserted after H').toContain('H!ello17');
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// Case 18 (MS-5) — Chuỗi liên tiếp (sequential right-of-existing) [§3b.F]
+// Acceptance: (a) P18a.left diff ≤ 2px after P18b insert; (b) P18b appears near click-x
+// EXPECT PASS — inserting right of current rightmost never disturbs left segments
+// ────────────────────────────────────────────────────────────────────────────
+test('Case 18 (MS-5) — Sequential right inserts: P18a đứng yên, P18b đúng vị trí [EXPECT PASS]', async ({ page }) => {
+  const errs = collectErrors(page);
+  await page.goto(BASE_URL);
+  await waitForEditor(page);
+
+  // ── ACTION 1: click 120px past "B".right → type "P18a" ──────────────────
+  // Use "B" placeholder (non-empty) to avoid Yjs-empty-para boundingBox timeout.
+  await typeInFreshParagraph(page, 'B');
+
+  const { clientX: click1X } = await clickPastText(page, 120);
+  await expect(page.locator('.nib-vcaret')).toBeVisible({ timeout: 5000 });
+  await page.keyboard.type('P18a', { delay: 25 });
+  await page.waitForTimeout(500);
+  expect(await page.locator('.ProseMirror').textContent()).toContain('P18a');
+
+  const p18aLeftAfterStep1 = await getTextLeftInLastPara(page, 'P18a');
+  expect(p18aLeftAfterStep1).not.toBeNull();
+
+  // ── ACTION 2: click 100px past P18a.right → type "P18b" ──────────────────
+  // This is a RIGHT-of-existing insert → P18a must NOT move
+  const { clientX: click2X } = await clickPastText(page, 100);
+  await expect(page.locator('.nib-vcaret'), 'vcaret for P18b insert').toBeVisible({ timeout: 5000 });
+  await page.keyboard.type('P18b', { delay: 25 });
+  await page.waitForTimeout(500);
+
+  expect(await page.locator('.ProseMirror').textContent()).toContain('P18b');
+
+  // ── RECORD: positions after step 2 ───────────────────────────────────────
+  const p18aLeftAfterStep2 = await getTextLeftInLastPara(page, 'P18a');
+  const p18bLeft = await getTextLeftInLastPara(page, 'P18b');
+  expect(p18aLeftAfterStep2).not.toBeNull();
+  expect(p18bLeft).not.toBeNull();
+
+  const diffP18a = Math.abs(p18aLeftAfterStep2! - p18aLeftAfterStep1!);
+  // P18b should appear near where we clicked (tolerance ±30px — includes char width & spacer edge effects)
+  const p18bOffset = Math.abs(p18bLeft! - click2X);
+
+  await page.screenshot({
+    path: path.join(EVIDENCE_DIR, 'case-18-ms5-sequential.png'),
+    fullPage: true,
+  });
+  expect(errs, `JS errors:\n${errs.join('\n')}`).toHaveLength(0);
+
+  console.log(
+    `Case 18 [MS-5 SEQUENTIAL]: ` +
+    `P18a diff=${diffP18a.toFixed(1)}px (≤2=ok); ` +
+    `P18b.left=${p18bLeft!.toFixed(1)}px click2X=${click2X.toFixed(1)}px offset=${p18bOffset.toFixed(1)}px (≤30=ok)`,
+  );
+
+  // Acceptance (a): P18a stays put when inserting to its right
+  expect(
+    diffP18a,
+    `P18a phải đứng yên sau khi P18b được chèn bên phải. ` +
+    `before=${p18aLeftAfterStep1!.toFixed(1)} after=${p18aLeftAfterStep2!.toFixed(1)} diff=${diffP18a.toFixed(1)}px`,
+  ).toBeLessThanOrEqual(2);
+
+  // Acceptance (b): P18b appears near click2X (vcaret materializes at ~clicked x)
+  expect(
+    p18bOffset,
+    `P18b.left=${p18bLeft!.toFixed(1)} phải gần click2X=${click2X.toFixed(1)} (offset ≤30px). ` +
+    `Actual offset=${p18bOffset.toFixed(1)}px`,
+  ).toBeLessThanOrEqual(30);
 });
 
 // ────────────────────────────────────────────────────────────────────────────

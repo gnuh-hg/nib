@@ -58,9 +58,9 @@ Lập team **không phải mặc định** — tốn token + tăng coordination 
    - **Sau khi spawn N teammate → áp layout terminal (§8). Guard = KIỂM `$TMUX` RUNTIME, KHÔNG đọc
      `teammateMode` setting** (đính chính ISSUE-2: Claude Code auto-detect tmux đang chạy → teammate VẪN
      nhận pane riêng dù `.claude/settings.json` KHÔNG set `teammateMode`). Chạy `[ -n "$TMUX" ] && tmux list-panes`:
-     → **`$TMUX` set (tmux đang chạy)**: PHẢI áp lệnh layout §8 tương ứng N — dùng block lệnh có `main-pane-width 60%` TRƯỚC `select-layout` (main-vertical N≤4, tiled N≥5) — KHÔNG được bỏ sót (defect ISSUE-2/6/11).
+     → **`$TMUX` set (tmux đang chạy)**: PHẢI chạy `bash .claude/scripts/tmux-grid-layout.sh` (lead cột trái 30% + teammate grid phải, tự tính theo N — xem §8) — KHÔNG được bỏ sót (defect ISSUE-2/6/11/18).
      → **`$TMUX` rỗng (không tmux)**: in-process, KHÔNG có pane → bỏ qua (no-op).
-   - **Re-apply layout sau MỖI lần đổi N** (spawn MỚI hoặc shutdown/TeamDelete) — không chỉ sau spawn đầu. Dùng "Re-apply helper" ở §8: đếm N động, chọn layout phù hợp. Pane thoát → tmux tự dọn nhưng KHÔNG tự cân layout → lead phải chủ động (ISSUE-11).
+   - **Re-apply layout sau MỖI lần đổi N** (spawn MỚI hoặc shutdown/TeamDelete) — không chỉ sau spawn đầu. Chạy lại đúng script §8 (`tmux-grid-layout.sh` — tự dọn zombie + tính lại theo N thật, idempotent). Pane thoát → tmux tự dọn nhưng KHÔNG tự cân layout → lead phải chủ động (ISSUE-11).
 
 3. CHỜ ACK — teammate TỰ gửi ack "sẵn sàng" cho lead sau khi đọc xong "Đọc đầu phiên".
    KHÔNG sleep mù, KHÔNG đoán mốc thời gian. Chỉ khi sau ~45s teammate vẫn IM → resend 1 lần
@@ -86,7 +86,7 @@ Quy trình BẮT BUỘC:
 1. Nhận "Task #N" qua SendMessage → TaskGet(N) đọc brief + TaskUpdate(in_progress) NGAY trong turn này.
 2. Làm đúng scope brief. KHÔNG tự lấy task khác từ TaskList khi chưa được giao.
 3. Xong → TaskUpdate(completed) RỒI SendMessage(to="team-lead", <paste TOÀN BỘ output theo Output format trong agent body>).
-4. Chờ task kế hoặc shutdown_request. KHÔNG tự thoát, KHÔNG peer-DM teammate khác.
+4. Chờ task kế hoặc shutdown_request. KHÔNG tự thoát. Peer-DM CHỈ trong whitelist §4 (consult/clarify, không handoff deliverable, tóm tắt vào report lead) — ngoài whitelist = SAI.
 ```
 
 ---
@@ -118,7 +118,7 @@ output_format: <lead expect nhận gì — trỏ "Output format" trong agent bod
 - **handwriting** — **TRƯỚC tiên** xác nhận §11.2 (license MyScript) đã chốt (xem §10 human gate). Sau đó: thiết kế bút→LaTeX. **STOP**: bút→LaTeX nhận diện ≥1 ký hiệu + `npm run build` exit 0; nộp evidence.
 - **glue-packaging** — thiết kế IPC + tên sidecar. **STOP**: `cargo build` trong `src-tauri/` pass + app launch + ≥1 IPC call frontend→sidecar trả về (console 0 error); nộp evidence.
 - **team-ops** — code+triệu chứng issue (từ `.claude/teams/issues.md`) + target sửa. **STOP**: diff file `.claude/` báo lead; thay đổi high-impact (`master.md`/`playbook.md`/`settings.json`) chờ user duyệt; KHÔNG đụng `src/`/`backend/`/`src-tauri/`.
-- **tester** — feature slug + trigger (khi nào chạy) + tiền điều kiện (dev server :1420, login state...). **STOP pha plan**: `tests/flows/<slug>.flow.md` tồn tại + `status: ready` + đủ 6 nhóm case (N/A có lý do) + 3 req nền [LOCKED] (i18n/theme/thiết bị) + mỗi case có expected đo được + Catalog README.md cập nhật. **Execute (CHỈ foreground ISSUE-8)**: verdict PASS/FAIL per-case + evidence screenshot/GIF + console 0 error. Nếu background → nộp flow + click-through checklist cho user.
+- **tester** — feature slug + trigger (khi nào chạy) + tiền điều kiện (dev server :1420, login state...) + **changeset block** (BẮT BUỘC khi test sau implementer task): (a) file/symbol đã sửa, (b) hành vi đã đổi 1–2 câu, (c) acceptance criterion nguyên văn user. Tester bám changeset để scope case đúng vùng — không phủ tràn toàn tính năng. **STOP pha plan**: `tests/flows/<slug>.flow.md` tồn tại + `status: ready` + đủ 6 nhóm case scope-driven (3 req nền chỉ khi changeset CHẠM) + hành vi "bất kỳ" đã phân hoạch `test-planning/SKILL.md §3b` + mỗi case có expected đo được + Catalog README.md cập nhật. **Execute**: verdict PASS/FAIL per-case + acceptance nguyên văn được case nào chứng minh. (ISSUE-21)
 
 ---
 
@@ -136,7 +136,22 @@ TaskUpdate(owner=<role>) + SendMessage wake ("Task #N — TaskGet(N) rồi bắt
 ### SendMessage protocol
 
 - **Lead ↔ teammate**: path chính. Lead wake; teammate report về `team-lead`.
-- **KHÔNG peer-DM**: teammate không tự DM teammate khác trừ khi lead chỉ định trong brief.
+- **Peer-DM CÓ CẤU TRÚC (whitelist — CONSULT/CLARIFY only, KHÔNG handoff deliverable):**
+
+  | Cặp vai | Mục đích cho phép |
+  |---|---|
+  | `architect` ↔ `researcher` | architect hỏi researcher context/docs thiếu giữa lúc thiết kế |
+  | implementer (`editor-frontend`/`backend-cas`/`handwriting`/`glue-packaging`) ↔ `architect` | làm rõ API contract/data flow không cần vòng qua lead |
+  | implementer ↔ implementer (contract xuyên stack, vd `editor-frontend` ↔ `backend-cas` về IPC LaTeX-in/LaTeX-out) | làm rõ hợp đồng dữ liệu giữa 2 stack |
+  | `team-ops` ↔ `researcher` | team-ops nhờ researcher tra docs ngoài (team-ops không có WebSearch/WebFetch) |
+  | `tester` ↔ implementer | làm rõ expected behavior của changeset |
+
+  **Rule giữ trật tự (bắt buộc):**
+  1. Lead vẫn sở hữu TaskList + gate evidence cuối + quyết handoff. Peer-DM KHÔNG dùng để giao task/duyệt kết quả của nhau.
+  2. **Visibility**: câu trả lời peer quan trọng phải được đưa vào report gửi lead (tóm tắt "đã hỏi X, nhận Y") — lead không mất dấu.
+  3. Peer-DM chỉ để hỏi-đáp ngắn/clarify. Thành tranh luận thiết kế → escalate lead.
+  4. Deliverable (file code, plan, evidence) VẪN về lead để gate — KHÔNG peer-handoff.
+  5. **KHÔNG peer-DM ngoài whitelist** (vd researcher ↔ tester không có lý do → không mở) — vi phạm = issue `SCOPE`.
 - **Format wake**: luôn include `Task #N` để teammate `TaskGet(N)` ngay. KHÔNG paste full brief vào message — brief nằm trong Task.
 
 ### Idle state là bình thường
@@ -245,91 +260,56 @@ Mỗi teammate = 1 **pane riêng**, dễ quan sát song song. Config: `"teammate
 
 > ⚠️ **KHÔNG hỗ trợ** trong VS Code terminal / Windows Terminal / Ghostty → tự fallback `in-process`.
 
-### tmux pane layout cho N teammate (Nib realistic, N=2..5)
+### tmux pane layout — lead cột trái + teammate grid phải (mọi N, KHÔNG cap)
 
-Sau `TeamCreate` + spawn N teammate, chạy lệnh tmux từ **pane lead (pane 1)** để sắp pane.
-**Spawn order = pane index** (spawn theo thứ tự vai trong chain để pane `2..N+1` khớp vai; lead = pane `1` luôn).
-Block 1 = setup mới; Block 2 = sau khi kill 1 pane (renumber + re-layout).
+Sau khi spawn / đổi số teammate, lead chạy 1 lệnh từ **pane lead**:
 
-> **⚠️ ISSUE-11/18 (lặp ≥3 lần: ISSUE-2/6/11; zombie-pane ISSUE-18) — 4 quy tắc bắt buộc:**
-> 1. **`main-pane-width 60%` TRƯỚC `select-layout`** — set ngay đầu mỗi block lệnh để lead pane luôn là main rộng (~60% màn), teammate xếp vào phần còn lại. Không set → tmux dùng 50% default → lead pane hẹp hơn teammate.
-> 2. **Re-apply sau MỖI lần đổi N** — không chỉ sau spawn mà cả sau shutdown/TeamDelete. Khi teammate thoát, pane biến mất nhưng layout không tự cân → lead phải chủ động re-apply. Dùng Re-apply helper (gồm kill zombie TRƯỚC khi đếm N).
-> 3. **Guard `$TMUX` luôn áp** (đã có ở §2) — nếu không có tmux → skip toàn bộ, no-op.
-> 4. **Dọn zombie pane TRƯỚC khi đếm N** (ISSUE-18): pane cũ còn hiển thị dù process đã thoát (pane_dead=1) làm lệch N + chiếm không gian. Re-apply helper đã tích hợp bước kill-zombie; chạy nó thay vì chỉ `select-layout`. Giới hạn khuyến nghị: **≤4 teammate đồng thời** (N=5 tổng pane → main-vertical vừa đẹp). N≥6 tiled → chật; cân nhắc sequential thay parallel.
-
-**N=2** — main + 2 pane dọc phải (vd planner-light → editor-frontend):
-```
-┌──────────────┬────────────┐
-│              │ tm1 (p2)   │
-│  main (p1)   ├────────────┤
-│              │ tm2 (p3)   │
-└──────────────┴────────────┘
-```
 ```bash
-tmux set-window-option main-pane-width 60% && tmux select-layout main-vertical                                   # Block 1
-tmux move-window -r -s 1:1 && tmux set-window-option main-pane-width 60% && tmux select-layout main-vertical     # Block 2 (sau kill 1 pane)
+bash .claude/scripts/tmux-grid-layout.sh        # lead trái 30% (mặc định)
+bash .claude/scripts/tmux-grid-layout.sh 25     # tuỳ chọn: lead 25%
 ```
 
-**N=3** — main + 3 pane dọc phải (vd researcher → planner → architect):
-```
-┌──────────────┬────────────┐
-│              │ tm1 (p2)   │
-│  main (p1)   ├────────────┤
-│              │ tm2 (p3)   │
-│              ├────────────┤
-│              │ tm3 (p4)   │
-└──────────────┴────────────┘
-```
-```bash
-tmux set-window-option main-pane-width 60% && tmux select-layout main-vertical                                   # Block 1
-tmux move-window -r -s 1:1 && tmux set-window-option main-pane-width 60% && tmux select-layout main-vertical     # Block 2
-```
+> **⚠️ ISSUE-2/6/11/18/29 — nguồn lỗi đã loại bỏ:** bản cũ ghép grid bằng `join-pane`/`resize-pane`
+> với **index pane HARD-CODE** (mỗi N một block lệnh) → index lệch khi spawn order khác / có zombie
+> pane → lệnh fail hoặc ghép sai pane → "không gian co lại"/layout méo dù không đụng gì. Bản trung gian
+> `N≤3 main-vertical / N≥4 tiled` cũng bỏ: discontinuity vô lý (lead 65%→25% ở N=4) + tự bịa cap
+> "≤4 teammate" (chưa ai yêu cầu). **Bỏ hết.** Thay bằng 1 script tự tính layout-string.
 
-**N=4** — main + 2×2 grid (vd researcher → planner → architect → editor-frontend):
+**Nguyên tắc — MỘT quy tắc duy nhất cho MỌI N:**
+- **Lead** = cột trái, **30%** rộng (đổi qua tham số), **full chiều cao** — nơi user đọc/thao tác chính.
+- **Teammate** = lưới `ceil(√M)` cột × `ceil(M/cols)` hàng, lấp 70% bên phải (hàng cuối lệch thì pane rộng ra lấp trọn).
+- Script tự: guard `$TMUX` (không tmux → no-op), **dọn zombie pane trước khi đếm N**, tính layout-string
+  từ pane thật + kích thước window (**KHÔNG hardcode index**), áp `select-layout`. **KHÔNG cap số teammate.**
+- Script: `.claude/scripts/tmux-grid-layout.sh` (bash + tmux ≥ 3.x).
+
+Đã đo thật (window 214×76, tmux 3.6):
+
+| N (lead+tm) | Lead trái | Lưới phải | Mỗi teammate |
+|---|---|---|---|
+| 3 (2 tm) | 64×75 | 2×1 | 74×75 |
+| 4 (3 tm) | 64×75 | 2 hàng (2+1) | 74×37 · hàng cuối 149×37 |
+| 5 (4 tm) | 64×75 | 2×2 | 74×37 |
+| 6 (5 tm) | 64×75 | 3×2 (3+2) | 49×37 · 74×37 |
+| 10 (9 tm) | 64×75 | 3×3 | 49×24 |
+
+**Sơ đồ (N=5, lead + 4 teammate):**
 ```
 ┌──────────────┬──────────┬──────────┐
-│              │ tm1 (p2) │ tm2 (p3) │
-│  main (p1)   ├──────────┼──────────┤
-│              │ tm3 (p4) │ tm4 (p5) │
+│              │ tm1 (74) │ tm2 (74) │
+│  LEAD  30%   ├──────────┼──────────┤
+│  (full cao)  │ tm3 (74) │ tm4 (74) │
 └──────────────┴──────────┴──────────┘
 ```
+
+**Re-apply BẮT BUỘC sau MỖI lần đổi N** (spawn mới / shutdown / TeamDelete) — không chỉ lần đầu.
+Pane thoát → tmux xoá pane nhưng KHÔNG tự cân lại layout → lead chạy lại script. Script idempotent +
+tự dọn zombie nên gọi lại bao nhiêu lần cũng an toàn:
 ```bash
-# Block 1
-tmux set-window-option main-pane-width 60% && tmux select-layout main-vertical && tmux join-pane -h -s :.3 -t :.2 && tmux join-pane -h -s :.5 -t :.4
-# Block 2
-tmux move-window -r -s 1:1 && tmux set-window-option main-pane-width 60% && tmux select-layout main-vertical && tmux join-pane -h -s :.3 -t :.2 && tmux join-pane -h -s :.5 -t :.4
+[ -n "$TMUX" ] && bash .claude/scripts/tmux-grid-layout.sh
 ```
 
-**N=5** — full chain Nib (researcher → planner → architect → editor-frontend → backend-cas), main + 2+2+1:
-```
-┌──────────────┬──────────┬──────────┐
-│              │ tm1 (p2) │ tm2 (p3) │
-│  main (p1)   ├──────────┼──────────┤
-│              │ tm3 (p4) │ tm4 (p5) │
-│              ├──────────┴──────────┤
-│              │      tm5 (p6)       │
-└──────────────┴─────────────────────┘
-```
-```bash
-# Block 1 — resize-pane cuối nâng chiều cao tm5 (mặc định bị lùn)
-tmux set-window-option main-pane-width 60% && tmux select-layout main-vertical && tmux join-pane -h -s :.3 -t :.2 && tmux join-pane -h -s :.5 -t :.4 && tmux resize-pane -t :.6 -y 18
-# Block 2
-tmux move-window -r -s 1:1 && tmux set-window-option main-pane-width 60% && tmux select-layout main-vertical && tmux join-pane -h -s :.3 -t :.2 && tmux join-pane -h -s :.5 -t :.4 && tmux resize-pane -t :.6 -y 18
-```
-
-**Re-apply helper (dùng sau shutdown/TeamDelete — tích hợp kill zombie):**
-```bash
-# Bước 1 — Dọn zombie pane (pane_dead=1): process thoát nhưng pane còn → kill trước khi đếm N
-[ -n "$TMUX" ] && tmux list-panes -F "#{pane_id} #{pane_dead}" | awk '$2==1{print $1}' | xargs -r -I{} tmux kill-pane -t {}
-# Bước 2 — Re-apply layout: N≤5 pane → main-vertical (lead 60%); N≥6 → tiled (hiếm, tránh)
-[ -n "$TMUX" ] && N=$(tmux list-panes | wc -l) && \
-  { [ "$N" -le 5 ] && tmux set-window-option main-pane-width 60% && tmux select-layout main-vertical || tmux select-layout tiled; }
-```
-
-> Tested Ubuntu + tmux 3.x pattern. Nếu index lệch sau renumber → fallback `tmux select-layout tiled`.
-> Zellij/Windows: adapt thủ công (hoặc dùng `in-process`).
->
-> **N=6** (full chain với design): researcher → planner → architect → design → editor-frontend → backend-cas. Layout: fallback `tmux select-layout tiled` (6 pane khó chia đẹp hơn N=5 — tiled đảm bảo tất cả thấy được). Hoặc dùng in-process.
+> Tested Ubuntu + tmux 3.6. Zellij / Windows Terminal / VS Code: không hỗ trợ split-pane → dùng `in-process` mode (§8 đầu mục).
+> Layout lệch → chạy LẠI script (idempotent), KHÔNG tự ghép `join-pane`/`resize-pane` — đó là nguồn lỗi đã loại bỏ.
 
 ---
 
@@ -379,16 +359,18 @@ có section "Human gate §11.2" enforce điều này.
 8. **Quên TeamDelete team cũ** trước khi TeamCreate mới — vi phạm "1 team tại 1 lúc" (§9).
 9. **Lead tự soạn/soát plan artifact thay planner** (ISSUE-12) — viết ROADMAP/PLAN.md/CHECKPOINT.md là việc của `planner`; lead chỉ phân loại scope + gate. Lead tự soạn = bỏ chuyên môn + bỏ gate → lặp ISSUE-3/5/12. Mọi plan artifact phải qua `planner` soạn + lead gate TRƯỚC khi giao architect/implementer (PLAN-GATE §3).
 10. **Lead tự dựng layout/mockup ép user chọn thay vì giao `design`** (ISSUE-10) — visual/layout/spacing/mockup là việc `design` dựng bản thật present; lead CHỈ hỏi user quyết WHAT (scope, container type). Lead hỏi "bố cục nào đẹp hơn?" bằng ASCII sketch = lấn vai design → user không chọn được vì không thấy bản thật. Giao `design`, xem memory [[lead-no-diy-design]].
+20. **Kết thúc LOOP mà chưa cân nhắc `tester`** — feature/fix đạt trạng thái testable (implementer báo done + evidence pass) nhưng lead shutdown team/coi request xong mà KHÔNG spawn `tester` (và không ghi rõ lý do N/A) = sai. Dùng checklist DONE `.claude/skills/orchestration-routing/SKILL.md §3` trước khi thoát LOOP (xem `master.md §7`).
 
 **Teammate:**
 11. **Silent-complete** — xong không SendMessage report → team treo (issue `SILENT`).
-12. **Peer-DM teammate khác** — không qua lead trừ khi brief chỉ định (issue `SCOPE`).
+12. **Peer-DM NGOÀI whitelist / dùng peer-DM để handoff deliverable / giấu nội dung peer khỏi lead** — peer-DM CÓ CẤU TRÚC chỉ hợp lệ trong whitelist §4 (consult/clarify, không handoff, phải tóm tắt vào report lead). Vi phạm 1 trong 3 điều này = issue `SCOPE`.
 13. **Làm ngoài scope brief** — tự lấy task khác từ TaskList / mở rộng phạm vi (issue `SCOPE`).
 14. **Tự thoát không chờ shutdown_request** — mất kết quả cuối (issue `NO-SHUTDOWN-RESP`).
 15. **Phán "có vẻ pass" / "render đẹp"** — gate phải từ exit-code/output thật (issue `GATE`).
 16. **Trao đổi plan-as-data JSON giữa teammate** — giao tiếp prose markdown (issue `FORM`). (File code `src/`/`backend/` là artifact — KHÁC, hợp lệ.)
 17. **Quên TaskUpdate(in_progress/completed)** — lead không track được trạng thái (issue `FORGOT-TASKUPDATE`).
 18. **implementer đụng vùng vai khác** — `editor-frontend` sửa `backend/`, `team-ops` sửa `src/`... SAI vai. Mỗi vai giữ ranh giới file của mình (master §2).
+19. **Tranh chấp PASS tester → lead tự lái browser thay vì đọc evidence** (ISSUE-24) — khi user bảo "không ổn", bước đầu tiên là đọc `tests/flows/<slug>.flow.md` + `tests/evidence/<slug>/` tìm lỗ hổng coverage → giao tester mở rộng case. Lead-DIY browser khi tester flow đã tồn tại = vừa lãng phí vừa bỏ qua artifact. (Xem master §7 "Khi user/lead nghi ngờ verdict PASS".)
 
 ---
 

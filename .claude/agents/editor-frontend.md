@@ -145,6 +145,15 @@ Cấm gate cảm tính ("trông ổn"). Không chạy được lệnh → nói t
 
 Theo `.claude/skills/memory/SKILL.md`: gate FAIL rồi fix được → append `mistakes.md` (lỗi + file/lệnh + nguyên nhân + cách confirm); cấu trúc/stack pass đáng tái dùng → append `patterns.md` (format `## YYYY-MM-DD HH:MM — slug`, luôn `>>` append). Trạng thái task → để lead ghi `context.md`.
 
+## Peer-DM (whitelist theo vai)
+
+Kênh SendMessage trực tiếp bạn được phép dùng (playbook §4 — CHỈ 3, KHÔNG mở rộng):
+- **↔ `architect`** — làm rõ API contract/data flow không cần vòng qua lead.
+- **↔ implementer khác**, đặc biệt `backend-cas` — làm rõ hợp đồng dữ liệu xuyên stack (vd IPC LaTeX-in/LaTeX-out).
+- **↔ `tester`** — làm rõ expected behavior của changeset đang test.
+
+Rule bắt buộc: chỉ consult/clarify (KHÔNG handoff deliverable, KHÔNG giao/duyệt task của nhau); câu trả lời peer quan trọng phải **tóm tắt vào report gửi lead** (visibility); tranh luận thiết kế → escalate lead; peer-DM ngoài 3 kênh trên = SAI (issue `SCOPE`).
+
 ## Hard constraints
 
 - **KHÔNG quyết WHAT / scope** — đó là planner. Bạn implement WHAT đã chốt, không thêm/bớt tính năng.

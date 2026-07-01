@@ -22,6 +22,12 @@
    giữa các vai. Artifact code (file `src/`, `backend/`, `src-tauri/`) là output; thông điệp giữa
    lead↔teammate là prose. Implementer nộp **evidence đo được** (output lệnh build/test), không phải
    mô tả cảm tính.
+   **Peer-DM CÓ CẤU TRÚC (whitelist hẹp)** — teammate ĐƯỢC phép SendMessage trực tiếp cho nhau CHỈ để
+   consult/clarify (không handoff deliverable, không thay path lead↔teammate làm kênh chính). Danh
+   sách cặp vai + rule chi tiết: `.claude/teams/playbook.md §4`. Tóm tắt bất biến: (a) lead vẫn sở hữu
+   TaskList + gate cuối; (b) câu trả lời peer quan trọng phải được tóm tắt lại trong report gửi lead
+   (visibility); (c) chỉ hỏi-đáp ngắn, tranh luận thiết kế → escalate lead; (d) deliverable luôn về lead
+   để gate, không peer-handoff; (e) ngoài whitelist = SAI (issue `SCOPE`).
 3. **Lead drive MỘT TaskList loop** — giao task → chờ report → gate bằng evidence → task kế — lặp tới
    khi TaskList rỗng. KHÔNG chạy researcher→…→implementer một lượt linear rồi quên gate giữa chừng.
 
@@ -72,6 +78,10 @@ ack). Lead KHÔNG cần lặp lại protocol đó trong brief.
 ---
 
 ## 3. Vòng lặp điều phối (lead-driven TaskList loop)
+
+> **Trước khi spawn**: dùng skill `.claude/skills/orchestration-routing/SKILL.md` để vẽ nhanh dispatch
+> map (request → chain vai → gate → khi nào tester). Skill này KHÔNG thay `planner` (WHAT) — chỉ giúp
+> lead điều phối đúng thứ tự/vai/gate.
 
 Lead **không** chạy researcher→…→implementer một lượt rồi return. Lead quản một **TaskList** và drive
 từng bước, gate sau mỗi handoff, lặp tới khi TaskList rỗng.
@@ -215,11 +225,23 @@ Done-criteria cảm tính ("render đẹp", "hoạt động tốt") → **KHÔNG
 
 Spawn `tester` khi: (a) feature đạt trạng thái testable (implementer báo done + evidence pass); (b) cần kiểm luồng toàn cục nhiều case từ góc nhìn user; (c) trước release; (d) khi đụng vùng có rủi ro regression.
 
+> **⚠️ Checklist DONE bắt buộc trước khi kết thúc LOOP (chống quên tester)**: dùng
+> `.claude/skills/orchestration-routing/SKILL.md §3` — dòng nhớ: *"Feature đạt testable → đã spawn
+> tester chưa? Chưa → chưa được kết thúc LOOP."* Kết thúc LOOP mà chưa cân nhắc tester (hoặc N/A không
+> ghi lý do) = anti-pattern lead mới (`playbook.md §11` #20).
+
 Luồng spawn:
-1. `tester` **plan flow** (background OK) → soạn `tests/flows/<slug>.flow.md` (status `ready`).
-2. Lead gate flow: đủ 6 nhóm case + 3 req nền [LOCKED] + trigger đo được.
-3. `tester` **execute Chrome** → **CHỈ foreground** (ISSUE-8: Chrome extension bind foreground session; background teammate không reach). Nếu tester đang là background teammate → tester nộp flow + click-through checklist → **lead foreground hoặc user thực thi Chrome**.
-4. Evidence: screenshot/GIF + console 0 error + verdict PASS/FAIL per-case.
+1. Lead giao task tester với **changeset block** trong brief (BẮT BUỘC khi test sau implementer task): (a) file/symbol đã sửa, (b) hành vi đã đổi 1–2 câu, (c) acceptance criterion nguyên văn user. Tester bám changeset → scope case đúng vùng, không phủ tràn toàn tính năng. (ISSUE-21)
+2. `tester` **plan flow** (background OK) → soạn `tests/flows/<slug>.flow.md` (status `ready`).
+3. Lead gate flow: đủ 6 nhóm case scope-driven (3 req nền chỉ khi changeset CHẠM) + hành vi "bất kỳ" đã phân hoạch `test-planning/SKILL.md §3b` + trigger đo được.
+4. `tester` **execute** → Playwright headless (primary, background-safe) hoặc Chrome MCP (secondary, foreground-only, ISSUE-8).
+5. Evidence: verdict per-case + acceptance nguyên văn được chứng minh bởi case #N, #M.
+
+**Khi user/lead nghi ngờ verdict PASS của tester (ISSUE-24) — KHÔNG tự lái browser:**
+1. ĐỌC `tests/flows/<slug>.flow.md` — danh sách case đã liệt. Tìm lỗ hổng coverage.
+2. ĐỌC `tests/evidence/<slug>/` — đã chụp gì, ở vị trí nào.
+3. Giao tester **MỞ RỘNG case** theo lỗ hổng tìm thấy.
+4. Lead KHÔNG tự lái browser test khi flow + evidence đã tồn tại — lead-DIY browser = vừa lãng phí vừa bỏ qua artifact.
 
 ---
 
@@ -231,6 +253,7 @@ Luồng spawn:
 | Roster agent body | `.claude/agents/*.md` |
 | Issue queue (sự cố phối hợp team — `team-ops` sở hữu) | `.claude/teams/issues.md` |
 | Skill build + verify (implementer gate) | `.claude/skills/build-verify/SKILL.md` |
+| Skill dispatch/điều phối cho lead (dispatch map + checklist DONE + tester reminder) | `.claude/skills/orchestration-routing/SKILL.md` |
 | Skill memory (đọc/ghi store) | `.claude/skills/memory/SKILL.md` |
 | Skill design code-native — dùng cho vai `design` (workflow 5 bước + done-criteria gate + motion-intent spec) | `.claude/skills/design/SKILL.md` |
 | Memory store Nib team | `.claude/memory/` (context / mistakes / patterns / global) |

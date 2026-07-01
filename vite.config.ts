@@ -23,6 +23,12 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     globals: true,
     // Exclude Playwright e2e specs (they use @playwright/test which conflicts with vitest).
-    exclude: ['**/node_modules/**', '**/tests/flows/playwright/**'],
+    // Specs live under tests/e2e/ since the 2026-06-30 restructure (ISSUE-25);
+    // the old tests/flows/playwright/ glob is kept for backward-compat.
+    exclude: [
+      '**/node_modules/**',
+      '**/tests/e2e/**',
+      '**/tests/flows/playwright/**',
+    ],
   },
 });

@@ -71,6 +71,7 @@ Cấm gate cảm tính ("render đẹp", "ổn rồi").
 | `free-caret-rebuild/phase-b-schema-migration` | long-plan (Phase B) | Schema + Migration: PM schema row-based (Row/MathInline extensions) + Y.Doc adapt (blockMeta keyed atom-id + NEW rowMeta) + R1 proof + migration module an toàn (4 test case, deleteDatabase NEVER) + WS room v2. 3 session. | ✅ vitest 118/118, R1<1KB, migration PASS 2026-06-23 |
 | `free-caret-rebuild/phase-c-text-cursor` | long-plan (Phase C) | Text Engine + Cursor: RowView thật (blankBefore/indent geometry) + text insert + click-to-position + ghost caret virtual-space + arrow nav 2D (up/down goalX + Tab). MathInline vẫn placeholder. 3 session. | 🔄 |
 | `free-caret-v2` | roadmap | Rebuild đường gõ từ zero (WIPE 2026-06-25) theo Path B "spacer-atom" (virtual-space free-caret). 5 phase: A schema+caret / B nav+edit / C IME+undo / D MathLive inline / E CAS+vòng lõi. | 🔄 |
-| `free-caret-v2/phase-a-schema-caret` | long-plan (Phase A) | SpacerAtom extension + schema NibParagraph update + click→virtual-caret + type→materialize. 3 session. Gate vàng: "click→gõ→text đúng x". | 🔄 |
+| `free-caret-v2/phase-a-schema-caret` | long-plan (Phase A) | SpacerAtom extension + schema NibParagraph update + click→virtual-caret + type→materialize. 3 session. Gate vàng: "click→gõ→text đúng x". | ✅ DONE (Playwright 12/12; bug Case 14/15 regression marker chờ Phase B) |
+| `free-caret-v2/phase-b-nav-edit` | long-plan (Phase B) | Unified add-char/merge law (insert-side displace + backspace/delete) + arrow nav 2D (left/right gap-step, up/down goalX) + Tab spacer 4×space_width. 3 session. Gate vàng: Case 14+15 Playwright XANH + 15/15 full suite. | 🔄 |
 
 > Cập nhật bảng này mỗi khi tạo/đóng một plan. Trạng thái: ⬜ chưa bắt đầu · 🔄 đang chạy · ✅ done.

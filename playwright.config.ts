@@ -2,17 +2,17 @@ import { defineConfig } from '@playwright/test';
 
 /**
  * Playwright config cho Nib E2E/smoke tests.
- * Spec files: tests/flows/playwright/<slug>.spec.ts
- * Evidence:   tests/flows/evidence/<slug>/
+ * Spec files: tests/e2e/<slug>.spec.ts
+ * Evidence:   tests/evidence/<slug>/  (commit làm baseline regression)
  * Dev server: npm run dev → http://localhost:1420
  *
  * Chạy: npx playwright test
- *       npx playwright test tests/flows/playwright/<slug>.spec.ts
+ *       npx playwright test tests/e2e/<slug>.spec.ts
  * Report:     playwright-report/ (gitignore — chỉ xem local)
  * Raw output: test-results/ (gitignore)
  */
 export default defineConfig({
-  testDir: './tests/flows/playwright',
+  testDir: './tests/e2e',
   // Mỗi test chạy độc lập, không retry mặc định (tránh flake-hide)
   retries: 0,
   // Timeout 30s/test — đủ cho Vite dev server cold start

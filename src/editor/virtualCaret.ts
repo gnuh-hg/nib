@@ -41,7 +41,12 @@ export interface VirtualCaretState {
   textRightClient: number;
 }
 
-const INACTIVE: VirtualCaretState = {
+/**
+ * The neutral "caret off" state. Exported (E3) so materializeInput + the
+ * Workspace backspace handler share ONE canonical inactive value instead of
+ * re-declaring their own.
+ */
+export const INACTIVE: VirtualCaretState = {
   active: false,
   lineDocPos: 0,
   virtualXEditorRelative: 0,
@@ -110,7 +115,13 @@ export function createVirtualCaretPlugin(): Plugin<VirtualCaretState> {
             span.style.left = `${vc.virtualXEditorRelative}px`;
             return span;
           },
-          { side: 1, key: 'nib-vcaret' },
+          // The key MUST encode the drawn x (Session B.2): ProseMirror caches a
+          // widget's DOM by key and will NOT re-run this render closure when the
+          // key is unchanged. Arrow-nav moves the caret WITHIN the same gap (same
+          // lineDocPos), so a fixed key left the `left` style stale. Rounding to
+          // the px keeps the key stable across no-op re-renders. Class stays
+          // 'nib-vcaret' so selectors/styles are unaffected.
+          { side: 1, key: `nib-vcaret@${Math.round(vc.virtualXEditorRelative)}` },
         );
         return DecorationSet.create(state.doc, [widget]);
       },

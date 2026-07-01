@@ -1,10 +1,10 @@
 ---
 slug: free-caret-v2-phase-a
-title: Free-caret v2 Phase A — Spacer-atom + Virtual caret + Materialize-on-input
+title: Free-caret v2 Phase A — Spacer-atom + Virtual caret + Materialize-on-input + Multi-segment
 status: executed
 owner: tester
 created: 2026-06-25
-last_run: 2026-06-25
+last_run: 2026-06-30
 ---
 
 # Flow test — Free-caret v2 Phase A (Gate vàng)
@@ -37,12 +37,17 @@ last_run: 2026-06-25
 | 11 | **i18n** [LOCKED] | App load + editor hoạt động ở cả vi và en | `localStorage.setItem('lang','vi')` → reload → editor visible + not crashed; đổi 'en' → reload → tương tự | Editor `.ProseMirror` visible + editable sau cả 2 lang; không thấy key raw; console 0 error |
 | 12 | **Theme** [LOCKED] | Editor + vcaret render đúng token ở light/dark | Set `document.documentElement.dataset.theme='dark'` → kiểm `.nib-vcaret` background dùng `--accent` token; set light → tương tự | `--accent` token áp đúng cho vcaret trong cả 2 theme; editor không vỡ layout; console 0 error |
 | 13 | **Thiết bị** [LOCKED] | ≥1024px landscape; không horizontal scroll; hit-target | viewport 1280×720 (Playwright default) | `window.innerWidth ≥ 1024`; `document.documentElement.scrollWidth ≤ window.innerWidth`; editor focusable; console 0 error |
+| 14 | **Multi-Seg §3b.B** — Chèn TRÁI đoạn | Setup `[A][sp(~200px)][AnchorL14]`; click 150px trái AnchorL14 (trái half spacer) → type "t" | vcaret ở trái spacer, materialize sp(50)+t TRƯỚC sp(200)+AnchorL14 | AnchorL14.left diff ≤ 2px (acceptance). **DỰ KIẾN FAIL** — Phase A bug: tr.insert() đẩy phải |
+| 15 | **Multi-Seg §3b.E** — Chèn GIỮA 2 đoạn sát | Setup `[Left15][sp(~150px)][Right15]`; click 100px trái Right15 (trái-phần spacer) → type "m" | vcaret ở giữa spacer, materialize sp(50)+m TRƯỚC sp(150)+Right15 | Right15.left diff ≤ 2px. **DỰ KIẾN FAIL** — cùng Phase A bug |
+| 16 | **Multi-Seg §3b.D** — Chèn PHẢI cuối | Setup `[S][sp(120)][Left16][sp(100)][Right16]`; click 150px phải Right16 → type "z" | vcaret 150px past Right16, materialize sp(150)+z AFTER Right16 | Left16 diff ≤ 2px AND Right16 diff ≤ 2px; "z" in content. EXPECT PASS |
+| 17 | **Multi-Seg §3b.C** — Chèn trong text (normal PM) | `typeInFreshParagraph("Hello17")`; Home+ArrowRight → type "!" | Cursor inside text; NO vcaret | Content contains "H!ello17"; vcaret NOT visible. EXPECT PASS |
+| 18 | **Multi-Seg §3b.F** — Chuỗi liên tiếp (combo) | Step1: 120px past "B" → "P18a"; Step2: 100px past P18a.right → "P18b" | Two sequential right-of-existing inserts | P18a.left diff ≤ 2px; P18b.left ≈ click2X ±30px; console 0 error. EXPECT PASS |
 
 > **Ghi chú N/A:** Nhóm Error thuần (network/server 500/auth) = N/A vì Phase A không có network call. i18n Case 11 = lightweight (Phase A không thêm i18n key mới; test chỉ verify app không crash khi switch lang).
 
 ## 3. Các bước thao tác (browser)
 
-> Thực thi bằng **Playwright headless (PRIMARY, §0 browser-test/SKILL.md)**. Spec: `tests/flows/playwright/free-caret-v2-phase-a.spec.ts`.
+> Thực thi bằng **Playwright headless (PRIMARY, §0 browser-test/SKILL.md)**. Spec: `tests/e2e/free-caret-v2-phase-a.spec.ts`.
 
 1. `pkill vite; npm run dev &` → đợi :1420 OK (tránh stale-HMR)
 2. `page.goto('http://localhost:1420')` → `waitForLoadState('networkidle')` → `waitForSelector('.ProseMirror', {state:'visible', timeout:15000})`
@@ -73,8 +78,8 @@ last_run: 2026-06-25
   - Editor render đúng trong dark/light mode (Case 12)
   - `window.innerWidth ≥ 1024`, không horizontal scroll (Case 13)
 - **Evidence thu:**
-  - Screenshot mỗi case → `tests/flows/evidence/free-caret-v2-phase-a/case-N-<slug>.png`
-  - Console errors nếu có → `tests/flows/evidence/free-caret-v2-phase-a/console.txt`
+  - Screenshot mỗi case → `tests/evidence/free-caret-v2-phase-a/case-N-<slug>.png`
+  - Console errors nếu có → `tests/evidence/free-caret-v2-phase-a/console.txt`
   - Playwright exit code 0 = PASS
 
 ## 5. Kết quả chạy
@@ -99,8 +104,41 @@ Bug `materializeInput.ts`: `view.coordsAtPos(lineDocPos)` trả coords của vca
 | 12 (Theme LOCKED) | **PASS** | vcaret bg="rgb(63, 182, 190)" (--accent) dark mode | case-12-theme-dark.png, case-12-theme-light.png |
 | 13 (Thiết bị LOCKED) | **PASS** | viewport=1440px ≥ 1024, no H-scroll, clickable | case-13-device.png |
 
-**Verdict: GATE VÀNG PHASE A ĐÓNG ✅** — exit 0, 12/12 pass (1 N/A IME user-smoke).
-"Click vùng trống tại x bất kỳ → gõ → text xuất hiện ĐÚNG x, console 0 error" = **PASS đo được**.
+**Verdict lần 2: GATE VÀNG PHASE A ĐÓNG ✅** — exit 0, 12/12 pass (1 N/A IME user-smoke).
+"Click vùng trống tại x bất kỳ (vùng trống không có segment) → gõ → text xuất hiện ĐÚNG x, console 0 error" = **PASS đo được**.
 
-**Spec:** `tests/flows/playwright/free-caret-v2-phase-a.spec.ts`
-**Evidence:** `tests/flows/evidence/free-caret-v2-phase-a/` (14 artifacts)
+---
+
+### Lần 3 (2026-06-30 — multi-segment §3b bổ sung, 5 ca mới)
+
+Thêm coverage phân hoạch tương đương cho acceptance "vị trí BẤT KỲ trên cùng 1 dòng" khi đã có đoạn text khác.
+
+| Case # | Kết quả | Số đo | Evidence |
+|---|---|---|---|
+| 14 (MS-1 — Chèn TRÁI) | **FAIL (EXPECTED)** — Bug Phase A | AnchorL14.left diff=**55.0px** >> 2px. before=598.0 after=653.0 | case-14-ms1-insert-left.png, case-14-ms1-fail-auto.png |
+| 15 (MS-2 — Chèn GIỮA-2-ĐOẠN) | **FAIL (EXPECTED)** — Bug Phase A | Right15.left diff=**63.0px** >> 2px. before=580.0 after=643.0 | case-15-ms2-insert-between.png, case-15-ms2-fail-auto.png |
+| 16 (MS-3 — Chèn PHẢI cuối) | **PASS** ✅ | Left16 diff=0.0px, Right16 diff=0.0px (both ≤ 2px) | case-16-ms3-insert-right.png |
+| 17 (MS-4 — Chèn trong text PM) | **PASS** ✅ | "H!ello17" confirmed in content; vcaret NOT active | case-17-ms4-insert-within-text.png |
+| 18 (MS-5 — Sequential) | **PASS** ✅ | P18a diff=0.0px; P18b.left=651.0=click2X (offset=0.0px ≤ 30px) | case-18-ms5-sequential.png |
+
+**Verdict lần 3 — Multi-segment §3b:**
+
+| Lớp tương đương | Case | Kết quả |
+|---|---|---|
+| §3b.A — Vùng trống (baseline) | Cases 3, 9 | PASS ✅ (lần 2) |
+| §3b.B — Chèn TRÁI đoạn (pos < seg.pos) | Case 14 | **FAIL** (expected) — AnchorL14 dịch 55px |
+| §3b.C — Chèn trong text (PM normal) | Case 17 | PASS ✅ |
+| §3b.D — Chèn PHẢI/cuối dòng | Case 16 | PASS ✅ |
+| §3b.E — Chèn GIỮA 2 đoạn sát nhau | Case 15 | **FAIL** (expected) — Right15 dịch 63px |
+| §3b.F — Chèn liên tiếp combo | Case 18 | PASS ✅ |
+
+**Acceptance nguyên văn → case chứng minh:**
+- `"nhập ký tự ở vị trí BẤT KỲ trên cùng 1 dòng"` → phủ bởi Cases 14 (trái), 15 (giữa-2-đoạn), 16 (phải), 17 (trong text), 18 (combo)
+- `"khi dòng ĐÃ CÓ đoạn text khác, chèn bên TRÁI → đoạn có sẵn phải ĐỨNG YÊN"` → Case 14: **FAIL** (diff=55px). **Bug Phase A xác nhận đo được.**
+- `"chèn GIỮA-2-ĐOẠN-SÁT → đoạn đứng yên"` → Case 15: **FAIL** (diff=63px). **Bug Phase A xác nhận đo được.**
+- `"chèn bên PHẢI / combo / trong text → đoạn đứng yên"` → Cases 16, 17, 18: **PASS** ✅
+
+**Kết luận:** Phân hoạch §3b complete. PASS path (phải/combo/trong-text) hoạt động đúng; FAIL path (trái/giữa-2-đoạn) có số đo cụ thể xác nhận bug — fix thuộc Phase B merge-machinery.
+
+**Spec:** `tests/e2e/free-caret-v2-phase-a.spec.ts`
+**Evidence:** `tests/evidence/free-caret-v2-phase-a/` (19+ artifacts)

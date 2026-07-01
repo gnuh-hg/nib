@@ -1,6 +1,6 @@
 ---
 name: browser-test
-description: "Thực thi flow test Nib: Playwright headless PRIMARY (background-safe, Bash) hoặc Chrome MCP SECONDARY (foreground-only, ISSUE-8). Spec file tại tests/flows/playwright/<slug>.spec.ts; evidence tại tests/flows/evidence/<slug>/."
+description: "Thực thi flow test Nib: Playwright headless PRIMARY (background-safe, Bash) hoặc Chrome MCP SECONDARY (foreground-only, ISSUE-8). Spec file tại tests/e2e/<slug>.spec.ts; evidence tại tests/evidence/<slug>/."
 ---
 
 # browser-test — thực thi flow test bằng Chrome / Playwright
@@ -47,7 +47,7 @@ test('<case-name>', async ({ page }) => {
   await page.locator('<selector>').click();
   await expect(page.locator('<selector>')).toBeVisible();
   // --- evidence ---
-  await page.screenshot({ path: 'tests/flows/evidence/<slug>/case-1.png', fullPage: true });
+  await page.screenshot({ path: 'tests/evidence/<slug>/case-1.png', fullPage: true });
   // --- gate ---
   expect(errors, `console errors: ${errors.join('; ')}`).toHaveLength(0);
 });
@@ -59,12 +59,12 @@ npx playwright test /tmp/nib-test-<slug>.spec.ts \
   2>&1
 ```
 
-### Mode 2 — File trong `tests/flows/playwright/` (tái dùng)
+### Mode 2 — File trong `tests/e2e/` (tái dùng)
 
 ```bash
-# Ghi spec vào tests/flows/playwright/<slug>.spec.ts
+# Ghi spec vào tests/e2e/<slug>.spec.ts
 # Chạy:
-npx playwright test tests/flows/playwright/<slug>.spec.ts \
+npx playwright test tests/e2e/<slug>.spec.ts \
   --project=chromium \
   --reporter=list \
   2>&1
@@ -74,8 +74,8 @@ npx playwright test tests/flows/playwright/<slug>.spec.ts \
 
 | Loại | Cách thu | Lưu ở |
 |---|---|---|
-| Screenshot | `page.screenshot({ path: '...', fullPage: true })` | `tests/flows/evidence/<slug>/case-N.png` |
-| Toàn flow GIF/video | thêm `--video=on` vào lệnh + copy từ `test-results/` | `tests/flows/evidence/<slug>/` |
+| Screenshot | `page.screenshot({ path: '...', fullPage: true })` | `tests/evidence/<slug>/case-N.png` |
+| Toàn flow GIF/video | thêm `--video=on` vào lệnh + copy từ `test-results/` | `tests/evidence/<slug>/` |
 | Console errors | `page.on('console', ...)` collect trong test | ghi vào `console.txt` nếu có lỗi |
 
 ### Gate Playwright
@@ -85,13 +85,13 @@ npx playwright test tests/flows/playwright/<slug>.spec.ts \
 npx playwright test <spec-file> --project=chromium --reporter=list 2>&1
 echo "Exit: $?"
 # Screenshot evidence phải tồn tại:
-ls tests/flows/evidence/<slug>/
+ls tests/evidence/<slug>/
 ```
 
 ### Cẩn thận với Playwright
 
 - **Dev server PHẢI đang chạy** (`npm run dev` :1420) — Playwright không tự khởi server.
-- **`playwright.config.ts`** ở root repo đã có (testDir=tests/flows/playwright, baseURL=http://localhost:1420). Mode 2 (`tests/flows/playwright/<slug>.spec.ts`) sẽ tự dùng config này. Mode 1 inline dùng `--project=chromium` flag đủ (không cần config).
+- **`playwright.config.ts`** ở root repo đã có (testDir=`tests/e2e`, baseURL=http://localhost:1420). Mode 2 (`tests/e2e/<slug>.spec.ts`) sẽ tự dùng config này. Mode 1 inline dùng `--project=chromium` flag đủ (không cần config).
 - **MathLive web component**: đợi hydrate trước khi click → `page.waitForSelector('math-field')` hoặc `page.waitForLoadState('networkidle')`.
 - **`page.goto` timeout default = 30s** — đủ cho Vite dev server.
 
@@ -174,8 +174,8 @@ mcp__claude-in-chrome__read_console_messages(tabId, pattern="error|Error|FAILED"
 
 - **Screenshot**: chụp sau mỗi case chính → đặt tên gợi nhớ (`case-1-happy.png`, `case-3-error.png`).
 - **GIF**: dùng `gif_creator` cho flow nhiều bước (login, drag, animation) → tên `<slug>-<case>.gif`.
-- **Console log**: copy text lỗi (nếu có) → `tests/flows/evidence/<slug>/console.txt`.
-- Lưu tất cả vào `tests/flows/evidence/<slug>/`.
+- **Console log**: copy text lỗi (nếu có) → `tests/evidence/<slug>/console.txt`.
+- Lưu tất cả vào `tests/evidence/<slug>/`.
 
 ### Bước 5 — Ghi kết quả vào flow file
 
@@ -209,7 +209,7 @@ Cập nhật frontmatter:
 | Thiết bị | 1024px landscape | PASS — layout không vỡ |
 
 **Verdict:** FAIL tại Case 3 — <triệu chứng cụ thể>
-Evidence: tests/flows/evidence/<slug>/
+Evidence: tests/evidence/<slug>/
 ```
 
 > Map ngược vào flow file: PASS/FAIL từng case ghi vào "5. Kết quả chạy".
@@ -304,7 +304,7 @@ Khi không thể chạy Chrome (background teammate), nộp template này cho le
 ### Ghi nhận kết quả
 - PASS / FAIL: ___
 - Case FAIL (nếu có): Case # — <triệu chứng>
-- Screenshot (nếu có): đặt vào `tests/flows/evidence/<slug>/`
+- Screenshot (nếu có): đặt vào `tests/evidence/<slug>/`
 ```
 
 ---
@@ -317,7 +317,7 @@ TRÌNH TỰ CHUẨN:
   1. tabs_context_mcp → tabs_create_mcp/navigate :1420
   2. Thao tác per-case (computer/find/form_input/javascript_tool)
   3. read_console_messages pattern=error (kỳ vọng 0)
-  4. Thu evidence → tests/flows/evidence/<slug>/
+  4. Thu evidence → tests/evidence/<slug>/
   5. Ghi "5. Kết quả chạy" + cập nhật status:executed
 
 TRÁNH:

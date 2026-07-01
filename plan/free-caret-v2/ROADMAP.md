@@ -161,8 +161,8 @@ Mỗi lần build 1 phase: user trỏ vào phase → dùng `plan-long` dựng `p
 
 | Phase | Long-plan | Trạng thái |
 |---|---|---|
-| A — Schema spacer-atom + click→caret + type→materialize | `plan/free-caret-v2/phase-a-schema-caret/` | 🔄 |
-| B — Arrow navigation 2D + editing in gap | `plan/free-caret-v2/phase-b-nav-edit/` | ⬜ |
+| A — Schema spacer-atom + click→caret + type→materialize | `plan/free-caret-v2/phase-a-schema-caret/` | ✅ |
+| B — Arrow navigation 2D + editing in gap | `plan/free-caret-v2/phase-b-nav-edit/` | ✅ (2026-07-01) |
 | C — IME + Undo/Redo + Copy/Paste | `plan/free-caret-v2/phase-c-ime-undo/` | ⬜ |
 | D — MathLive inline atom + dual-caret | `plan/free-caret-v2/phase-d-math-inline/` | ⬜ |
 | E — CAS + Vòng lõi (gate vàng tối thượng) | `plan/free-caret-v2/phase-e-cas-loop/` | ⬜ |
